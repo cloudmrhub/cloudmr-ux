@@ -1,10 +1,17 @@
-import React from 'react'
+import logo from './logo.svg';
+import './App.css';
+import { CmrButton, CmrInput,CmrCheckbox,CmrCollapse,CmrAvatar} from 'cloudmr-ux';
 
-import { ExampleComponent } from 'eros-p'
-import 'eros-p/dist/index.css'
-
-const App = () => {
-  return <ExampleComponent text="Create React Library Example 😄" />
+function App() {
+  return (
+    <div className="App">
+    <CmrButton onClick={() => console.log(123)}>123</CmrButton>
+    <CmrInput></CmrInput>
+    <CmrCheckbox></CmrCheckbox>
+    <CmrCollapse></CmrCollapse>
+    <CmrAvatar></CmrAvatar>
+    </div>
+  );
 }
 
-export default App
+export default App;
