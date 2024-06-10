@@ -1,6 +1,6 @@
 {
-  "name": "eros-p",
-  "version": "1.0.0",
+  "name": "cloudmr-ux",
+  "version": "0.0.3",
   "description": "Made with create-react-library",
   "author": "erosmontin",
   "license": "MIT",
@@ -8,9 +8,6 @@
   "main": "dist/index.js",
   "module": "dist/index.modern.js",
   "source": "src/index.js",
-  "engines": {
-    "node": ">=10"
-  },
   "scripts": {
     "build": "microbundle-crl --no-compress --format modern,cjs",
     "start": "microbundle-crl watch --no-compress --format modern,cjs",
@@ -23,11 +20,42 @@
     "predeploy": "cd example && npm install && npm run build",
     "deploy": "gh-pages -d example/build"
   },
-  "peerDependencies": {
-    "react": "^16.0.0"
-  },
-  "devDependencies": {
-    "microbundle-crl": "^0.13.10",
+"dependencies": {
+    "@ant-design/cssinjs": "^1.16.1",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.1",
+    "@mui/material": "^5.14.2",
+    "@mui/x-data-grid": "^6.10.1",
+    "@reduxjs/toolkit": "^1.9.5",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.7.13",
+    "@types/react": "^18.0.0",
+    "@types/react-color": "^3.0.6",
+    "@types/react-dom": "^18.0.0",
+    "antd": "^5.7.3",
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.1",
+    "gl-matrix": "^3.4.3",
+    "https-browserify": "^1.0.0",
+    "jszip": "^3.10.1",
+    "lil-gui": "^0.19.1",
+    "mathjax": "^3.2.2",
+    "mathjs": "^11.9.1",
+    "moment": "^2.29.4",
+    "plotly.js-dist-min": "^2.27.0",
+    "react": "^18.2.0",
+    "react-color": "^2.19.3",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.1",
+    "react-router-dom": "^6.14.2",
+    "react-scripts": "5.0.1",
+    "redux-persist": "^6.0.0",
+    "sass": "^1.64.1",
+    "web-vitals": "^2.1.0",
     "babel-eslint": "^10.0.3",
     "cross-env": "^7.0.2",
     "eslint": "^6.8.0",
@@ -41,13 +69,31 @@
     "eslint-plugin-react": "^7.17.0",
     "eslint-plugin-standard": "^4.0.1",
     "gh-pages": "^2.2.0",
+    "microbundle-crl": "^0.13.10",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.0.4",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-scripts": "^3.4.1"
+    "prettier": "^2.0.4"
   },
   "files": [
-    "dist"
-  ]
+    "dist",
+    "src/**"
+  ],
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+
 }
