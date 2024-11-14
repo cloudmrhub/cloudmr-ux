@@ -1,15 +1,25 @@
 # cloudmr-ux
 
+## for dev:
+1. clone this package
+    ```bash
+    cd cloudmr-ux
+    ```
+1. create a pakage global link
 
-[![NPM](https://img.shields.io/npm/v/eros-p.svg)](https://www.npmjs.com/package/eros-p) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
+    ```bash
+    npm link
+    ```
+1. in a different directory run 
+    ```bash
+    npx create-react-app local                    
+    ```
+1. install cloudmr-ux (locally)
+    ```bash
+    npm i /path/to/the/package/cloudmr-ux
 
-## Install
-
-```bash
-npm install --save cloudmr-ux
-```
-
-
+    ```
+1. taht's it!
 ## License
 
 MIT © [erosmontin](https://github.com/erosmontin)
