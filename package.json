@@ -1,6 +1,6 @@
 {
   "name": "cloudmr-ux",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Made with create-react-library",
   "author": "erosmontin",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "predeploy": "cd example && npm install && npm run build",
     "deploy": "gh-pages -d example/build"
   },
-"dependencies": {
+  "dependencies": {
     "@ant-design/cssinjs": "^1.16.1",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
@@ -38,25 +38,8 @@
     "@types/react-dom": "^18.0.0",
     "antd": "^5.7.3",
     "axios": "^1.4.0",
-    "bootstrap": "^5.3.1",
-    "gl-matrix": "^3.4.3",
-    "https-browserify": "^1.0.0",
-    "jszip": "^3.10.1",
-    "lil-gui": "^0.19.1",
-    "mathjax": "^3.2.2",
-    "mathjs": "^11.9.1",
-    "moment": "^2.29.4",
-    "plotly.js-dist-min": "^2.27.0",
-    "react": "^18.2.0",
-    "react-color": "^2.19.3",
-    "react-dom": "^18.2.0",
-    "react-redux": "^8.1.1",
-    "react-router-dom": "^6.14.2",
-    "react-scripts": "5.0.1",
-    "redux-persist": "^6.0.0",
-    "sass": "^1.64.1",
-    "web-vitals": "^2.1.0",
     "babel-eslint": "^10.0.3",
+    "bootstrap": "^5.3.1",
     "cross-env": "^7.0.2",
     "eslint": "^6.8.0",
     "eslint-config-prettier": "^6.7.0",
@@ -69,9 +52,25 @@
     "eslint-plugin-react": "^7.17.0",
     "eslint-plugin-standard": "^4.0.1",
     "gh-pages": "^2.2.0",
+    "gl-matrix": "^3.4.3",
+    "https-browserify": "^1.0.0",
+    "jszip": "^3.10.1",
+    "lil-gui": "^0.19.1",
+    "mathjax": "^3.2.2",
+    "mathjs": "^11.9.1",
     "microbundle-crl": "^0.13.10",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^2.0.4"
+    "moment": "^2.29.4",
+    "plotly.js-dist-min": "^2.27.0",
+    "prettier": "^2.0.4",
+    "react": "^18.2.0",
+    "react-color": "^2.19.3",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.1.1",
+    "react-router-dom": "^6.14.2",
+    "react-scripts": "5.0.1",
+    "redux-persist": "^6.0.0",
+    "sass": "^1.64.1",
+    "web-vitals": "^2.1.0"
   },
   "files": [
     "dist",
@@ -94,6 +93,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
   }
-
 }
