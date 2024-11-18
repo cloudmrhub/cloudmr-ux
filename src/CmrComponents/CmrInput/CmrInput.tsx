@@ -1,8 +1,7 @@
 import React from 'react';
-import './Input.scss';
+import './CmrInput.css';
 import { Input } from 'antd';
 import { SizeType } from 'antd/lib/config-provider/SizeContext';
-import { LiteralUnion } from 'antd/lib/_util/type';
 
 interface CmrInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size' | 'prefix' | 'type'> {
     defaultValue?: string;
