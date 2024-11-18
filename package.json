@@ -1,7 +1,7 @@
 {
   "name": "cloudmr-ux",
   "version": "0.1.0",
-  "author": "erosmontin",
+  "author": "erosmontin@gmail.com",
   "license": "MIT",
   "repository": "erosmontin/cloudmr-ux",
   "main": "dist/index.js",
