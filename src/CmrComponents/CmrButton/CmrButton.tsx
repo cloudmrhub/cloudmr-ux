@@ -1,12 +1,11 @@
-import React from 'react';
-import './CmrButton.scss';
+import './CmrButton.css';
 import { Button, ButtonProps } from '@mui/material';
 
 export const CmrButton = (props: ButtonProps) => {
     const { children, onClick, ...rest } = props;
 
     return (
-        <Button onClick={onClick} {...rest} style={{...props.style, textTransform:'none'}}>
+        <Button onClick={onClick} {...rest} className="cmr-button"  style={{...props.style, textTransform:'none'}}>
             {children}
         </Button>
     );

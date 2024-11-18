@@ -1,100 +1,35 @@
 {
   "name": "cloudmr-ux",
   "version": "0.1.0",
-  "description": "Made with create-react-library",
   "author": "erosmontin",
   "license": "MIT",
-  "repository": "erosmontin/eros-p",
+  "repository": "erosmontin/cloudmr-ux",
   "main": "dist/index.js",
-  "module": "dist/index.modern.js",
-  "source": "src/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "microbundle-crl --no-compress --format modern,cjs",
-    "start": "microbundle-crl watch --no-compress --format modern,cjs",
-    "prepare": "run-s build",
-    "test": "run-s test:unit test:lint test:build",
-    "test:build": "run-s build",
-    "test:lint": "eslint .",
-    "test:unit": "cross-env CI=1 react-scripts test --env=jsdom",
-    "test:watch": "react-scripts test --env=jsdom",
-    "predeploy": "cd example && npm install && npm run build",
-    "deploy": "gh-pages -d example/build"
+    "build": "tsup src/index.ts --format cjs,esm --dts"
   },
   "dependencies": {
-    "@ant-design/cssinjs": "^1.16.1",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.14.1",
-    "@mui/material": "^5.14.2",
-    "@mui/x-data-grid": "^6.10.1",
-    "@reduxjs/toolkit": "^1.9.5",
-    "@testing-library/jest-dom": "^5.14.1",
-    "@testing-library/react": "^13.0.0",
-    "@testing-library/user-event": "^13.2.1",
-    "@types/jest": "^27.0.1",
-    "@types/node": "^16.7.13",
-    "@types/react": "^18.0.0",
-    "@types/react-color": "^3.0.6",
-    "@types/react-dom": "^18.0.0",
-    "antd": "^5.7.3",
-    "axios": "^1.4.0",
-    "babel-eslint": "^10.0.3",
-    "bootstrap": "^5.3.1",
-    "cross-env": "^7.0.2",
-    "eslint": "^6.8.0",
-    "eslint-config-prettier": "^6.7.0",
-    "eslint-config-standard": "^14.1.0",
-    "eslint-config-standard-react": "^9.2.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-node": "^11.0.0",
-    "eslint-plugin-prettier": "^3.1.1",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-react": "^7.17.0",
-    "eslint-plugin-standard": "^4.0.1",
-    "gh-pages": "^2.2.0",
-    "gl-matrix": "^3.4.3",
-    "https-browserify": "^1.0.0",
-    "jszip": "^3.10.1",
-    "lil-gui": "^0.19.1",
-    "mathjax": "^3.2.2",
-    "mathjs": "^11.9.1",
-    "microbundle-crl": "^0.13.10",
-    "moment": "^2.29.4",
-    "plotly.js-dist-min": "^2.27.0",
-    "prettier": "^2.0.4",
-    "react": "^18.2.0",
-    "react-color": "^2.19.3",
-    "react-dom": "^18.2.0",
-    "react-redux": "^8.1.1",
-    "react-router-dom": "^6.14.2",
-    "react-scripts": "5.0.1",
-    "redux-persist": "^6.0.0",
-    "sass": "^1.64.1",
-    "web-vitals": "^2.1.0"
-  },
-  "files": [
-    "dist",
-    "src/**"
-  ],
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/material": "^6.1.7",
+    "antd": "^5.22.1",
+    "css-loader": "^7.1.2",
+    "react": "^18.3.1",
+    "sass": "^1.81.0",
+    "sass-loader": "^16.0.3",
+    "style-loader": "^4.0.0"
   },
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
-  }
+    "tsup": "^6.7.0",
+    "typescript": "^5.6.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }

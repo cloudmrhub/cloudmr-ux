@@ -1,0 +1,12 @@
+{
+   "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "react-jsx", // For React 17+ with JSX
+    "esModuleInterop": true,
+    "skipLibCheck": true, // Avoid errors with type definitions
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"]
+}
+
