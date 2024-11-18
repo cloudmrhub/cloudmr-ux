@@ -32,6 +32,7 @@ export const CmrInput = (props: CmrInputProps) => {
             onChange={onChange}
             onPressEnter={onPressEnter}
             {...rest}
+            className="cmr-input"
         />
     );
 };
