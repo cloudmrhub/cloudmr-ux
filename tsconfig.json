@@ -1,12 +1,15 @@
 {
-   "compilerOptions": {
+  "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "node",
     "jsx": "react-jsx", // For React 17+ with JSX
     "esModuleInterop": true,
     "skipLibCheck": true, // Avoid errors with type definitions
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true, // Generate .d.ts files for type definitions
+    "outDir": "dist", // Output directory for built files
+    "strict": true // Enforce stricter type checking
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
-

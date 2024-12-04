@@ -11,7 +11,17 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts"
+    "build": "tsup src/index.ts --format cjs,esm --dts --external react,react-dom"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tsup": "^6.7.0",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
@@ -19,15 +29,8 @@
     "@mui/material": "^6.1.7",
     "antd": "^5.22.1",
     "css-loader": "^7.1.2",
-    "react": "^18.3.1",
     "sass": "^1.81.0",
     "sass-loader": "^16.0.3",
     "style-loader": "^4.0.0"
-  },
-  "devDependencies": {
-    "tsup": "^6.7.0",
-    "typescript": "^5.6.3"
   }
-  
-
 }
