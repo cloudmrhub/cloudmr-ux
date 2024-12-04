@@ -1,1 +1,1 @@
-export { default as CmrInput } from './CmrInput';
+export * from './CmrInput';

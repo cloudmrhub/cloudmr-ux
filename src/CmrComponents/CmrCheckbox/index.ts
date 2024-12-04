@@ -1,1 +1,1 @@
-export { default as CmrCheckbox } from './CmrCheckbox';
+export * from './CmrCheckbox';

@@ -1,2 +1,3 @@
-export { default as CmrButton } from './CmrButton';
+export * from './CmrButton';
+
 

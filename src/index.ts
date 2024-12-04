@@ -1,5 +1,5 @@
 // src/index.ts
-export * from './CmrComponents/CmrButton/CmrButton';
-export * from './CmrComponents/CmrCheckbox/CmrCheckbox';
-export * from './CmrComponents/CmrInput/CmrInput';
+export * from './CmrComponents/CmrButton';
+export * from './CmrComponents/CmrCheckbox';
+export * from './CmrComponents/CmrInput';
 
