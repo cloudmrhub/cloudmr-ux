@@ -1,11 +1,39 @@
+.cmr-label{
+    font-size: 40;
+}
 .cmr-checkbox {
-    margin-bottom: 4px;
-    &__text {
+    font-family: "Source Sans 3", sans-serif !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    font-weight: 400 !important;
+
+    /* margin-bottom: 4px; */
+    /* &__text {
         font-style: normal;
         font-weight: 500;
         font-size: 16px;
         line-height: 15px;
         text-align: justify;
         color: black;
-    }
+    } */
 }
+
+/* .cmr-checkbox:checked {
+    background-color: #580F8B !important;
+} */
+
+/* .MuiCheckbox-root {
+    font-family: "Source Sans 3", sans-serif !important;
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    font-weight: 400 !important;
+}
+
+.MuiCheckbox-root.Mui-checked {
+    color: white !important;
+    background-color: #580F8B !important;
+}
+
+.MuiCheckbox-root.Mui-checked::before {
+    background: none !important;
+} */
