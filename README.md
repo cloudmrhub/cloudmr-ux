@@ -1,28 +1,24 @@
 # cloudmr-ux
 
 ## for dev:
-clone this package
+Installation steps
+
+1. Clone this package
+```bash
+git clone https://github.com/cloudmrhub/cloudmr-ux.git
+```
+2. Install dependencies
 ```bash
 cd cloudmr-ux
-```
-build it
-```
 npm install
-npm run build
 ```
-in a different directory create a test app
+3. Run Parcel to build/serve the file public/index.html
 ```bash
-npx create-react-app local                    
-```
-
-install cloudmr-ux (locally)
-```bash
-npm i /path/to/the/package/cloudmr-ux
-
+npx parcel public/index.html      
 ```
 that's it!
-## License
 
+## License
 MIT © 
 [erosmontin](https://github.com/erosmontin)
 
