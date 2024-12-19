@@ -1,13 +1,29 @@
 .cmr-label{
-    font-size: 40;
+    font-size: 14.4px;
 }
 .cmr-checkbox {
     font-family: "Source Sans 3", sans-serif !important;
     font-size: 1rem !important;
     line-height: 1.5 !important;
     font-weight: 400 !important;
+}
 
-    /* margin-bottom: 4px; */
+/* Custom styles for the Checkbox */
+.MuiCheckbox-root {
+    color: #580F8B !important;  /* Default color (unchecked) */
+}
+
+.Mui-checked {
+    color: #580F8B !important;  /* Checked state color */
+}
+
+/* Optional: Change color on hover or focus */
+.MuiCheckbox-root.Mui-focusVisible:hover,
+.MuiCheckbox-root:hover {
+    background-color: rgba(88, 15, 139, 0.1) !important;  /* Light purple on hover */
+}
+
+   /* margin-bottom: 4px; */
     /* &__text {
         font-style: normal;
         font-weight: 500;
@@ -16,24 +32,3 @@
         text-align: justify;
         color: black;
     } */
-}
-
-/* .cmr-checkbox:checked {
-    background-color: #580F8B !important;
-} */
-
-/* .MuiCheckbox-root {
-    font-family: "Source Sans 3", sans-serif !important;
-    font-size: 1rem !important;
-    line-height: 1.5 !important;
-    font-weight: 400 !important;
-}
-
-.MuiCheckbox-root.Mui-checked {
-    color: white !important;
-    background-color: #580F8B !important;
-}
-
-.MuiCheckbox-root.Mui-checked::before {
-    background: none !important;
-} */
