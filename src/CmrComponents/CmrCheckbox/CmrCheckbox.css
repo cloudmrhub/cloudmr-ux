@@ -11,24 +11,19 @@
 /* Custom styles for the Checkbox */
 .MuiCheckbox-root {
     color: #580F8B !important;  /* Default color (unchecked) */
+    background-color: transparent !important; /* Ensure no background by default */
 }
 
 .Mui-checked {
     color: #580F8B !important;  /* Checked state color */
 }
 
+.MuiCheckbox-root:active, .MuiCheckbox-root:focus {
+    background-color: transparent !important; /* Remove active state background */
+}
+
 /* Optional: Change color on hover or focus */
 .MuiCheckbox-root.Mui-focusVisible:hover,
 .MuiCheckbox-root:hover {
-    background-color: rgba(88, 15, 139, 0.1) !important;  /* Light purple on hover */
+    background-color: transparent !important;  
 }
-
-   /* margin-bottom: 4px; */
-    /* &__text {
-        font-style: normal;
-        font-weight: 500;
-        font-size: 16px;
-        line-height: 15px;
-        text-align: justify;
-        color: black;
-    } */
