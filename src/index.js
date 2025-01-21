@@ -71,7 +71,7 @@ const App = () => {
                 </div>
 
                 <div>
-                    <h3> 5. Dropdown </h3>
+                    <h3> 5. Dropdown Selection </h3>
                     <CmrDropDown
                         options={[
                             { label: 'Option 1', value: 'option1' },

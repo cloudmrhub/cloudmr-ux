@@ -1,3 +1,13 @@
+/* Adjust font size for dropdown label */
+.dropdown-label {
+    font-size: 14.4px !important; /* Ensure font size is applied */
+}
+
+/* Adjust font size for dropdown items */
+.custom-dropdown .MuiMenuItem-root {
+    font-size: 14.4px !important; /* Font size for each dropdown item */
+}
+
 /* More specific targeting for MUI's outlined input */
 .dropdown-select .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
     border-color: #ced4da !important;
