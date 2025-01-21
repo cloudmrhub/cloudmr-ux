@@ -1,11 +1,26 @@
-/* Adjust font size for dropdown label */
-.dropdown-label {
-    font-size: 14.4px !important; /* Ensure font size is applied */
+/* Adjust font size for dropdown label when no option is selected */
+.dropdown-select .MuiInputLabel-root {
+    font-size: 14.4px !important; /* Ensure the label font size is applied */
 }
 
-/* Adjust font size for dropdown items */
+/* Adjust font size for dropdown label when focused */
+.dropdown-select .MuiInputLabel-root.Mui-focused {
+    font-size: 14.4px !important;
+}
+
+/* Adjust font size for the selected option (dropdown value) */
+.dropdown-select .MuiSelect-select {
+    font-size: 14.4px !important; /* Ensure selected option text has the correct font size */
+}
+
+/* Adjust font size for the selected option when focused */
+.dropdown-select .MuiSelect-select:focus {
+    font-size: 14.4px !important;
+}
+
+/* Style for the dropdown options (MenuItem) */
 .custom-dropdown .MuiMenuItem-root {
-    font-size: 14.4px !important; /* Font size for each dropdown item */
+    font-size: 14.4px !important; /* Set font size for dropdown options */
 }
 
 /* More specific targeting for MUI's outlined input */

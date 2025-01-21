@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Select, MenuItem, FormControl, InputLabel, SelectChangeEvent } from '@mui/material';
-import './CmrDropDown.css';
+import './CmrSelect.css';
 
 interface Option {
     label: string;
     value: string;
 }
 
-interface CmrDropDownProps {
+interface CmrSelectProps {
     options: Option[];
     label: string;
     disabled?: boolean;
 }
 
-const CmrDropDown: React.FC<CmrDropDownProps> = ({ options, label, disabled }) => {
+const CmrSelect: React.FC<CmrSelectProps> = ({ options, label, disabled }) => {
     // Handle state for selected value directly in the component
     const [selectedValue, setSelectedValue] = useState<string>('');
 
@@ -42,4 +42,4 @@ const CmrDropDown: React.FC<CmrDropDownProps> = ({ options, label, disabled }) =
     );
 };
 
-export default CmrDropDown;
+export default CmrSelect;

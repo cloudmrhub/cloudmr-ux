@@ -5,7 +5,7 @@ import { CmrButton } from "./CmrComponents/CmrButton";
 import { CmrInput } from "./CmrComponents/CmrInput";
 import { CmrCheckbox } from "./CmrComponents/CmrCheckbox";
 import { CmrRadioGroup } from "./CmrComponents/CmrRadioGroup";
-import { CmrDropDown } from "./CmrComponents/CmrDropDown";
+import { CmrSelect } from "./CmrComponents/CmrSelect";
 
 const App = () => {
     return (
@@ -72,7 +72,7 @@ const App = () => {
 
                 <div>
                     <h3> 5. Dropdown Selection </h3>
-                    <CmrDropDown
+                    <CmrSelect
                         options={[
                             { label: 'Option 1', value: 'option1' },
                             { label: 'Option 2', value: 'option2' },
