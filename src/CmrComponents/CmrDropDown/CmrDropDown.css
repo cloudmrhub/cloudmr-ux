@@ -1,0 +1,37 @@
+/* More specific targeting for MUI's outlined input */
+.dropdown-select .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline {
+    border-color: #ced4da !important;
+    /* Default border color */
+}
+
+/* Hover state */
+.dropdown-select .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    border-color: #ced4da !important;
+}
+
+/* Focused state */
+.dropdown-select .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    border-color: #ced4da !important;
+}
+
+/* Style for the dropdown label */
+.dropdown-label.Mui-focused {
+    color: #580f8b !important;
+    /* Color when focused */
+}
+
+/* Highlighted (hover) state */
+.custom-dropdown .MuiMenuItem-root:hover {
+    background-color: #e6d5f3 !important; /* A lighter purple for hover */
+  }
+  
+  /* Selected state */
+  .custom-dropdown .MuiMenuItem-root.Mui-selected {
+    background-color: #e7d4f5 !important; /* The purple color for selected state */
+  }
+  
+  /* Selected state when hovered */
+  .custom-dropdown .MuiMenuItem-root.Mui-selected:hover {
+    background-color: #dcbfea !important; /* A slightly darker purple when selected and hovered */
+  }
+  

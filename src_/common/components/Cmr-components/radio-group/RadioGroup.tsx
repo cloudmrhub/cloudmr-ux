@@ -1,31 +1,101 @@
-import React from 'react';
-import './RadioGroup.scss';
-import { Radio } from 'antd';
-import { RadioChangeEvent } from 'antd/lib/radio/interface';
+// import React from 'react';
+// import './RadioGroup.scss';
+// import { Radio } from 'antd';
+// import { RadioChangeEvent } from 'antd/lib/radio/interface';
 
-interface CmrRadioGroupProps {
-    defaultValue?: any;
-    disabled?: boolean;
-    name?: string;
-    value?: any;
-    onChange?: (e: RadioChangeEvent) => void;
-    children?: React.ReactNode;
+// interface CmrRadioGroupProps {
+//     defaultValue?: any;
+//     disabled?: boolean;
+//     name?: string;
+//     value?: any;
+//     onChange?: (e: RadioChangeEvent) => void;
+//     children?: React.ReactNode;
+// }
+
+// const CmrRadioGroup = (props: CmrRadioGroupProps) => {
+//     const { defaultValue, disabled, name, value, onChange, children, ...rest } = props;
+
+//     return (
+//         <Radio.Group
+//             defaultValue={defaultValue}
+//             disabled={disabled}
+//             name={name}
+//             value={value}
+//             onChange={onChange}
+//             {...rest}
+//         >
+//             {children}
+//         </Radio.Group>
+//     );
+// };
+
+// export default CmrRadioGroup;
+
+import React, { useState } from "react";
+import './CmrRadioGroup.css';
+import {
+    Radio,
+    RadioGroup,
+    FormControl,
+    FormControlLabel,
+    FormLabel,
+} from "@mui/material";
+
+interface CmrRadioOption {
+    label: string; // Label for each radio button
+    value: string; // Value for each radio button
+    disabled?: boolean; // Optional: Disabled state for individual radio buttons
 }
 
-const CmrRadioGroup = (props: CmrRadioGroupProps) => {
-    const { defaultValue, disabled, name, value, onChange, children, ...rest } = props;
+interface CmrRadioProps {
+    options: CmrRadioOption[]; // Array of radio button options
+    groupLabel?: string; // Label for the radio group
+    defaultValue?: string; // Default selected value
+    onChange?: (value: string) => void; // Handler to return the selected value
+}
+
+const CmrRadioGroup: React.FC<CmrRadioProps> = ({
+    options,
+    groupLabel,
+    defaultValue,
+    onChange,
+}) => {
+    const [selectedValue, setSelectedValue] = useState<string>(defaultValue || "");
+
+    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.value;
+        setSelectedValue(newValue);
+
+        // Use the passed onChange handler, or fall back to logging by default
+        if (onChange) {
+            onChange(newValue);
+        } else {
+            console.log("Selected Radio Value:", newValue);
+        }
+    };
 
     return (
-        <Radio.Group
-            defaultValue={defaultValue}
-            disabled={disabled}
-            name={name}
-            value={value}
-            onChange={onChange}
-            {...rest}
-        >
-            {children}
-        </Radio.Group>
+        <div className="cmr-radio-label">
+            <FormControl component="fieldset">
+                {groupLabel && <FormLabel component="legend">{groupLabel}</FormLabel>}
+                <RadioGroup value={selectedValue} onChange={handleChange}>
+                    {options.map((option) => (
+                        <FormControlLabel
+                            key={option.value}
+                            value={option.value}
+                            control={<Radio disabled={option.disabled} />}
+                            label={option.label}
+                            sx={{
+                                '& .MuiTypography-root': {
+                                    fontSize: '14.4px',
+                                    fontFamily: '"Source Sans 3", sans-serif',
+                                },
+                            }}
+                        />
+                    ))}
+                </RadioGroup>
+            </FormControl>
+        </div>
     );
 };
 
