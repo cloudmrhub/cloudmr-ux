@@ -32,13 +32,13 @@
 
 /* Disabled variant styles */
 .cmr-button.Mui-disabled {
-    background-color: #ccc !important;  /* Change background color for disabled state */
+    background-color: #ced4da !important;  /* Change background color for disabled state */
     color: #999 !important;  /* Change text color for disabled state */
-    border: 2px solid #ccc !important;  /* Change border color for disabled state */
+    border: 2px solid #ced4da !important;  /* Change border color for disabled state */
     cursor: not-allowed !important;  /* Change cursor to indicate the button is disabled */
 }
 
 .cmr-button.Mui-disabled:hover {
-    background-color: #ccc !important;  /* Keep the same background color on hover for disabled button */
+    background-color: #ced4da !important;  /* Keep the same background color on hover for disabled button */
     color: #999 !important;  /* Keep the same text color on hover for disabled button */
 }

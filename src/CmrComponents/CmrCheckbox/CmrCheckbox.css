@@ -10,7 +10,7 @@
 
 /* Custom styles for the Checkbox */
 .MuiCheckbox-root {
-    color: #580F8B !important;  /* Default color (unchecked) */
+    color: #ced4da !important;  /* Default color (unchecked) */
     background-color: transparent !important; /* Ensure no background by default */
 }
 

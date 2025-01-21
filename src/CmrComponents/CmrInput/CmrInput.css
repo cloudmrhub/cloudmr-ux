@@ -3,7 +3,6 @@
   padding: 0.375rem 0.75rem;
   font-size: 1rem;
   line-height: 1.5;
-  color: #495057;
   background-color: #fff;
   background-clip: padding-box;
   border: 1px solid #ced4da;
@@ -12,18 +11,17 @@
 
 /* Focused input styles (highlighted outline color) */
 .cmr-input:focus {
-  border-color: #8000ff !important; /* Custom outline color */
+  border-color: #580f8b !important; /* Custom outline color */
   box-shadow: 0 0 0 0.2rem rgba(88, 15, 139, 0.25) !important; /* Glow effect */
 }
 
 /* Hover style for the input */
 .cmr-input:hover {
-  border-color: #8000ff !important; 
-  /* box-shadow: 0 0 0 0.2rem rgba(88, 15, 139, 0.1) !important;  */
+  border-color: #ced4da !important;
 }
 
 /* Optional: style for when the input is focused and has a value (like Material UI) */
 .cmr-input:focus:not(:placeholder-shown) {
-  border-color: #8000ff !important; /* Same as focus style */
+  border-color: #580f8b !important; /* Same as focus style */
   box-shadow: 0 0 0 0.2rem rgba(130, 39, 194, 0.25) !important; /* Same as focus style */
 }

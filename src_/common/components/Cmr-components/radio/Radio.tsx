@@ -22,45 +22,60 @@
 
 // export default CmrRadio;
 
-import React, { useState } from 'react';
-import { Radio, FormControl, FormControlLabel, RadioGroup } from '@mui/material';
+import React, { useState } from "react";
+import {
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+} from "@mui/material";
 
-const CmrRadio = () => {
-  const [selectedValue, setSelectedValue] = useState<string>('option1'); // State to manage selected radio button value
+interface CmrRadioOption {
+  label: string; // Label for each radio button
+  value: string; // Value for each radio button
+  disabled?: boolean; // Optional: Disabled state for individual radio buttons
+}
 
-  // Handle the change in selection
+interface CmrRadioProps {
+  options: CmrRadioOption[]; // Array of radio button options
+  groupLabel?: string; // Label for the radio group
+  defaultValue?: string; // Default selected value
+  onChange?: (value: string) => void; // Handler to return the selected value
+}
+
+const CmrRadio: React.FC<CmrRadioProps> = ({
+  options,
+  groupLabel,
+  defaultValue,
+  onChange,
+}) => {
+  const [selectedValue, setSelectedValue] = useState<string>(defaultValue || "");
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedValue(event.target.value);
+    const newValue = event.target.value;
+    setSelectedValue(newValue);
+
+    // Use the passed onChange handler, or fall back to logging by default
+    if (onChange) {
+      onChange(newValue);
+    } else {
+      console.log("Selected Radio Value:", newValue);
+    }
   };
 
   return (
     <FormControl component="fieldset">
-      <RadioGroup
-        aria-label="radio-button-group"
-        name="radio-buttons"
-        value={selectedValue}
-        onChange={handleChange}
-      >
-        {/* First Radio Button */}
-        <FormControlLabel
-          value="option1"
-          control={<Radio />}
-          label="Option 1"
-        />
-        
-        {/* Second Radio Button */}
-        <FormControlLabel
-          value="option2"
-          control={<Radio />}
-          label="Option 2"
-        />
-        
-        {/* Third Radio Button */}
-        <FormControlLabel
-          value="option3"
-          control={<Radio />}
-          label="Option 3"
-        />
+      {groupLabel && <FormLabel component="legend">{groupLabel}</FormLabel>}
+      <RadioGroup value={selectedValue} onChange={handleChange}>
+        {options.map((option) => (
+          <FormControlLabel
+            key={option.value}
+            value={option.value}
+            control={<Radio disabled={option.disabled} />}
+            label={option.label}
+          />
+        ))}
       </RadioGroup>
     </FormControl>
   );

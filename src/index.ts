@@ -2,5 +2,5 @@
 export * from './CmrComponents/CmrButton';
 export * from './CmrComponents/CmrCheckbox';
 export * from './CmrComponents/CmrInput';
-export * from './CmrComponents/CmrRadio';
+export * from './CmrComponents/CmrRadioGroup';
 

@@ -1,0 +1,25 @@
+/* Default radio button color */
+.MuiRadio-root {
+    color: #ced4da !important;  /* Default border color (unchecked) */
+}
+
+/* Checked state color */
+.Mui-checked {
+    color: #580F8B !important;  /* Border color when checked */
+}
+
+/* Optional: Set the color of the label text */
+.cmr-label {
+    font-size: 14.4px;
+    font-family: "Source Sans 3", sans-serif;
+}
+
+/* Remove the circular shadow on hover/focus */
+.MuiRadio-root.Mui-focusVisible {
+    box-shadow: none !important;  /* Remove the shadow */
+}
+
+/* Custom style for the radio button on hover */
+.MuiRadio-root:hover {
+    background-color: transparent !important;  /* Remove hover background */
+}

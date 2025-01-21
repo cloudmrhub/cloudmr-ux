@@ -28,7 +28,6 @@ export const CmrInput = (props: CmrInputProps) => {
             value={value}
             type={type}
             prefix={prefix}
-            bordered={bordered}
             onChange={onChange}
             onPressEnter={onPressEnter}
             {...rest}
