@@ -15,7 +15,7 @@
   color: #580f8b;
 }
 
-// Religning MUI checkbox in the header
+/* // Religning MUI checkbox in the header */
 .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainerContent {
   padding: 0 !important;
   margin: 0 !important;
