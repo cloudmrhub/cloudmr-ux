@@ -1,6 +1,6 @@
 {
   "name": "cloudmr-ux",
-  "version": "1.0.6",
+  "version": "1.1.7",
   "author": "erosmontin@gmail.com",
   "license": "MIT",
   "repository": "erosmontin/cloudmr-ux",
@@ -31,6 +31,7 @@
     "@mui/material": "^5.14.2",
     "@mui/x-data-grid": "^6.10.1",
     "antd": "^5.22.1",
+    "axios": "^1.9.0",
     "css-loader": "^7.1.2",
     "sass": "^1.81.0",
     "sass-loader": "^16.0.3",
