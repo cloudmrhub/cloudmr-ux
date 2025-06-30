@@ -25,7 +25,7 @@ interface UploadWindowProps {
     };
 }
 
-export default function UploadWindow({
+export default function CmrUploadWindow({
                                          upload, open, setOpen, fileExtension,
                                          template = {showFileName: true, showDatabase: true, showFileSize: true}, // default values
                                      }: UploadWindowProps) {

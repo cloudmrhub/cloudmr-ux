@@ -2,9 +2,9 @@
 .css-1lymaxv-MuiDataGrid-root .MuiDataGrid-cell:focus-within {
   outline: none !important;
 }
-.MuiTablePagination-selectLabel,.MuiTablePagination-displayedRows{
+/* .MuiTablePagination-selectLabel,.MuiTablePagination-displayedRows{
   margin-bottom: 0;
-}
+} */
 
 .MuiDataGrid-columnHeaders{
   background: rgba(88, 15, 139, 0.08);

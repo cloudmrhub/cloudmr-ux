@@ -16,6 +16,8 @@ export { default as CmrCheckbox } from './CmrComponents/checkbox/Checkbox';
 export { default as CmrLabel } from './CmrComponents/label/Label';
 export { default as CmrButton } from './CmrComponents/CmrButton/CmrButton';
 export { default as CmrInputNumber } from './CmrComponents/input-number/InputNumber';
+export { default as CMRSelectUpload } from './CmrComponents/select-upload/SelectUpload';
+export { default as CmrUploadWindow } from './CmrComponents/upload/UploadWindow';
 export type { LambdaFile } from './CmrComponents/upload/Upload';
 
 
