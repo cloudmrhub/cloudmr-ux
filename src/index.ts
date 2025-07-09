@@ -18,6 +18,7 @@ export { default as CmrButton } from './CmrComponents/CmrButton/CmrButton';
 export { default as CmrInputNumber } from './CmrComponents/input-number/InputNumber';
 export { default as CMRSelectUpload } from './CmrComponents/select-upload/SelectUpload';
 export { default as CmrUploadWindow } from './CmrComponents/upload/UploadWindow';
+export { default as CmrTooltip } from './CmrComponents/tooltip/Tooltip';
 export type { LambdaFile } from './CmrComponents/upload/Upload';
 
 

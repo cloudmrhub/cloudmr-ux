@@ -8,8 +8,8 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import Box from "@mui/material/Box";
-import {Alert, AlertColor, Collapse, MenuItem} from "@mui/material";
-import {ChangeEvent} from "react";
+import { Alert, AlertColor, Collapse, MenuItem } from "@mui/material";
+import { ChangeEvent } from "react";
 import './Upload.css';
 import CmrLabel from "../label/Label";
 
@@ -26,9 +26,9 @@ interface UploadWindowProps {
 }
 
 export default function CmrUploadWindow({
-                                         upload, open, setOpen, fileExtension,
-                                         template = {showFileName: true, showDatabase: true, showFileSize: true}, // default values
-                                     }: UploadWindowProps) {
+    upload, open, setOpen, fileExtension,
+    template = { showFileName: true, showDatabase: true, showFileSize: true }, // default values
+}: UploadWindowProps) {
     const [fileOriginalName, setFileOriginalName] = React.useState('');
     const [fileAlias, setFileAlias] = React.useState('/');
     const [fileSize, setFileSize] = React.useState('0 MB');
@@ -55,6 +55,8 @@ export default function CmrUploadWindow({
         return fileName.split('.').pop();
     }
 
+    const INVALID_ALIAS_REGEX = /[ ,:%><]/;
+
     const handleConfirm = () => {
         if (uploadedFiles.length === 0) {
             setInfoOpen(true);
@@ -70,6 +72,16 @@ export default function CmrUploadWindow({
             setTimeout(() => setInfoOpen(false), 2500);
             return;
         }
+
+        // Validate File Alias characters
+        if (INVALID_ALIAS_REGEX.test(fileAlias)) {
+            setInfoOpen(true);
+            setInfoStyle('error');
+            setWarningText("Alias contains invalid characters ( , : % > < or spaces )");
+            setTimeout(() => setInfoOpen(false), 10000);
+            return;
+        }
+
         setOpen(false);
         upload(uploadedFiles[0], fileAlias, locationSelection).then((response: number) => {
             console.log(response);
@@ -141,7 +153,7 @@ export default function CmrUploadWindow({
     }
 
     function loadFiles(files: File[]) {
-        if (files.length==0){
+        if (files.length == 0) {
             setInfoOpen(true);
             setInfoStyle('warning');
             setWarningText('No file selected');
@@ -182,8 +194,7 @@ export default function CmrUploadWindow({
             const output =
                 exponent === 0
                     ? `${numberOfBytes} bytes`
-                    : `${approx.toFixed(3)} ${
-                        units[exponent]
+                    : `${approx.toFixed(3)} ${units[exponent]
                     }`;
             setFileSize(output);
         }
@@ -265,12 +276,12 @@ export default function CmrUploadWindow({
                     </DialogContentText>
                     <DialogContent dividers>
                         <Box width={500} height={250}
-                             style={{
-                                 borderStyle: 'dashed',
-                                 borderRadius: '5pt',
-                                 borderColor: (uploadBoxWarning == undefined) ? 'lightGray' : '#BA3C3C'
-                             }}>
-                            <Typography component="div" style={{height: '100%'}}>
+                            style={{
+                                borderStyle: 'dashed',
+                                borderRadius: '5pt',
+                                borderColor: (uploadBoxWarning == undefined) ? 'lightGray' : '#BA3C3C'
+                            }}>
+                            <Typography component="div" style={{ height: '100%' }}>
                                 <Box style={{
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -278,15 +289,15 @@ export default function CmrUploadWindow({
                                     alignItems: 'center',
                                     height: '100%'
                                 }}
-                                     onClick={fileInputClick}
-                                     ref={fileInput}>
-        <Typography variant="body1" align="center" style={{marginTop: 'auto'}}>
-            Drag & Drop or Click to Upload Your File Here <sup>*</sup>
-        </Typography>
-        <Typography variant="body2" align="center" style={{marginTop: 'auto',fontSize: '0.8rem', fontStyle:'italic'}}>
-            * Warning: The file you are uploading may contain sensitive information protected under privacy laws. Please ensure all PHI is anonymized before proceeding.Before proceeding. The user is the sole responsible for data anonymization.
-        </Typography>
-                                    
+                                    onClick={fileInputClick}
+                                    ref={fileInput}>
+                                    <Typography variant="body1" align="center" style={{ marginTop: 'auto' }}>
+                                        Drag & Drop or Click to Upload Your File Here <sup>*</sup>
+                                    </Typography>
+                                    <Typography variant="body2" align="center" style={{ marginTop: 'auto', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                        * Warning: The file you are uploading may contain sensitive information protected under privacy laws. Please ensure all PHI is anonymized before proceeding.Before proceeding. The user is the sole responsible for data anonymization.
+                                    </Typography>
+
                                 </Box>
                             </Typography>
                         </Box>
@@ -295,15 +306,15 @@ export default function CmrUploadWindow({
                             id="file-window"
                             multiple
                             accept={fileExtension == undefined ? "*" : fileExtension}
-                            style={{display: 'none'}}
+                            style={{ display: 'none' }}
                             onChange={loadSelectedFiles}
                         />
-                        <Box component="form" sx={{'& .MuiTextField-root': {m: 2, width: '25ch', mb: 0}}}>
+                        <Box component="form" sx={{ '& .MuiTextField-root': { m: 2, width: '25ch', mb: 0 } }}>
                             <div>
                                 {template.showFileName && (
                                     <TextField
                                         required
-                                        style={{marginTop:'30px'}}
+                                        style={{ marginTop: '30px' }}
                                         label={`File Alias:`}
                                         value={fileAlias}
                                         variant="standard"
@@ -311,7 +322,7 @@ export default function CmrUploadWindow({
                                     />
                                 )}
 
-                                {fileOriginalName!=''&&<CmrLabel style={{marginLeft:'16px', fontSize:'9pt', color:'#267833'}}>
+                                {fileOriginalName != '' && <CmrLabel style={{ marginLeft: '16px', fontSize: '9pt', color: '#267833' }}>
                                     {fileOriginalName}
                                 </CmrLabel>}
                                 {template.showDatabase && (
@@ -322,7 +333,7 @@ export default function CmrUploadWindow({
                                         helperText="Upstream Storage Location"
                                         variant="standard"
                                     >
-                                        {[{value: 's3', label: 'S3'}].map((option) => (
+                                        {[{ value: 's3', label: 'S3' }].map((option) => (
                                             <MenuItem key={option.value} value={option.value}>
                                                 {option.label}
                                             </MenuItem>
@@ -342,7 +353,7 @@ export default function CmrUploadWindow({
                                     />
                                 )}
                                 <Collapse in={infoOpen}>
-                                    <Alert severity={infoStyle} sx={{m: 1}}>
+                                    <Alert severity={infoStyle} sx={{ m: 1 }}>
                                         {warningText}
                                     </Alert>
                                 </Collapse>
@@ -350,10 +361,10 @@ export default function CmrUploadWindow({
                         </Box>
                     </DialogContent>
                     <DialogActions>
-                        <Button color={'inherit'} sx={{color: '#333'}} disabled={UpBtnDisabled}
-                                onClick={handleClose}>Cancel</Button>
+                        <Button variant={"outlined"} disabled={UpBtnDisabled}
+                            onClick={handleClose}>Cancel</Button>
                         <Button variant='contained' disabled={UpBtnDisabled}
-                                onClick={handleConfirm}>{UpBtnText}</Button>
+                            onClick={handleConfirm}>{UpBtnText}</Button>
                     </DialogActions>
                 </DialogContent>
             </Dialog>

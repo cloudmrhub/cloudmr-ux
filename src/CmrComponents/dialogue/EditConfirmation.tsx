@@ -62,7 +62,7 @@ export default function CmrEditConfirmation({ name,message, defaultText='',
                 </DialogActions>
                 <DialogActions>
                     {cancellable&&
-                        <CmrButton variant={"outlined"} color={'inherit'} sx={{color:'#333'}} onClick={handleCancel}>Cancel</CmrButton>
+                        <CmrButton variant={"outlined"} onClick={handleCancel}>Cancel</CmrButton>
                     }
                     <CmrButton variant={"contained"} color={color} onClick={handleConfirm}>Confirm</CmrButton>
                 </DialogActions>
