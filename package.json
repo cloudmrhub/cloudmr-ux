@@ -1,6 +1,6 @@
 {
   "name": "cloudmr-ux",
-  "version": "1.4.6",
+  "version": "1.5.5",
   "author": "erosmontin@gmail.com",
   "license": "MIT",
   "repository": "erosmontin/cloudmr-ux",
@@ -11,7 +11,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --external react,react-dom"
+    "build": "tsup src/index.ts --format cjs,esm --dts --external react,react-dom, axios"
   },
   "peerDependencies": {
     "react": "^18.0.0",
@@ -31,7 +31,7 @@
     "@mui/material": "^5.14.2",
     "@mui/x-data-grid": "^6.10.1",
     "antd": "^5.22.1",
-    "axios": "^1.9.0",
+    "axios": "1.10.0",
     "css-loader": "^7.1.2",
     "sass": "^1.81.0",
     "sass-loader": "^16.0.3",
