@@ -1,13 +1,12 @@
-import React, {Fragment, useState} from "react";
+import React, {Fragment} from "react";
 import CMRUpload, {CMRUploadProps, LambdaFile} from '../upload/Upload';
-import {Alert, AlertTitle, Button, Collapse, InputLabel, MenuItem} from "@mui/material";
+import { Button, MenuItem} from "@mui/material";
 import Select, {SelectChangeEvent} from "@mui/material/Select";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import Box from "@mui/material/Box";
-
 
 interface CMRSelectUploadProps extends CMRUploadProps{
     /**
@@ -88,8 +87,10 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
                 </Select>
             </DialogContent>
                 <Box sx={{pt:2, justifyContent:'center',display:'flex', padding:'8px'}}>
-                    <Button fullWidth variant="outlined" sx={{ marginRight:'8px'}} onClick={handleClose}> Cancel</Button>
-                    {(fileIndex !== -1 && !uploading)&&<Button fullWidth sx={{marginLeft:'8px'}} variant="contained" onClick={onSet}>
+
+                    <Button fullWidth sx={{marginRight:'8px'}} variant="outlined" onClick={handleClose}> Cancel</Button>
+                    
+                    {(fileIndex !== -1 && !uploading)&&<Button fullWidth variant="contained"  onClick={onSet}>
                         OK
                     </Button>}
                     {/* {fileIndex==-1 && 
