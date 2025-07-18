@@ -29,9 +29,9 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
         rows={
           dataSource
             ? dataSource.map((row) => ({
-                id: idAlias ? row[idAlias] : row['id'],
-                ...row,
-              }))
+              id: idAlias ? row[idAlias] : row['id'],
+              ...row,
+            }))
             : []
         }
         columns={columns}
@@ -40,6 +40,18 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
         initialState={{
           pagination: {
             paginationModel: { pageSize: 50, page: 0 },
+          },
+        }}
+        sx={{
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: '#F3E5F5',
+            color: '#333',
+          },
+          '& .MuiDataGrid-columnHeaders .MuiSvgIcon-root': {
+            color: '#580f8b',
+          },
+          '& .MuiDataGrid-columnHeaderTitle': {
+            fontWeight: 'bold',
           },
         }}
         localeText={{ noRowsLabel: '' }}

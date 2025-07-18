@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Upload.css';
 import { Box, Button, SxProps, Theme } from '@mui/material';
+import UploadIcon from '@mui/icons-material/Upload';
 import UploadWindow from "./UploadWindow";
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 
@@ -180,7 +181,7 @@ const CmrUpload = (props: CMRUploadProps) => {
                     sx={props.sx}
                 >
                     {/* if if props.changeNameAfterUpload */}
-
+                    <UploadIcon className='me-2'/>
                     {props.changeNameAfterUpload ?
                         (uploadedFile === undefined ? (props.uploadButtonName ? props.uploadButtonName : "Upload") : uploadedFile)
                         :

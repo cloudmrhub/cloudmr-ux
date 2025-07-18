@@ -7,12 +7,13 @@
 } */
 
 .MuiDataGrid-columnHeaders{
-  background: rgba(88, 15, 139, 0.08);
+  background: #F3E5F5;
   color: #333;
+  font-weight: bold;
 }
 
 .MuiDataGrid-columnHeaders .MuiSvgIcon-root {
-  color: #580f8b;
+  color: #580f8b !important;
 }
 
 /* // Religning MUI checkbox in the header */
