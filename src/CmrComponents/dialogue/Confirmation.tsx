@@ -37,7 +37,7 @@ export default function CmrConfirmation({ name,message,cancelText='Cancel',
                 </DialogContentText>
                 <DialogActions className={'mt-4'}>
                     {cancellable&&
-                        <CmrButton variant={"outlined"} color={'inherit'} sx={{color:'#333'}} onClick={handleCancel}>{cancelText}</CmrButton>
+                        <CmrButton variant={"outlined"} onClick={handleCancel}>{cancelText}</CmrButton>
                     }
                     <CmrButton variant={"contained"} color={color} onClick={handleConfirm}>{confirmText}</CmrButton>
                 </DialogActions>

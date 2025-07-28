@@ -54,7 +54,7 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
             fontWeight: 'bold',
           },
         }}
-        localeText={{ noRowsLabel: '' }}
+        localeText={{ noRowsLabel: 'No Rows' }}
         {...rest}
       />
     </div>

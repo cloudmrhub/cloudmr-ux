@@ -17,7 +17,7 @@ interface UploadWindowProps {
     upload: (file: File, fileAlias: string, fileDatabase: string) => Promise<number>;
     open: boolean;
     setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-    fileExtension?: string,
+    fileExtension?: string | string[];
     template?: {
         showFileName?: boolean;
         showDatabase?: boolean;
@@ -47,6 +47,16 @@ export default function CmrUploadWindow({
 
     const handleClose = () => {
         setOpen(false);
+    };
+
+    const checkExtension = (filename: string, allowed: string | string[]) => {
+        if (!filename) return false;
+        const name = filename.toLowerCase();
+        if (Array.isArray(allowed)) {
+            return allowed.some(ext => name.endsWith(ext.startsWith('.') ? ext : '.' + ext));
+        } else {
+            return name.endsWith(allowed.startsWith('.') ? allowed : '.' + allowed);
+        }
     };
 
     const getExtension = (fileName: string | undefined) => {
@@ -214,10 +224,16 @@ export default function CmrUploadWindow({
                 let draggedFiles = e.dataTransfer.files;
                 if (draggedFiles.length > 1) {
                     setUploadBoxWarning('Only one file can be uploaded at a time')
-                } else if (fileExtension != undefined && draggedFiles.length != 0 &&
-                    getExtension(draggedFiles[0].name) != fileExtension) {
-                    setUploadBoxWarning(`Only accepting files with extension ${fileExtension}`);
+                } else if (
+                    fileExtension != undefined && draggedFiles.length !== 0 &&
+                    !checkExtension(draggedFiles[0].name, fileExtension)
+                ) {
+                    setUploadBoxWarning(
+                        `Only accepting files with extension(s): ${Array.isArray(fileExtension) ? fileExtension.join(', ') : fileExtension
+                        }`
+                    );
                 }
+
             }
             // @ts-ignore
             e.dataTransfer.dropEffect = 'copy';
@@ -235,13 +251,20 @@ export default function CmrUploadWindow({
                 setWarningText('Only one file can be uploaded at a time');
                 setTimeout(() => setInfoOpen(false), 2500);
                 return;
-            } else if (fileExtension != undefined && `.${getExtension(files[0].name)}` != fileExtension) {
+            } else if (
+                fileExtension !== undefined &&
+                !checkExtension(files[0].name, fileExtension)
+            ) {
                 setInfoOpen(true);
                 setInfoStyle('warning');
-                setWarningText(`Only accepting files with extension ${fileExtension}`);
+                setWarningText(
+                    `Only accepting files with extension(s): ${Array.isArray(fileExtension) ? fileExtension.join(', ') : fileExtension
+                    }`
+                );
                 setTimeout(() => setInfoOpen(false), 2500);
                 return;
             }
+
             // @ts-ignore
             loadFiles(files);
         });
@@ -305,7 +328,13 @@ export default function CmrUploadWindow({
                             type="file"
                             id="file-window"
                             multiple
-                            accept={fileExtension == undefined ? "*" : fileExtension}
+                            accept={
+                                fileExtension === undefined
+                                    ? '*'
+                                    : Array.isArray(fileExtension)
+                                        ? fileExtension.join(',')
+                                        : fileExtension
+                            }
                             style={{ display: 'none' }}
                             onChange={loadSelectedFiles}
                         />

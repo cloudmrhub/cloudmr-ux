@@ -1,25 +1,28 @@
-import React, {Fragment} from "react";
-import CMRUpload, {CMRUploadProps, LambdaFile} from '../upload/Upload';
-import { Button, MenuItem} from "@mui/material";
-import Select, {SelectChangeEvent} from "@mui/material/Select";
+import React, { Fragment } from "react";
+import CMRUpload, { CMRUploadProps, LambdaFile } from '../upload/Upload';
+import { Button, MenuItem } from "@mui/material";
+import Select from 'react-select';
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import Box from "@mui/material/Box";
+import './SelectUpload.css'
 
-interface CMRSelectUploadProps extends CMRUploadProps{
+
+interface CMRSelectUploadProps extends CMRUploadProps {
     /**
      * A selection of currently uploaded files
      */
     fileSelection: UploadedFile[];
-    onSelected: (file?: UploadedFile)=>void;
+    onSelected: (file?: UploadedFile) => void;
     chosenFile?: string;
     buttonText?: string;
+    selectStyles?: any;
     /**
      * Enforces the extension of selected files
      */
-    fileExtension?:string;
+    fileExtension?: string;
 }
 
 interface UploadedFile {
@@ -53,23 +56,23 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
         setOpen(false);
     };
 
-    const handleChange = (event: SelectChangeEvent<number>) => {
-        //@ts-ignore
-        selectFileIndex(event.target.value);
-    };
+    // const handleChange = (event: SelectChangeEvent<number>) => {
+    //     //@ts-ignore
+    //     selectFileIndex(event.target.value);
+    // };
 
-    const onSet = ()=>{
+    const onSet = () => {
         props.onSelected(props.fileSelection[fileIndex]);
         setOpen(false);
     }
-    const selectionDialog =  <Dialog open={open} onClose={handleClose}>
+    const selectionDialog = <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Select or Upload</DialogTitle>
-        <DialogContent sx={{width: 520}}>
-            <DialogContentText sx={{pl:1, pr:1, pb:0}}>
-                {(uploading)?"Please wait for the upload to finish.":""}
+        <DialogContent sx={{ width: 520 }}>
+            <DialogContentText sx={{ pl: 1, pr: 1, pb: 0 }}>
+                {(uploading) ? "Please wait for the upload to finish." : ""}
             </DialogContentText>
-                <DialogContent sx={{p:1}}>
-                <Select
+            <Box sx={{ p: 1 }}>
+                {/* <Select
                     value={fileIndex}
                     onChange={handleChange}
                     disabled={uploading}
@@ -84,51 +87,71 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
                             {option.fileName}
                         </MenuItem>
                     ))}
-                </Select>
-            </DialogContent>
-                <Box sx={{pt:2, justifyContent:'center',display:'flex', padding:'8px'}}>
+                </Select> */}
+                <Select
+                    classNamePrefix="cmr-select"
+                    isDisabled={uploading}
+                    options={props.fileSelection.map(file => ({
+                        value: file.id,
+                        label: file.fileName,
+                    }))}
+                    placeholder="Select a Stored File"
+                    onChange={(selected) => {
+                        if (selected) {
+                            const index = props.fileSelection.findIndex(file => file.id === selected.value);
+                            selectFileIndex(index);
+                        } else {
+                            selectFileIndex(-1);
+                        }
+                    }}
+                    menuPortalTarget={document.body}
+                    menuPosition="fixed"
+                    styles={props.selectStyles}
+                />
+            </Box>
+            <Box sx={{ pt: 2, justifyContent: 'center', display: 'flex', padding: '8px' }}>
 
-                    <Button fullWidth sx={{marginRight:'8px'}} variant="outlined" onClick={handleClose}> Cancel</Button>
-                    
-                    {(fileIndex !== -1 && !uploading)&&<Button fullWidth variant="contained"  onClick={onSet}>
-                        OK
-                    </Button>}
-                    {/* {fileIndex==-1 && 
+                <Button fullWidth sx={{ marginRight: '8px' }} variant="outlined" onClick={handleClose}> Cancel</Button>
+
+                {(fileIndex !== -1 && !uploading) && <Button fullWidth variant="contained" onClick={onSet}>
+                    OK
+                </Button>}
+                {/* {fileIndex==-1 && 
                     <Button color={'primary'} style={{textTransform:'none'}} variant={'contained'} fullWidth={true} disabled={true}>
                     
         Upload
     </Button>} */}
-                    {/* TOBEACTIVATED AFTER THE BETA TESTING */}
-                    {fileIndex==-1&& <CMRUpload {...props} color="info" fullWidth onUploaded={(res, file)=>{
-                        console.log("calling Setup level on uploaded");
-                        console.log(props.onUploaded);
-                        selectFileIndex(props.fileSelection.length);
-                        props.onUploaded(res, file);
+                {/* TOBEACTIVATED AFTER THE BETA TESTING */}
+                {fileIndex == -1 && <CMRUpload {...props} color="info" fullWidth onUploaded={(res, file) => {
+                    console.log("calling Setup level on uploaded");
+                    console.log(props.onUploaded);
+                    selectFileIndex(props.fileSelection.length);
+                    props.onUploaded(res, file);
+                    setOpen(false);
+                }} fileExtension={props.fileExtension}
+                    uploadHandler={props.uploadHandler}
+                    uploadStarted={() => {
+                        setUploading(true);
+                        props.onSelected(undefined);
+                    }}
+                    uploadProgressed={(progress) => {
                         setOpen(false);
-                    }} fileExtension = {props.fileExtension}
-                                                uploadHandler={props.uploadHandler}
-                                                uploadStarted={()=>{
-                                                    setUploading(true);
-                                                    props.onSelected(undefined);
-                                                }}
-                                                uploadProgressed={(progress)=>{
-                                                    setOpen(false);
-                                                    setProgress(progress);
-                                                }}
-                                                uploadEnded={()=>setUploading(false)}
-                    ></CMRUpload>}
-                    
-                </Box>
+                        setProgress(progress);
+                    }}
+                    uploadEnded={() => setUploading(false)}
+                ></CMRUpload>}
+
+            </Box>
         </DialogContent>
     </Dialog>;
     return <Fragment>
-        {uploading?<Button variant={"contained"} style={{...props.style, textTransform:'none'}} sx={{overflowWrap:'inherit'}} color={'primary'} disabled={uploading}>
+        {uploading ? <Button variant={"contained"} style={{ ...props.style, textTransform: 'none' }} sx={{ overflowWrap: 'inherit' }} color={'primary'} disabled={uploading}>
             Uploading {progress}%
-        </Button>:<Button variant={(props.chosenFile==undefined)?"contained":"outlined"} color="info" onClick={handleClickOpen} sx={{marginRight:'10pt'}}
-                          style={{...props.style, textTransform:'none'}}>
-            {(props.chosenFile==undefined)?
-                (props.buttonText?props.buttonText:"Choose")
-                :props.chosenFile}
+        </Button> : <Button variant={(props.chosenFile == undefined) ? "contained" : "outlined"} color="info" onClick={handleClickOpen} sx={{ marginRight: '10pt' }}
+            style={{ ...props.style, textTransform: 'none' }}>
+            {(props.chosenFile == undefined) ?
+                (props.buttonText ? props.buttonText : "Choose")
+                : props.chosenFile}
         </Button>}
         {selectionDialog}
     </Fragment>;
