@@ -22,7 +22,7 @@ interface CMRSelectUploadProps extends CMRUploadProps {
     /**
      * Enforces the extension of selected files
      */
-    fileExtension?: string;
+    fileExtension?: string | string[];
 }
 
 interface UploadedFile {
@@ -36,6 +36,19 @@ interface UploadedFile {
     updatedAt: string;
     database: string;
     location: string;
+}
+
+/**
+ * Check if there is file extension limit is set
+ */
+function checkExtension(filename: string, allowed?: string | string[]) {
+    if (!filename || !allowed) return true;
+    const name = filename.toLowerCase();
+    if (Array.isArray(allowed)) {
+        return allowed.some(ext => name.endsWith(ext.startsWith('.') ? ext : '.' + ext));
+    } else {
+        return name.endsWith(allowed.startsWith('.') ? allowed : '.' + allowed);
+    }
 }
 
 /**
@@ -72,29 +85,17 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
                 {(uploading) ? "Please wait for the upload to finish." : ""}
             </DialogContentText>
             <Box sx={{ p: 1 }}>
-                {/* <Select
-                    value={fileIndex}
-                    onChange={handleChange}
-                    disabled={uploading}
-                    inputProps={{ 'aria-label': 'Without label' }}
-                    sx={{width: '100%'}}
-                >
-                    <MenuItem value={-1}>
-                    {props.fileSelection.length < 1 ? <em>No Stored Files</em> : <em>Select a Stored File</em>}
-                    </MenuItem>
-                    {((props.fileSelection!=undefined? props.fileSelection: [])).map((option,index) => (
-                        <MenuItem key={index} value={index}>
-                            {option.fileName}
-                        </MenuItem>
-                    ))}
-                </Select> */}
                 <Select
                     classNamePrefix="cmr-select"
                     isDisabled={uploading}
-                    options={props.fileSelection.map(file => ({
-                        value: file.id,
-                        label: file.fileName,
-                    }))}
+                    options={
+                        props.fileSelection
+                            .filter(file => checkExtension(file.fileName, props.fileExtension))
+                            .map(file => ({
+                                value: file.id,
+                                label: file.fileName,
+                            }))
+                    }
                     placeholder="Select a Stored File"
                     onChange={(selected) => {
                         if (selected) {
@@ -116,11 +117,7 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
                 {(fileIndex !== -1 && !uploading) && <Button fullWidth variant="contained" onClick={onSet}>
                     OK
                 </Button>}
-                {/* {fileIndex==-1 && 
-                    <Button color={'primary'} style={{textTransform:'none'}} variant={'contained'} fullWidth={true} disabled={true}>
-                    
-        Upload
-    </Button>} */}
+
                 {/* TOBEACTIVATED AFTER THE BETA TESTING */}
                 {fileIndex == -1 && <CMRUpload {...props} color="info" fullWidth onUploaded={(res, file) => {
                     console.log("calling Setup level on uploaded");

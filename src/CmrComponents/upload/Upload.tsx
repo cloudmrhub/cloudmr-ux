@@ -44,7 +44,7 @@ interface CMRUploadProps extends React.HTMLAttributes<HTMLDivElement> {
     onUploaded: (res: AxiosResponse, file: File) => Promise<void> | void;
     sx?: SxProps<Theme> | undefined;
     rest?: any;
-    fileExtension?: string;
+    fileExtension?: string | string[];
     uploadStarted?: () => void;
     uploadEnded?: () => void;
     uploadFailed?: () => void;

@@ -242,7 +242,12 @@ export default function CmrUploadWindow({
         inputRef.addEventListener('drop', function (e) {
             e.stopPropagation();
             e.preventDefault();
-            setUploadBoxWarning(undefined);
+            // setUploadBoxWarning(undefined);
+
+            setTimeout(() => {
+                setUploadBoxWarning(undefined);
+            }, 10000);
+
             // @ts-ignore
             let files = e.dataTransfer.files; // Array of all files
             if (files.length > 1) {

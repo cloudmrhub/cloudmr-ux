@@ -6,40 +6,82 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CmrButton from '../CmrButton/CmrButton';
 
+type ExtraButton = {
+    text: string;
+    color?: "inherit" | "primary" | "secondary" | "success" | "error" | "info" | "warning";
+    onClick: () => void;
+};
 
-export default function CmrConfirmation({ name,message,cancelText='Cancel',
-    color, open, setOpen, confirmCallback=()=>{},confirmText='Confirm', cancellable=false, cancelCallback=()=>{}, width}: { name: string | undefined; cancelText?:string; message:string|undefined;
-    color?: "inherit" | "primary" | "secondary" | "success" | "error" | "info" | "warning" | undefined, open:boolean, setOpen:(open:boolean)=>void, confirmCallback?:()=>void,
-    cancellable?:boolean, cancelCallback?:()=>void, width?:number, confirmText?:string}) {
-    const [text, setText] = React.useState('');
-
+export default function CmrConfirmation({
+    name,
+    message,
+    cancelText = 'Cancel',
+    confirmText = 'Confirm',
+    color,
+    open,
+    setOpen,
+    confirmCallback = () => { },
+    cancelCallback = () => { },
+    cancellable = false,
+    width,
+    extraButtons = [],
+}: {
+    name: string | undefined;
+    message: string | undefined;
+    cancelText?: string;
+    confirmText?: string;
+    color?: "inherit" | "primary" | "secondary" | "success" | "error" | "info" | "warning";
+    open: boolean;
+    setOpen: (open: boolean) => void;
+    confirmCallback?: () => void;
+    cancelCallback?: () => void;
+    cancellable?: boolean;
+    width?: number;
+    extraButtons?: ExtraButton[];
+}) {
     const handleClose = () => {
         setOpen(false);
     };
 
-    const handleConfirm=()=>{
+    const handleConfirm = () => {
         confirmCallback();
         handleClose();
-    }
+    };
 
-    const handleCancel=()=>{
+    const handleCancel = () => {
         cancelCallback();
         handleClose();
-    }
-
+    };
 
     return (
         <Dialog open={open} onClose={handleClose}>
-            <DialogTitle>{name?name:'Confirmation'}</DialogTitle>
-            <DialogContent sx={{width:width}}>
+            <DialogTitle>{name ? name : 'Confirmation'}</DialogTitle>
+            <DialogContent sx={{ width: width }}>
                 <DialogContentText alignContent={'center'}>
                     {message}
                 </DialogContentText>
                 <DialogActions className={'mt-4'}>
-                    {cancellable&&
-                        <CmrButton variant={"outlined"} onClick={handleCancel}>{cancelText}</CmrButton>
-                    }
-                    <CmrButton variant={"contained"} color={color} onClick={handleConfirm}>{confirmText}</CmrButton>
+                    {cancellable && (
+                        <CmrButton variant="outlined" onClick={handleCancel}>
+                            {cancelText}
+                        </CmrButton>
+                    )}
+                    {extraButtons.map((btn, idx) => (
+                        <CmrButton
+                            key={idx}
+                            variant="outlined"
+                            color={btn.color || 'success'}
+                            onClick={() => {
+                                btn.onClick();
+                                handleClose();
+                            }}
+                        >
+                            {btn.text}
+                        </CmrButton>
+                    ))}
+                    <CmrButton variant="contained" color={color} onClick={handleConfirm}>
+                        {confirmText}
+                    </CmrButton>
                 </DialogActions>
             </DialogContent>
         </Dialog>
