@@ -1,0 +1,26 @@
+.cmr-select__control {
+    border-color: #ccc;
+    font-family: Inter, Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 400;
+}
+
+.cmr-select__option {
+    font-family: Inter, Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    /* color: #000;
+    background-color: white; */
+}
+
+.cmr-select__single-value {
+    /* color: #580F8B; */
+    font-weight: 400;
+    font-family: Inter, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.cmr-select__menu {
+    z-index: 9999 !important;
+}
+
+.cmr-select__menu-portal {
+    z-index: 2000 !important;
+}
