@@ -5,13 +5,59 @@
   "license": "MIT",
   "repository": "erosmontin/cloudmr-ux",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./core/features/authenticate/authenticateSlice": {
+      "types": "./dist/core/features/authenticate/authenticateSlice.d.ts",
+      "default": "./dist/core/features/authenticate/authenticateSlice.js"
+    },
+    "./core/features/authenticate/authenticateActionCreation": {
+      "types": "./dist/core/features/authenticate/authenticateActionCreation.d.ts",
+      "default": "./dist/core/features/authenticate/authenticateActionCreation.js"
+    },
+    "./core/features/data/dataSlice": {
+      "types": "./dist/core/features/data/dataSlice.d.ts",
+      "default": "./dist/core/features/data/dataSlice.js"
+    },
+    "./core/features/data/dataActionCreation": {
+      "types": "./dist/core/features/data/dataActionCreation.d.ts",
+      "default": "./dist/core/features/data/dataActionCreation.js"
+    },
+    "./core/common/utilities/*": {
+      "types": "./dist/core/common/utilities/*.d.ts",
+      "default": "./dist/core/common/utilities/*.js"
+    },
+    "./core/common/components/footer/Footer": {
+      "types": "./dist/core/common/components/footer/Footer.d.ts",
+      "default": "./dist/core/common/components/footer/Footer.js"
+    },
+    "./core/common/components/CmrColorPicker/CmrColorPicker": {
+      "types": "./dist/core/common/components/CmrColorPicker/CmrColorPicker.d.ts",
+      "default": "./dist/core/common/components/CmrColorPicker/CmrColorPicker.js"
+    },
+    "./core/config/AppConfig": {
+      "types": "./dist/core/config/AppConfig.d.ts",
+      "default": "./dist/core/config/AppConfig.js"
+    },
+    "./core/store/hooks": {
+      "types": "./dist/core/store/hooks.d.ts",
+      "default": "./dist/core/store/hooks.js"
+    },
+    "./core/store/configureStore": {
+      "types": "./dist/core/store/configureStore.d.ts",
+      "default": "./dist/core/store/configureStore.js"
+    }
+  },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --external react,react-dom, axios"
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "find src -name '*.scss' -o -name '*.css' | while read file; do mkdir -p \"dist/$(dirname \"${file#src/}\")\" && cp \"$file\" \"dist/${file#src/}\"; done"
   },
   "peerDependencies": {
     "react": "^18.0.0",
