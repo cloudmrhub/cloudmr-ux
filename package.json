@@ -51,6 +51,10 @@
             "types": "./dist/core/features/rois/roiTypes.d.ts",
             "default": "./dist/core/features/rois/roiTypes.js"
         },
+        "./core/features/setup/setupActionCreation": {
+            "types": "./dist/core/features/setup/setupActionCreation.d.ts",
+            "default": "./dist/core/features/setup/setupActionCreation.js"
+        },
         "./core/common/utilities/AuthenticatedRequests": {
             "types": "./dist/core/common/utilities/AuthenticatedRequests.d.ts",
             "default": "./dist/core/common/utilities/AuthenticatedRequests.js"
