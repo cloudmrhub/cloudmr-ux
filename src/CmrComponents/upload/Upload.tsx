@@ -80,7 +80,7 @@ interface CMRUploadProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 
-const CmrUpload = (props: CMRUploadProps) => {
+const CmrUpload = ({ changeNameAfterUpload = true, ...props }: CMRUploadProps) => {
 
     let [open, setOpen] = useState(false);
     /**
@@ -180,9 +180,9 @@ const CmrUpload = (props: CMRUploadProps) => {
                     color={props.color || "primary"}
                     sx={props.sx}
                 >
-                    {/* if if props.changeNameAfterUpload */}
+                    {/* if if changeNameAfterUpload */}
                     <UploadIcon className='me-2'/>
-                    {props.changeNameAfterUpload ?
+                    {changeNameAfterUpload ?
                         (uploadedFile === undefined ? (props.uploadButtonName ? props.uploadButtonName : "Upload") : uploadedFile)
                         :
                         (props.uploadButtonName ? props.uploadButtonName : "Upload")
@@ -195,10 +195,6 @@ const CmrUpload = (props: CMRUploadProps) => {
                 template={{ showFileName: true, showFileSize: true }} />
         </React.Fragment>
     );
-};
-
-CmrUpload.defaultProps = {
-    changeNameAfterUpload: true,
 };
 
 export type { CMRUploadProps };

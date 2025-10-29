@@ -63,12 +63,14 @@ const CmrCollapse = (props: CmrCollapseProps) => {
                     </div>
                 );
 
-                return cloneElement(child, {
-                    expanded,
-                    panelKey,
-                    onToggle,
-                    header, // Override header with clickable version
-                });
+                return <React.Fragment key={panelKey}>
+                    {cloneElement(child, {
+                        expanded,
+                        panelKey,
+                        onToggle,
+                        header, // Override header with clickable version
+                    })}
+                </React.Fragment>;
             });
         } else {
             // Handle single child case

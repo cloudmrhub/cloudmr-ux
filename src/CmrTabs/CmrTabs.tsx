@@ -30,7 +30,7 @@ function CustomTabPanel(props: TabPanelProps) {
             {...other}
         >
             <Box sx={{ p: 0 }} style={{ display: (value === index ? undefined : 'none') }}>
-                <Typography>{children}</Typography>
+                {children}
             </Box>
         </div>
     );
@@ -70,11 +70,11 @@ export default function CmrTabs(props: CmrTabsProps) {
                         }
                     }}>
                     {props.tabList.map((tab, index) =>
-                        <Tab sx={{ color: (value == index) ? '#580F8B' : undefined }} style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 400 }} label={tab.text} {...a11yProps(index)} />)}
+                        <Tab key={index} sx={{ color: (value == index) ? '#580F8B' : undefined }} style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 400 }} label={tab.text} {...a11yProps(index)} />)}
                 </Tabs>
             </Box>
             {props.tabList.map((tab, index) =>
-                <CustomTabPanel value={value} index={index}>
+                <CustomTabPanel key={index} value={value} index={index}>
                     {cloneElement(tab.children, {
                         visible: value == index
                     })}
