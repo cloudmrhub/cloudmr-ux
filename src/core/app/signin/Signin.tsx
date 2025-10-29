@@ -26,9 +26,11 @@ const theme = createTheme({
 export default function Signin({
     signInCallback,
     appIcon,
+    appTitle,
 }: {
     signInCallback: (credentials: SigninDataType) => void;
     appIcon: string;
+    appTitle: string;
 }) {
     const handleSubmit = (event: any) => {
         event.preventDefault();
@@ -63,6 +65,17 @@ export default function Signin({
                                 style={{ margin: "auto", height: "70pt" }}
                                 alt=""
                             />
+                            <h1
+                                style={{
+                                    display: "block",
+                                    marginTop: "8pt",
+                                    marginRight: "5pt",
+                                    textAlign: "center",
+                                    fontWeight: "bold",
+                                }}
+                            >
+                                {appTitle}
+                            </h1>
                         </div>
                     </div>
 
