@@ -95,6 +95,22 @@
             "types": "./dist/CmrComponents/header/Header.d.ts",
             "default": "./dist/CmrComponents/header/Header.js"
         },
+        "./CmrComponents/dialogue/Confirmation": {
+            "types": "./dist/CmrComponents/dialogue/Confirmation.d.ts",
+            "default": "./dist/CmrComponents/dialogue/Confirmation.js"
+        },
+        "./CmrComponents/double-slider/InvertibleDualSlider": {
+            "types": "./dist/CmrComponents/double-slider/InvertibleDualSlider.d.ts",
+            "default": "./dist/CmrComponents/double-slider/InvertibleDualSlider.js"
+        },
+        "./CmrComponents/double-slider/DualSlider": {
+            "types": "./dist/CmrComponents/double-slider/DualSlider.d.ts",
+            "default": "./dist/CmrComponents/double-slider/DualSlider.js"
+        },
+        "./CmrComponents/tk-dualrange/TKDualRange": {
+            "types": "./dist/CmrComponents/tk-dualrange/TKDualRange.d.ts",
+            "default": "./dist/CmrComponents/tk-dualrange/TKDualRange.js"
+        },
         "./core/config/AppConfig": {
             "types": "./dist/core/config/AppConfig.d.ts",
             "default": "./dist/core/config/AppConfig.js"
