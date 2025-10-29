@@ -19,6 +19,9 @@ export { default as CmrInputNumber } from './CmrComponents/input-number/InputNum
 export { default as CMRSelectUpload } from './CmrComponents/select-upload/SelectUpload';
 export { default as CmrUploadWindow } from './CmrComponents/upload/UploadWindow';
 export { default as CmrTooltip } from './CmrComponents/tooltip/Tooltip';
+export { DualSlider } from "./CmrComponents/double-slider/DualSlider";
+export { Slider } from "./CmrComponents/gui-slider/Slider";
+export { InvertibleDualSlider } from './CmrComponents/double-slider/InvertibleDualSlider'
 export type { LambdaFile } from './CmrComponents/upload/Upload';
 
 
@@ -29,7 +32,4 @@ import CmrTableComponent from './CmrTable/CmrTable';
 export const CmrTable: FC<CmrTableProps> = CmrTableComponent;
 export type { CmrTableProps };
 
-
-
-
-
+import './core';
