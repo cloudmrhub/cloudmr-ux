@@ -57,7 +57,7 @@ export const renameUploadedData = createAsyncThunk(
 
 export const deleteUploadedData = createAsyncThunk(
     "DELETE_UPLOADED_DATA",
-    async ({ fileId }: { fileId: number; accessToken: string }) => {
+    async ({ fileId }: { fileId: number }) => {
         const endpoints = getEndpoints();
 
         try {

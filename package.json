@@ -99,21 +99,105 @@
             "types": "./dist/CmrComponents/header/Header.d.ts",
             "default": "./dist/CmrComponents/header/Header.js"
         },
-        "./CmrComponents/dialogue/Confirmation": {
-            "types": "./dist/CmrComponents/dialogue/Confirmation.d.ts",
-            "default": "./dist/CmrComponents/dialogue/Confirmation.js"
+        "./CmrComponents/CmrButton/CmrButton": {
+            "types": "./dist/CmrComponents/CmrButton/CmrButton.d.ts",
+            "default": "./dist/CmrComponents/CmrButton/CmrButton.js"
         },
-        "./CmrComponents/double-slider/InvertibleDualSlider": {
-            "types": "./dist/CmrComponents/double-slider/InvertibleDualSlider.d.ts",
-            "default": "./dist/CmrComponents/double-slider/InvertibleDualSlider.js"
+        "./CmrComponents/CmrCheckbox/CmrCheckbox": {
+            "types": "./dist/CmrComponents/CmrCheckbox/CmrCheckbox.d.ts",
+            "default": "./dist/CmrComponents/CmrCheckbox/CmrCheckbox.js"
+        },
+        "./CmrComponents/checkbox/Checkbox": {
+            "types": "./dist/CmrComponents/checkbox/Checkbox.d.ts",
+            "default": "./dist/CmrComponents/checkbox/Checkbox.js"
+        },
+        "./CmrComponents/CmrInput/CmrInput": {
+            "types": "./dist/CmrComponents/CmrInput/CmrInput.d.ts",
+            "default": "./dist/CmrComponents/CmrInput/CmrInput.js"
+        },
+        "./CmrComponents/input-number/InputNumber": {
+            "types": "./dist/CmrComponents/input-number/InputNumber.d.ts",
+            "default": "./dist/CmrComponents/input-number/InputNumber.js"
+        },
+        "./CmrComponents/CmrSelect/CmrSelect": {
+            "types": "./dist/CmrComponents/CmrSelect/CmrSelect.d.ts",
+            "default": "./dist/CmrComponents/CmrSelect/CmrSelect.js"
+        },
+        "./CmrComponents/CmrRadioGroup/CmrRadioGroup": {
+            "types": "./dist/CmrComponents/CmrRadioGroup/CmrRadioGroup.d.ts",
+            "default": "./dist/CmrComponents/CmrRadioGroup/CmrRadioGroup.js"
+        },
+        "./CmrComponents/CmrColorPicker/CmrColorPicker": {
+            "types": "./dist/CmrComponents/CmrColorPicker/CmrColorPicker.d.ts",
+            "default": "./dist/CmrComponents/CmrColorPicker/CmrColorPicker.js"
+        },
+        "./CmrComponents/gui-slider/Slider": {
+            "types": "./dist/CmrComponents/gui-slider/Slider.d.ts",
+            "default": "./dist/CmrComponents/gui-slider/Slider.js"
+        },
+        "./CmrComponents/gui-slider/ControlledSlider": {
+            "types": "./dist/CmrComponents/gui-slider/ControlledSlider.d.ts",
+            "default": "./dist/CmrComponents/gui-slider/ControlledSlider.js"
         },
         "./CmrComponents/double-slider/DualSlider": {
             "types": "./dist/CmrComponents/double-slider/DualSlider.d.ts",
             "default": "./dist/CmrComponents/double-slider/DualSlider.js"
         },
+        "./CmrComponents/double-slider/InvertibleDualSlider": {
+            "types": "./dist/CmrComponents/double-slider/InvertibleDualSlider.d.ts",
+            "default": "./dist/CmrComponents/double-slider/InvertibleDualSlider.js"
+        },
         "./CmrComponents/tk-dualrange/TKDualRange": {
             "types": "./dist/CmrComponents/tk-dualrange/TKDualRange.d.ts",
             "default": "./dist/CmrComponents/tk-dualrange/TKDualRange.js"
+        },
+        "./CmrComponents/upload/Upload": {
+            "types": "./dist/CmrComponents/upload/Upload.d.ts",
+            "default": "./dist/CmrComponents/upload/Upload.js"
+        },
+        "./CmrComponents/upload/UploadWindow": {
+            "types": "./dist/CmrComponents/upload/UploadWindow.d.ts",
+            "default": "./dist/CmrComponents/upload/UploadWindow.js"
+        },
+        "./CmrComponents/select-upload/SelectUpload": {
+            "types": "./dist/CmrComponents/select-upload/SelectUpload.d.ts",
+            "default": "./dist/CmrComponents/select-upload/SelectUpload.js"
+        },
+        "./CmrComponents/dialogue/Confirmation": {
+            "types": "./dist/CmrComponents/dialogue/Confirmation.d.ts",
+            "default": "./dist/CmrComponents/dialogue/Confirmation.js"
+        },
+        "./CmrComponents/dialogue/DeletionDialog": {
+            "types": "./dist/CmrComponents/dialogue/DeletionDialog.d.ts",
+            "default": "./dist/CmrComponents/dialogue/DeletionDialog.js"
+        },
+        "./CmrComponents/dialogue/EditConfirmation": {
+            "types": "./dist/CmrComponents/dialogue/EditConfirmation.d.ts",
+            "default": "./dist/CmrComponents/dialogue/EditConfirmation.js"
+        },
+        "./CmrComponents/rename/edit": {
+            "types": "./dist/CmrComponents/rename/edit.d.ts",
+            "default": "./dist/CmrComponents/rename/edit.js"
+        },
+        "./CmrComponents/panel/Panel": {
+            "types": "./dist/CmrComponents/panel/Panel.d.ts",
+            "default": "./dist/CmrComponents/panel/Panel.js"
+        },
+        "./CmrComponents/collapse/Collapse": {
+            "types": "./dist/CmrComponents/collapse/Collapse.d.ts",
+            "default": "./dist/CmrComponents/collapse/Collapse.js"
+        },
+        "./CmrComponents/header/Header": {
+            "types": "./dist/CmrComponents/header/Header.d.ts",
+            "default": "./dist/CmrComponents/header/Header.js"
+        },
+        "./CmrComponents/label/Label": {
+            "types": "./dist/CmrComponents/label/Label.d.ts",
+            "default": "./dist/CmrComponents/label/Label.js"
+        },
+        "./CmrComponents/tooltip/Tooltip": {
+            "types": "./dist/CmrComponents/tooltip/Tooltip.d.ts",
+            "default": "./dist/CmrComponents/tooltip/Tooltip.js"
         },
         "./core/config/AppConfig": {
             "types": "./dist/core/config/AppConfig.d.ts",
@@ -143,7 +227,7 @@
         "@emotion/react": "^11.0.0",
         "@emotion/styled": "^11.0.0",
         "@reduxjs/toolkit": "^1.9.0 || ^2.0.0",
-        "axios": "^1.0.0",
+        "axios": "@1.10.0",
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
         "react-redux": "^8.0.0 || ^9.0.0",
