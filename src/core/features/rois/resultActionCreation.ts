@@ -36,7 +36,7 @@ export function niiToVolume(nii: any) {
 
 export const loadResult = createAsyncThunk(
     "LoadResult",
-    async ({ job }: { accessToken: string; job: Job }) => {
+    async ({ job }: { job: Job }) => {
         // if(job.pipeline_id==sampleJob.pipeline_id){
         //     return sampleResult;
         // }
