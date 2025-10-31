@@ -55,3 +55,4 @@ export * from "./features/rois/resultSlice";
 export * from "./features/rois/roiTypes";
 
 export * from "./app/signin/Signin";
+export { default as Main } from "./app/main/Main";

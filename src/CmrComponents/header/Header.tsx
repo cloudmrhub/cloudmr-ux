@@ -3,30 +3,32 @@ import "./Header.scss";
 import { Link, useNavigate } from "react-router-dom";
 import { getAppConfig } from "../../core/config/AppConfig";
 import { Container, Toolbar } from "@mui/material";
+import { useAppDispatch, useAppSelector } from "../../core/store/hooks";
+import { signOut } from "../../core/features/authenticate/authenticateActionCreation";
 
 interface MenuItem {
     path: string;
     title: string;
 }
 
-const Header = ({
-    siteTitle,
-    authentication,
-    handleLogout,
-    menuList,
-    siteLogo,
-}: {
-    siteTitle: string;
-    authentication: { email: string; logged_in_token?: any };
+interface HeaderProps {
     menuList: MenuItem[];
-    handleLogout: () => void;
     siteLogo: string;
-}) => {
+}
+
+const Header = ({ menuList, siteLogo }: HeaderProps) => {
     const config = getAppConfig();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const authentication = useAppSelector((state) => state.authenticate);
+
     const currPath = navigate.name;
-    const [menuSelect, setMenuSelect] = useState(siteTitle);
+    const [menuSelect, setMenuSelect] = useState(config.APP_NAME);
     const { email } = authentication;
+
+    const handleLogout = () => {
+        dispatch(signOut());
+    };
     // console.log(authentication);
 
     useEffect(() => {

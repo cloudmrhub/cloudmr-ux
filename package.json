@@ -214,6 +214,14 @@
         "./core/app/signin/Signin": {
             "types": "./dist/core/app/signin/Signin.d.ts",
             "default": "./dist/core/app/signin/Signin.js"
+        },
+        "./core/app/upload/Upload": {
+            "types": "./dist/core/app/upload/Upload.d.ts",
+            "default": "./dist/core/app/upload/Upload.js"
+        },
+        "./core/app/main/Main": {
+            "types": "./dist/core/app/main/Main.d.ts",
+            "default": "./dist/core/app/main/Main.js"
         }
     },
     "files": [
