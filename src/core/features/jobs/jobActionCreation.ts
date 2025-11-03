@@ -2,8 +2,6 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 
 import { Job } from "./jobsSlice";
-// import { setupSetters } from "../setup/setupSlice";
-// import { LambdaFile } from 'cloudmr-ux';
 import { getFileExtension } from "../../common/utilities/SystemUtilities";
 import { is_safe_twix } from "../../common/utilities/file-transformation/anonymize";
 import { AuthenticatedHttpClient } from '../../common/utilities/AuthenticatedRequests';

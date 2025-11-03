@@ -8,12 +8,10 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { getLoggedInToken } from "../../features/authenticate/authenticateActionCreation";
 
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { useAppDispatch } from "../../store/hooks";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import "./Signin.scss";
-// @ts-ignore
-import { SigninDataType } from "../../index";
 
 const theme = createTheme({
   palette: {
