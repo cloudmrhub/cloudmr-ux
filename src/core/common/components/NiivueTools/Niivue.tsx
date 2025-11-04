@@ -28,7 +28,8 @@ export const nv = new Niivue({
   loadingText: "",
   isColorbar: true,
   isRadiologicalConvention: true,
-  textHeight: 0.04,
+  fontSizeScaling: 0.04,
+  fontMinPx: 8,
   colorbarHeight: 0.02,
   dragMode: "pan",
   // crosshairColor: [0.098,0.453,0.824]
@@ -177,12 +178,78 @@ export default function NiiVueport(props: {
       setBoundMaxs(nv.frac2mm([1, 1, 1]));
       // setMMs(nv.frac2mm([0.5, 0.5, 0.5])); // Commented to prevent recentering on volume load; we now re-apply saved crosshair if available
       try {
-        // Initialize sliders to the engine’s current crosshair (in mm), not a hard-coded 0.5
+        // Initialize sliders to the engine's current crosshair (in mm), not a hard-coded 0.5
         setMMs(nv.frac2mm(nv.scene.crosshairPos));
       } catch {}
       setTimeout((args) => nv.resizeListener(), 700);
     }
   }, []);
+
+  // Load initial volume on mount.
+  //
+  // TODO RJW: simplify this
+  React.useEffect(() => {
+    const loadInitialVolume = async () => {
+      if (props.niis[selectedVolume]) {
+        try {
+          await nv.loadVolumes([niiToVolume(props.niis[selectedVolume])]);
+
+          // Match the setup from onImageLoaded callback
+          setLayers([...nv.volumes]);
+          setBoundMins(nv.frac2mm([0, 0, 0]));
+          setBoundMaxs(nv.frac2mm([1, 1, 1]));
+
+          if (verifyComplex(nv.volumes[0])) {
+            nvSetDisplayedVoxels("absolute");
+          } else {
+            nvSetDisplayedVoxels("absolute");
+          }
+
+          let volume = nv.volumes[0];
+          nv.setGamma(1.0);
+          nv.onResetGamma?.();
+
+          nv.resetScene();
+          nvSetDragMode(dragMode);
+          nv.setSliceMM(worldSpace);
+          applySavedCrosshairIfAny();
+
+          // Force a multiplanar view switch to trigger proper rendering, then switch back
+          // TODO: fix this horrible hack
+          setTimeout(() => {
+            nv.setSliceType(nv.sliceTypeMultiplanar);
+            nv.resizeListener();
+            nv.drawScene();
+
+            // Then switch to the desired slice type
+            setTimeout(() => {
+              nvUpdateSliceType(sliceType);
+              nv.resizeListener();
+              nv.drawScene();
+
+              if (!lastMMRef.current) {
+                try {
+                  setMMs(nv.frac2mm(nv.scene.crosshairPos));
+                } catch {}
+              }
+            }, 50);
+          }, 100);
+        } catch (e) {
+          console.error("Error loading initial volume:", e);
+          setWarning(
+            "Error loading results, please check internet connectivity",
+          );
+          setWarningOpen(true);
+          setTimeout(() => {
+            setWarningOpen(false);
+            setWarning("");
+          }, 2500);
+        }
+      }
+    };
+
+    loadInitialVolume();
+  }, []); // Empty dependency array - only run on mount
 
   React.useEffect(() => {
     // console.log(props.niis[props.selectedVolume]);
@@ -946,8 +1013,20 @@ export default function NiiVueport(props: {
         nv.setSliceMM(worldSpace);
         applySavedCrosshairIfAny();
 
-        // ensure engine mode matches the remembered selection
-        nvUpdateSliceType(sliceType);
+        // Force a multiplanar view switch to trigger proper rendering, then switch back
+        // RJW TODO: fix this horrible hack
+        setTimeout(() => {
+          nv.setSliceType(nv.sliceTypeMultiplanar);
+          nv.resizeListener();
+          nv.drawScene();
+
+          // Then switch to the desired slice type
+          setTimeout(() => {
+            nvUpdateSliceType(sliceType);
+            nv.resizeListener();
+            nv.drawScene();
+          }, 50);
+        }, 100);
       } catch (e) {
         setWarning("Error loading results, please check internet connectivity");
         setWarningOpen(true);
@@ -1043,9 +1122,7 @@ export default function NiiVueport(props: {
 
     // Check if the request was successful
     if (!response.ok) {
-      props.warn(
-        "Failed to load the requested ROI Layer (was not properly saved)",
-      );
+      props.warn("Failed to load the requested ROI Layer");
       return;
     }
     // Convert the response to a Blob
@@ -1072,11 +1149,13 @@ export default function NiiVueport(props: {
         });
       } else {
         console.log(`${niiFilePath} not found in the ZIP file.`);
+        props.warn(`${niiFilePath} not found in the ZIP file.`);
         return null;
       }
       // return content;
     } else {
       console.log("info.json not found in the ZIP file.");
+      props.warn("info.json not found in the ZIP file.");
       return null;
     }
   };

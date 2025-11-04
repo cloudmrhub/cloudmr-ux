@@ -532,7 +532,7 @@ const Results = ({
                 dispatch(resultActions.selectVolume(index));
               }}
               selectedVolume={selectedVolume}
-              key={pipelineID}
+              // key={pipelineID}
               rois={rois || []}
               pipelineID={pipelineID}
               saveROICallback={() => {

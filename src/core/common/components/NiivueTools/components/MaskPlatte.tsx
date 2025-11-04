@@ -29,11 +29,11 @@ const MaskPlatte: React.FC<MaskPlatteProps> = ({
   let filledOptions = colors.map((color) => (
     <FiberManualRecordIcon sx={{ color: color }} />
   ));
-  if (expanded) {
-    setMaskColor(maskColor);
-  } else {
-    setMaskColor(undefined);
-  }
+  // if (expanded) { // TODO RJW: doing this this causes errors, skip for now
+  //   setMaskColor(maskColor);
+  // } else {
+  //   setMaskColor(undefined);
+  // }
   const [min, setMin] = useState(nv.volumes[0] ? nv.volumes[0].vox_min : 0);
   const [max, setMax] = useState(nv.volumes[0] ? nv.volumes[0].vox_max : 1);
   const cancelMask = () => {

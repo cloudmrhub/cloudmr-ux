@@ -151,7 +151,7 @@ export default function Toolbar(props: ToolbarProps) {
               >
                 {props.volumes.map((value, index) => {
                   return (
-                    <MenuItem value={index}>
+                    <MenuItem value={index} key={index}>
                       {/* {value.alias} */}
                       {getVolumeDisplay(value)}
                     </MenuItem>
@@ -174,11 +174,21 @@ export default function Toolbar(props: ToolbarProps) {
                 label="Display Mode"
                 onChange={handleSliceTypeChange}
               >
-                <MenuItem value={"axial"}>Axial</MenuItem>
-                <MenuItem value={"coronal"}>Coronal</MenuItem>
-                <MenuItem value={"sagittal"}>Sagittal</MenuItem>
-                <MenuItem value={"multi"}>Multi</MenuItem>
-                <MenuItem value={"3d"}>3D</MenuItem>
+                <MenuItem key={"axial"} value={"axial"}>
+                  Axial
+                </MenuItem>
+                <MenuItem key={"coronal"} value={"coronal"}>
+                  Coronal
+                </MenuItem>
+                <MenuItem key={"sagittal"} value={"sagittal"}>
+                  Sagittal
+                </MenuItem>
+                <MenuItem key={"multi"} value={"multi"}>
+                  Multi
+                </MenuItem>
+                <MenuItem key={"3d"} value={"3d"}>
+                  3D
+                </MenuItem>
               </Select>
             </FormControl>
 
@@ -236,9 +246,9 @@ export default function Toolbar(props: ToolbarProps) {
                 label="Opened ROIs"
                 onChange={(e) => props.setComplexMode(e.target.value)}
               >
-                {props.complexOptions.map((value) => {
+                {props.complexOptions.map((value, idx) => {
                   return (
-                    <MenuItem value={value}>
+                    <MenuItem key={idx} value={value}>
                       {value.charAt(0).toUpperCase() + value.slice(1)}
                     </MenuItem>
                   );
@@ -257,13 +267,14 @@ export default function Toolbar(props: ToolbarProps) {
               <Select
                 labelId="slice-type-label"
                 id="slice-type"
-                value={props.selectedROI}
+                value={props.selectedROI !== null ? props.selectedROI : ""}
                 label="Opened ROIs"
                 // onChange={(e)=>}
               >
                 {props.rois.map((value, index) => {
                   return (
                     <MenuItem
+                      key={index}
                       value={index}
                       onClick={() => props.setSelectedROI(Number(index))}
                     >
@@ -326,7 +337,6 @@ export default function Toolbar(props: ToolbarProps) {
                 Neurological
               </Typography>
               <Switch
-                defaultChecked={false}
                 checked={!props.radiological}
                 onChange={props.toggleRadiological}
               />
@@ -346,7 +356,6 @@ export default function Toolbar(props: ToolbarProps) {
                 Show Crosshair
               </Typography>
               <Switch
-                defaultChecked={true}
                 checked={props.showCrosshair}
                 onChange={props.toggleShowCrosshair}
               />
