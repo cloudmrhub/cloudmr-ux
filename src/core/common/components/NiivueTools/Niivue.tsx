@@ -186,46 +186,23 @@ export default function NiiVueport(props: {
   }, []);
 
   // Load initial volume on mount.
-  //
-  // TODO RJW: simplify this
+  // Note: nv.loadVolumes() triggers onImageLoaded callback (line 285)
+  // which handles all the setup automatically.
   React.useEffect(() => {
     const loadInitialVolume = async () => {
       if (props.niis[selectedVolume]) {
         try {
+          // loadVolumes calls onImageLoaded which does all setup
           await nv.loadVolumes([niiToVolume(props.niis[selectedVolume])]);
-
-          // Match the setup from onImageLoaded callback
-          setLayers([...nv.volumes]);
-          setBoundMins(nv.frac2mm([0, 0, 0]));
-          setBoundMaxs(nv.frac2mm([1, 1, 1]));
-
-          if (verifyComplex(nv.volumes[0])) {
-            nvSetDisplayedVoxels("absolute");
-          } else {
-            nvSetDisplayedVoxels("absolute");
-          }
-
-          let volume = nv.volumes[0];
-          nv.setGamma(1.0);
-          nv.onResetGamma?.();
-
-          nv.resetScene();
-          nvSetDragMode(dragMode);
-          nv.setSliceMM(worldSpace);
-          applySavedCrosshairIfAny();
 
           // Force a multiplanar view switch to trigger proper rendering, then switch back
           // TODO: fix this horrible hack
           setTimeout(() => {
             nv.setSliceType(nv.sliceTypeMultiplanar);
-            nv.resizeListener();
-            nv.drawScene();
 
             // Then switch to the desired slice type
             setTimeout(() => {
               nvUpdateSliceType(sliceType);
-              nv.resizeListener();
-              nv.drawScene();
 
               if (!lastMMRef.current) {
                 try {
@@ -321,6 +298,13 @@ export default function NiiVueport(props: {
         setMMs(nv.frac2mm(nv.scene.crosshairPos));
       } catch {}
     }
+
+    // Force a complete re-render with texture rebinding
+    // This ensures textures are properly bound in the current view mode
+    setTimeout(() => {
+      nv.updateGLVolume();
+      nv.drawScene();
+    }, 100);
   };
 
   function checkRange(numbers: number[]) {
@@ -1007,11 +991,8 @@ export default function NiiVueport(props: {
         nv.removeVolume(niiToVolume(props.niis[selectedVolume]));
       }
       try {
+        // loadVolumes calls onImageLoaded which does all setup
         await nv.loadVolumes([niiToVolume(props.niis[volumeIndex])]);
-        nvSetDragMode(dragMode); // re-apply user's drag mode after Niivue resets
-        // Re-apply world/voxel mode and last crosshair after loading a new volume
-        nv.setSliceMM(worldSpace);
-        applySavedCrosshairIfAny();
 
         // Force a multiplanar view switch to trigger proper rendering, then switch back
         // RJW TODO: fix this horrible hack
@@ -1575,7 +1556,7 @@ export default function NiiVueport(props: {
       {props.niis[selectedVolume] !== undefined && (
         <NiivuePanel
           nv={nv}
-          key={`${selectedVolume}`}
+          // key={`${selectedVolume}`}
           transformFactors={transformFactors}
           decimalPrecision={decimalPrecision}
           locationData={locationData}
