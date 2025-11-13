@@ -8,6 +8,33 @@ export interface SigninDataType {
   password: string;
 }
 
+export interface RegisterDataType {
+  email: string;
+  password: string;
+  firstname: string;
+  lastname: string;
+  username: string;
+}
+
+export const registerUser = createAsyncThunk(
+  "REGISTER",
+  async (registerData: RegisterDataType, thunkAPI) => {
+    const endpoints = getEndpoints();
+
+    try {
+      const response = await axios.post(endpoints.REGISTER, registerData);
+      return response.data;
+    } catch (error: any) {
+      console.error(error);
+      return thunkAPI.rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  },
+);
+
 export const getLoggedInToken = createAsyncThunk(
   "SIGN_IN",
   async (signinData: SigninDataType, thunkAPI) => {
@@ -28,7 +55,7 @@ export const getLoggedInToken = createAsyncThunk(
     } catch (error: any) {
       console.error(error);
       return thunkAPI.rejectWithValue({
-        message: error.message,
+        message: error.response?.data?.message || error.message,
         status: error.response?.status,
         data: error.response?.data,
       });

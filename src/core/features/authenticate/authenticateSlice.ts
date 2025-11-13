@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {getLoggedInToken, refreshAccessToken, getProfile, signOut} from './authenticateActionCreation';
+import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser} from './authenticateActionCreation';
 import {getUploadedData} from '../data/dataActionCreation';
 
 export interface AuthenticateToken {
@@ -17,6 +17,7 @@ export interface AuthenticateState {
     username?: string;
     status?: string;
     level?: string;
+    isAdmin?: boolean;
 
     logged_in_token?: AuthenticateToken;
     loading: boolean;
@@ -24,14 +25,18 @@ export interface AuthenticateState {
     // Tokens providing fine-grained access - will be set via action
     uploadToken: string;
     queueToken: string;
-    
+
     // Computed accessToken for backwards compatibility
     accessToken: string;
+
+    // Error and success messages
+    error?: string;
+    registerSuccess?: boolean;
 }
 
 const initialState: AuthenticateState = {
     email: '',
-    loading: true,
+    loading: false,
     uploadToken: '', // Will be set when app initializes
     queueToken: '',  // Will be set when app initializes
     accessToken: '', // Computed from logged_in_token
@@ -51,6 +56,14 @@ export const authenticateSlice = createSlice({
                 state.logged_in_token = undefined;
                 state.accessToken = "";
                 state.loading = false;
+                state.error = undefined;
+                state.registerSuccess = undefined;
+            },
+            clearError: (state) => {
+                state.error = undefined;
+            },
+            clearRegisterSuccess: (state) => {
+                state.registerSuccess = undefined;
             }
         },
         extraReducers: (builder) => (
@@ -62,8 +75,25 @@ export const authenticateSlice = createSlice({
                     state.accessToken = authenticate.logged_in_token?.accessToken || "";
                 }
             }),
+            builder.addCase(registerUser.pending, (state, action) => {
+                state.loading = true;
+                state.error = undefined;
+                state.registerSuccess = undefined;
+            }),
+            builder.addCase(registerUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.registerSuccess = true;
+                state.error = undefined;
+            }),
+            builder.addCase(registerUser.rejected, (state, action) => {
+                state.loading = false;
+                state.registerSuccess = false;
+                const payload = action.payload as any;
+                state.error = payload?.message || "Registration failed";
+            }),
             builder.addCase(getLoggedInToken.pending, (state, action) => {
                 state.loading = true;
+                state.error = undefined;
             }),
             builder.addCase(getLoggedInToken.fulfilled, (state, action) => {
                 const { email, id_token, access_token, refresh_token, token_type, expires_in } = action.payload;
@@ -79,6 +109,12 @@ export const authenticateSlice = createSlice({
                 state.email = email;
                 state.accessToken = access_token;
                 state.loading = false;
+                state.error = undefined;
+            }),
+            builder.addCase(getLoggedInToken.rejected, (state, action) => {
+                state.loading = false;
+                const payload = action.payload as any;
+                state.error = payload?.message || "Sign in failed";
             }),
             builder.addCase(refreshAccessToken.fulfilled, (state, action) => {
                 console.log("refreshed token", action.payload.parsedToken);
@@ -123,6 +159,7 @@ export const authenticateSlice = createSlice({
                     state.level = payloadData.level;
                     state.status = payloadData.status;
                     state.username = payloadData.username;
+                    state.isAdmin = payloadData.isAdmin;
                 }
                 state.loading = false;
             })
@@ -130,7 +167,7 @@ export const authenticateSlice = createSlice({
     });
 
 // Export actions
-export const { setInitialTokens, resetAuth } = authenticateSlice.actions;
+export const { setInitialTokens, resetAuth, clearError, clearRegisterSuccess } = authenticateSlice.actions;
 
 // Helper function for JWT parsing
 function parseJwt(token: string) {

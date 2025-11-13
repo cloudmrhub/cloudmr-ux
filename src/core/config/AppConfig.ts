@@ -24,6 +24,7 @@ export function createEndpoints(baseServer: string): AppEndpoints {
   return {
     SIGNIN: `${baseServer}/auth/login`,
     SIGNOUT: `${baseServer}/auth/logout`,
+    REGISTER: `${baseServer}/auth/register`,
     PROFILE: `${baseServer}/profile`,
     REFRESH_TOKEN: `${baseServer}/auth/refresh`,
     

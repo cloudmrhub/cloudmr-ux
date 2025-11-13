@@ -1,6 +1,7 @@
 export interface AppEndpoints {
   SIGNIN: string;
   SIGNOUT: string;
+  REGISTER: string;
   PROFILE: string;
   REFRESH_TOKEN?: string;
   FINEGRAIN?: string;
