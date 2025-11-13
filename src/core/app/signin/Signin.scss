@@ -50,7 +50,6 @@ body {
 
 #welcome{
   display: grid;
-  width: 420pt;
   grid-template-columns: 25% 50% 25%;
   grid-template-rows: fit-content(30%) 0pt 1fr;
   row-gap: 5px;

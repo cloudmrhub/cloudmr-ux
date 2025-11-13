@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser} from './authenticateActionCreation';
+import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser, changePassword} from './authenticateActionCreation';
 import {getUploadedData} from '../data/dataActionCreation';
 
 export interface AuthenticateToken {
@@ -32,6 +32,7 @@ export interface AuthenticateState {
     // Error and success messages
     error?: string;
     registerSuccess?: boolean;
+    changePasswordSuccess?: boolean;
 }
 
 const initialState: AuthenticateState = {
@@ -64,6 +65,9 @@ export const authenticateSlice = createSlice({
             },
             clearRegisterSuccess: (state) => {
                 state.registerSuccess = undefined;
+            },
+            clearChangePasswordSuccess: (state) => {
+                state.changePasswordSuccess = undefined;
             }
         },
         extraReducers: (builder) => (
@@ -162,12 +166,28 @@ export const authenticateSlice = createSlice({
                     state.isAdmin = payloadData.isAdmin;
                 }
                 state.loading = false;
+            }),
+            builder.addCase(changePassword.pending, (state, action) => {
+                state.loading = true;
+                state.error = undefined;
+                state.changePasswordSuccess = undefined;
+            }),
+            builder.addCase(changePassword.fulfilled, (state, action) => {
+                state.loading = false;
+                state.changePasswordSuccess = true;
+                state.error = undefined;
+            }),
+            builder.addCase(changePassword.rejected, (state, action) => {
+                state.loading = false;
+                state.changePasswordSuccess = false;
+                const payload = action.payload as any;
+                state.error = payload?.message || "Failed to change password";
             })
         ),
     });
 
 // Export actions
-export const { setInitialTokens, resetAuth, clearError, clearRegisterSuccess } = authenticateSlice.actions;
+export const { setInitialTokens, resetAuth, clearError, clearRegisterSuccess, clearChangePasswordSuccess } = authenticateSlice.actions;
 
 // Helper function for JWT parsing
 function parseJwt(token: string) {

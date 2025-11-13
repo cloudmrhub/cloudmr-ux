@@ -215,6 +215,18 @@
       "types": "./dist/core/app/signin/Signin.d.ts",
       "default": "./dist/core/app/signin/Signin.js"
     },
+    "./core/app/settings/Settings": {
+      "types": "./dist/core/app/settings/Settings.d.ts",
+      "default": "./dist/core/app/settings/Settings.js"
+    },
+    "./core/utils/passwordValidation": {
+      "types": "./dist/core/utils/passwordValidation.d.ts",
+      "default": "./dist/core/utils/passwordValidation.js"
+    },
+    "./core/components/PasswordRequirements": {
+      "types": "./dist/core/components/PasswordRequirements.d.ts",
+      "default": "./dist/core/components/PasswordRequirements.js"
+    },
     "./core/app/upload/Upload": {
       "types": "./dist/core/app/upload/Upload.d.ts",
       "default": "./dist/core/app/upload/Upload.js"

@@ -7,6 +7,8 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import Paper from "@mui/material/Paper";
+import Container from "@mui/material/Container";
 import { getLoggedInToken } from "../../features/authenticate/authenticateActionCreation";
 
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -97,87 +99,96 @@ export default function Signin({
 
           <div id="welcome-login">
             {!showRegister ? (
-              <Box
-                component="form"
-                onSubmit={handleSubmit}
-                noValidate
-                style={{ width: "87.5%" }}
-              >
-                {error && (
-                  <Alert
-                    severity="error"
-                    sx={{ mb: 2 }}
-                    onClose={() => dispatch(clearError())}
-                  >
-                    {error}
-                  </Alert>
-                )}
+              <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Paper sx={{ p: 3 }}>
+                  <Box component="form" onSubmit={handleSubmit} noValidate>
+                    <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                      Sign In
+                    </Typography>
 
-                <TextField
-                  margin="normal"
-                  className="col-md-12"
-                  required
-                  fullWidth
-                  id="email"
-                  label="Email Address"
-                  name="email"
-                  size="small"
-                  autoComplete="email"
-                  autoFocus
-                />
-                <TextField
-                  margin="normal"
-                  required
-                  fullWidth
-                  name="password"
-                  label="Password"
-                  type="password"
-                  id="password"
-                  size="small"
-                  autoComplete="current-password"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox value="remember" size={"small"} color="primary" />
-                  }
-                  label={<Typography variant="subtitle2">Remember Me</Typography>}
-                  style={{ float: "right", marginRight: "0" }}
-                  className="input-sm"
-                />
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
-                  disabled={loading}
-                >
-                  {loading ? "Signing In..." : "Sign In"}
-                </Button>
-                <Button
-                  type="button"
-                  fullWidth
-                  variant="contained"
-                  color="secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Forgot Password?
-                </Button>
-                <Grid container justifyContent="flex-end">
-                  <Grid item>
-                    <Link
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowRegister(true);
-                      }}
-                      className="btn btn-link"
-                      variant="body2"
+                    {error && (
+                      <Alert
+                        severity="error"
+                        sx={{ mb: 2 }}
+                        onClose={() => dispatch(clearError())}
+                      >
+                        {error}
+                      </Alert>
+                    )}
+
+                    <TextField
+                      margin="normal"
+                      className="col-md-6"
+                      required
+                      fullWidth
+                      id="email"
+                      label="Email Address"
+                      name="email"
+                      size="small"
+                      autoComplete="email"
+                      autoFocus
+                    />
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      name="password"
+                      label="Password"
+                      type="password"
+                      id="password"
+                      size="small"
+                      autoComplete="current-password"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          value="remember"
+                          size={"small"}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Typography variant="subtitle2">Remember Me</Typography>
+                      }
+                      style={{ float: "right", marginRight: "0" }}
+                      className="input-sm"
+                    />
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      sx={{ mt: 3, mb: 2 }}
+                      disabled={loading}
                     >
-                      {"Sign Up"}
-                    </Link>
-                  </Grid>
-                </Grid>
-              </Box>
+                      {loading ? "Signing In..." : "Sign In"}
+                    </Button>
+                    <Button
+                      type="button"
+                      fullWidth
+                      variant="contained"
+                      color="secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      Forgot Password?
+                    </Button>
+                    <Grid container justifyContent="flex-end">
+                      <Grid item>
+                        <Link
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowRegister(true);
+                          }}
+                          className="btn btn-link"
+                          variant="body2"
+                        >
+                          {"Sign Up"}
+                        </Link>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Paper>
+              </Container>
             ) : (
               <Register onBackToSignin={() => setShowRegister(false)} />
             )}

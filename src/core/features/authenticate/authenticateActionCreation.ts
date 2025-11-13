@@ -2,6 +2,7 @@ import axios from "axios";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAppConfig, getEndpoints } from "../../config/AppConfig";
 import { AuthenticateToken } from "./authenticateSlice";
+import { AuthenticatedHttpClient } from "../../common/utilities/AuthenticatedRequests";
 
 export interface SigninDataType {
   email: string;
@@ -16,6 +17,11 @@ export interface RegisterDataType {
   username: string;
 }
 
+export interface ChangePasswordDataType {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export const registerUser = createAsyncThunk(
   "REGISTER",
   async (registerData: RegisterDataType, thunkAPI) => {
@@ -23,6 +29,29 @@ export const registerUser = createAsyncThunk(
 
     try {
       const response = await axios.post(endpoints.REGISTER, registerData);
+      return response.data;
+    } catch (error: any) {
+      console.error(error);
+      return thunkAPI.rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  },
+);
+
+export const changePassword = createAsyncThunk(
+  "CHANGE_PASSWORD",
+  async (passwordData: ChangePasswordDataType, thunkAPI) => {
+    const endpoints = getEndpoints();
+
+    try {
+      const response = await AuthenticatedHttpClient.request({
+        method: "POST",
+        url: endpoints.CHANGE_PASSWORD,
+        data: passwordData,
+      });
       return response.data;
     } catch (error: any) {
       console.error(error);

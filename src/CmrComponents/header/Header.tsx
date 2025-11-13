@@ -11,12 +11,18 @@ interface MenuItem {
     title: string;
 }
 
+interface DropdownMenuItem {
+    label: string;
+    onClick: () => void;
+}
+
 interface HeaderProps {
     menuList: MenuItem[];
     siteLogo: string;
+    dropdownMenuItems?: DropdownMenuItem[];
 }
 
-const Header = ({ menuList, siteLogo }: HeaderProps) => {
+const Header = ({ menuList, siteLogo, dropdownMenuItems = [] }: HeaderProps) => {
     const config = getAppConfig();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
@@ -158,6 +164,19 @@ const Header = ({ menuList, siteLogo }: HeaderProps) => {
                                         className="dropdown-menu"
                                         aria-labelledby="dropdownMenuButton"
                                     >
+                                        {dropdownMenuItems.map((item, index) => (
+                                            <li key={index}>
+                                                <button
+                                                    className="dropdown-item"
+                                                    onClick={(event) => {
+                                                        event.preventDefault();
+                                                        item.onClick();
+                                                    }}
+                                                >
+                                                    {item.label}
+                                                </button>
+                                            </li>
+                                        ))}
                                         <li>
                                             <button
                                                 className="dropdown-item"
@@ -182,4 +201,4 @@ const Header = ({ menuList, siteLogo }: HeaderProps) => {
 };
 
 export default Header;
-export type { MenuItem };
+export type { MenuItem, DropdownMenuItem };

@@ -5,8 +5,8 @@ import Typography from "@mui/material/Typography";
 import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
 import Alert from "@mui/material/Alert";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
+import Paper from "@mui/material/Paper";
+import Container from "@mui/material/Container";
 import {
   registerUser,
   RegisterDataType,
@@ -17,14 +17,12 @@ import {
   clearRegisterSuccess,
 } from "../../features/authenticate/authenticateSlice";
 import { useEffect, useState } from "react";
-
-interface PasswordValidation {
-  minLength: boolean;
-  hasNumber: boolean;
-  hasSpecial: boolean;
-  hasUppercase: boolean;
-  hasLowercase: boolean;
-}
+import {
+  validatePassword,
+  isPasswordValid as checkPasswordValid,
+  PasswordValidation,
+} from "../../utils/passwordValidation";
+import PasswordRequirements from "../../components/PasswordRequirements";
 
 export default function Register({
   onBackToSignin,
@@ -74,13 +72,7 @@ export default function Register({
     }
 
     const timeoutId = setTimeout(() => {
-      const validation: PasswordValidation = {
-        minLength: password.length >= 8,
-        hasNumber: /\d/.test(password),
-        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-        hasUppercase: /[A-Z]/.test(password),
-        hasLowercase: /[a-z]/.test(password),
-      };
+      const validation = validatePassword(password);
       setPasswordValidation(validation);
       setShowPasswordValidation(true);
     }, 500); // 500ms debounce
@@ -98,22 +90,8 @@ export default function Register({
     setConfirmPassword(e.target.value);
   };
 
-  const isPasswordValid = () => {
-    return Object.values(passwordValidation).every((valid) => valid);
-  };
-
   const passwordsMatch =
     password === confirmPassword && confirmPassword.length > 0;
-
-  const validatePasswordNow = (pwd: string): PasswordValidation => {
-    return {
-      minLength: pwd.length >= 8,
-      hasNumber: /\d/.test(pwd),
-      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
-      hasUppercase: /[A-Z]/.test(pwd),
-      hasLowercase: /[a-z]/.test(pwd),
-    };
-  };
 
   const isEmailValid = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -121,7 +99,7 @@ export default function Register({
 
   const isFormValid = (): boolean => {
     // Check if password meets all requirements
-    const passwordValid = Object.values(passwordValidation).every((valid) => valid);
+    const passwordValid = checkPasswordValid(passwordValidation);
     // Check if passwords match
     const passwordsMatchValid = password === confirmPassword && confirmPassword.length > 0;
     // Check if password fields have content
@@ -142,13 +120,12 @@ export default function Register({
     }
 
     // Do immediate validation before submit
-    const currentValidation = validatePasswordNow(password);
+    const currentValidation = validatePassword(password);
     setPasswordValidation(currentValidation);
     setShowPasswordValidation(true);
 
     // Check if all validation rules pass
-    const isValid = Object.values(currentValidation).every((valid) => valid);
-    if (!isValid) {
+    if (!checkPasswordValid(currentValidation)) {
       return; // Validation messages will be shown
     }
 
@@ -169,15 +146,12 @@ export default function Register({
   };
 
   return (
-    <Box
-      component="form"
-      onSubmit={handleSubmit}
-      noValidate
-      style={{ width: "87.5%" }}
-    >
-      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-        Create Account
-      </Typography>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper sx={{ p: 3 }}>
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            Create Account
+          </Typography>
 
       {error && (
         <Alert
@@ -258,102 +232,10 @@ export default function Register({
         onChange={handlePasswordChange}
       />
 
-      {showPasswordValidation && (
-        <Box sx={{ mt: 1, mb: 1 }}>
-          <Typography
-            variant="caption"
-            display="block"
-            sx={{ mb: 0.5, fontWeight: "bold" }}
-          >
-            Password Requirements:
-          </Typography>
-          <Typography
-            variant="caption"
-            display="flex"
-            alignItems="center"
-            sx={{
-              color: passwordValidation.minLength
-                ? "success.main"
-                : "error.main",
-            }}
-          >
-            {passwordValidation.minLength ? (
-              <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            ) : (
-              <CancelIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            )}
-            Minimum 8 characters
-          </Typography>
-          <Typography
-            variant="caption"
-            display="flex"
-            alignItems="center"
-            sx={{
-              color: passwordValidation.hasNumber
-                ? "success.main"
-                : "error.main",
-            }}
-          >
-            {passwordValidation.hasNumber ? (
-              <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            ) : (
-              <CancelIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            )}
-            Contains at least 1 number
-          </Typography>
-          <Typography
-            variant="caption"
-            display="flex"
-            alignItems="center"
-            sx={{
-              color: passwordValidation.hasSpecial
-                ? "success.main"
-                : "error.main",
-            }}
-          >
-            {passwordValidation.hasSpecial ? (
-              <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            ) : (
-              <CancelIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            )}
-            Contains at least 1 special character
-          </Typography>
-          <Typography
-            variant="caption"
-            display="flex"
-            alignItems="center"
-            sx={{
-              color: passwordValidation.hasUppercase
-                ? "success.main"
-                : "error.main",
-            }}
-          >
-            {passwordValidation.hasUppercase ? (
-              <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            ) : (
-              <CancelIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            )}
-            Contains at least 1 uppercase letter
-          </Typography>
-          <Typography
-            variant="caption"
-            display="flex"
-            alignItems="center"
-            sx={{
-              color: passwordValidation.hasLowercase
-                ? "success.main"
-                : "error.main",
-            }}
-          >
-            {passwordValidation.hasLowercase ? (
-              <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            ) : (
-              <CancelIcon sx={{ fontSize: 16, mr: 0.5 }} />
-            )}
-            Contains at least 1 lowercase letter
-          </Typography>
-        </Box>
-      )}
+      <PasswordRequirements
+        validation={passwordValidation}
+        show={showPasswordValidation}
+      />
 
       <TextField
         margin="normal"
@@ -385,20 +267,22 @@ export default function Register({
         {loading ? "Registering..." : "Register"}
       </Button>
 
-      <Grid container justifyContent="flex-end">
-        <Grid item>
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onBackToSignin();
-            }}
-            variant="body2"
-          >
-            Already have an account? Sign in
-          </Link>
-        </Grid>
-      </Grid>
-    </Box>
+          <Grid container justifyContent="flex-end">
+            <Grid item>
+              <Link
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onBackToSignin();
+                }}
+                variant="body2"
+              >
+                Already have an account? Sign in
+              </Link>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+    </Container>
   );
 }
