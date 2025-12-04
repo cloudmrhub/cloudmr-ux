@@ -17,6 +17,7 @@ import { clearError } from "../../features/authenticate/authenticateSlice";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useState, useEffect } from "react";
 import Register from "./Register";
+import ForgotPassword from "./ForgotPassword";
 import "./Signin.scss";
 
 const theme = createTheme({
@@ -40,6 +41,7 @@ export default function Signin({
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.authenticate);
   const [showRegister, setShowRegister] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
     // Clear error when component unmounts
@@ -98,7 +100,7 @@ export default function Signin({
           </div>
 
           <div id="welcome-login">
-            {!showRegister ? (
+            {!showRegister && !showForgotPassword ? (
               <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
                 <Paper sx={{ p: 3 }}>
                   <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -162,16 +164,19 @@ export default function Signin({
                     >
                       {loading ? "Signing In..." : "Sign In"}
                     </Button>
-                    <Button
-                      type="button"
-                      fullWidth
-                      variant="contained"
-                      color="secondary"
-                      sx={{ mb: 2 }}
-                    >
-                      Forgot Password?
-                    </Button>
-                    <Grid container justifyContent="flex-end">
+                    <Grid container justifyContent="space-between" alignItems="center">
+                      <Grid item>
+                        <Link
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setShowForgotPassword(true);
+                          }}
+                          variant="body2"
+                        >
+                          Forgot Password?
+                        </Link>
+                      </Grid>
                       <Grid item>
                         <Link
                           href="#"
@@ -179,7 +184,6 @@ export default function Signin({
                             e.preventDefault();
                             setShowRegister(true);
                           }}
-                          className="btn btn-link"
                           variant="body2"
                         >
                           {"Sign Up"}
@@ -189,6 +193,8 @@ export default function Signin({
                   </Box>
                 </Paper>
               </Container>
+            ) : showForgotPassword ? (
+              <ForgotPassword onBackToSignin={() => setShowForgotPassword(false)} />
             ) : (
               <Register onBackToSignin={() => setShowRegister(false)} />
             )}

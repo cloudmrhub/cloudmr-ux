@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser, changePassword} from './authenticateActionCreation';
+import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser, changePassword, forgotPassword, resetPassword} from './authenticateActionCreation';
 import {getUploadedData} from '../data/dataActionCreation';
 
 export interface AuthenticateToken {
@@ -33,6 +33,8 @@ export interface AuthenticateState {
     error?: string;
     registerSuccess?: boolean;
     changePasswordSuccess?: boolean;
+    forgotPasswordSuccess?: boolean;
+    resetPasswordSuccess?: boolean;
 }
 
 const initialState: AuthenticateState = {
@@ -68,6 +70,12 @@ export const authenticateSlice = createSlice({
             },
             clearChangePasswordSuccess: (state) => {
                 state.changePasswordSuccess = undefined;
+            },
+            clearForgotPasswordSuccess: (state) => {
+                state.forgotPasswordSuccess = undefined;
+            },
+            clearResetPasswordSuccess: (state) => {
+                state.resetPasswordSuccess = undefined;
             }
         },
         extraReducers: (builder) => (
@@ -182,12 +190,44 @@ export const authenticateSlice = createSlice({
                 state.changePasswordSuccess = false;
                 const payload = action.payload as any;
                 state.error = payload?.message || "Failed to change password";
+            }),
+            builder.addCase(forgotPassword.pending, (state, action) => {
+                state.loading = true;
+                state.error = undefined;
+                state.forgotPasswordSuccess = undefined;
+            }),
+            builder.addCase(forgotPassword.fulfilled, (state, action) => {
+                state.loading = false;
+                state.forgotPasswordSuccess = true;
+                state.error = undefined;
+            }),
+            builder.addCase(forgotPassword.rejected, (state, action) => {
+                state.loading = false;
+                state.forgotPasswordSuccess = false;
+                const payload = action.payload as any;
+                state.error = payload?.message || "Failed to send reset code";
+            }),
+            builder.addCase(resetPassword.pending, (state, action) => {
+                state.loading = true;
+                state.error = undefined;
+                state.resetPasswordSuccess = undefined;
+            }),
+            builder.addCase(resetPassword.fulfilled, (state, action) => {
+                state.loading = false;
+                state.resetPasswordSuccess = true;
+                state.error = undefined;
+            }),
+            builder.addCase(resetPassword.rejected, (state, action) => {
+                state.loading = false;
+                state.resetPasswordSuccess = false;
+                const payload = action.payload as any;
+                state.error = payload?.message || "Failed to reset password";
             })
         ),
     });
 
 // Export actions
-export const { setInitialTokens, resetAuth, clearError, clearRegisterSuccess, clearChangePasswordSuccess } = authenticateSlice.actions;
+export const { setInitialTokens, resetAuth, clearError, clearRegisterSuccess, clearChangePasswordSuccess, clearForgotPasswordSuccess, clearResetPasswordSuccess } = authenticateSlice.actions;
 
 // Helper function for JWT parsing
 function parseJwt(token: string) {

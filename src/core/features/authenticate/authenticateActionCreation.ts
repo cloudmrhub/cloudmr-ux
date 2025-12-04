@@ -22,6 +22,16 @@ export interface ChangePasswordDataType {
   newPassword: string;
 }
 
+export interface ForgotPasswordDataType {
+  email: string;
+}
+
+export interface ResetPasswordDataType {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
 export const registerUser = createAsyncThunk(
   "REGISTER",
   async (registerData: RegisterDataType, thunkAPI) => {
@@ -52,6 +62,44 @@ export const changePassword = createAsyncThunk(
         url: endpoints.CHANGE_PASSWORD,
         data: passwordData,
       });
+      return response.data;
+    } catch (error: any) {
+      console.error(error);
+      return thunkAPI.rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  },
+);
+
+export const forgotPassword = createAsyncThunk(
+  "FORGOT_PASSWORD",
+  async (forgotData: ForgotPasswordDataType, thunkAPI) => {
+    const endpoints = getEndpoints();
+
+    try {
+      const response = await axios.post(endpoints.FORGOT_PASSWORD, forgotData);
+      return response.data;
+    } catch (error: any) {
+      console.error(error);
+      return thunkAPI.rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  },
+);
+
+export const resetPassword = createAsyncThunk(
+  "RESET_PASSWORD",
+  async (resetData: ResetPasswordDataType, thunkAPI) => {
+    const endpoints = getEndpoints();
+
+    try {
+      const response = await axios.post(endpoints.RESET_PASSWORD, resetData);
       return response.data;
     } catch (error: any) {
       console.error(error);

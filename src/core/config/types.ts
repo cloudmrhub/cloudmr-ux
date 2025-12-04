@@ -3,6 +3,8 @@ export interface AppEndpoints {
   SIGNOUT: string;
   REGISTER: string;
   CHANGE_PASSWORD: string;
+  FORGOT_PASSWORD: string;
+  RESET_PASSWORD: string;
   PROFILE: string;
   REFRESH_TOKEN?: string;
   FINEGRAIN?: string;

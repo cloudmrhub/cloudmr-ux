@@ -26,6 +26,8 @@ export function createEndpoints(baseServer: string): AppEndpoints {
     SIGNOUT: `${baseServer}/auth/logout`,
     REGISTER: `${baseServer}/auth/register`,
     CHANGE_PASSWORD: `${baseServer}/auth/change-password`,
+    FORGOT_PASSWORD: `${baseServer}/auth/forgot-password`,
+    RESET_PASSWORD: `${baseServer}/auth/reset-password`,
     PROFILE: `${baseServer}/profile`,
     REFRESH_TOKEN: `${baseServer}/auth/refresh`,
     
