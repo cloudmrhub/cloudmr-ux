@@ -21,10 +21,15 @@ export const submitJobs = createAsyncThunk(
             console.log(job);
             console.log(JSON.stringify(job.setup));
             let job_setup_copy = JSON.parse(JSON.stringify(job.setup));
-            for (var file of job_setup_copy.task.files) {
-                if (job_setup_copy.task.options[file].hasOwnProperty("link")) {
-                    delete job_setup_copy.task.options[file].link;
+            try {
+                for (var file of job_setup_copy.task.files) {
+                    if (job_setup_copy.task.options[file] && job_setup_copy.task.options[file].hasOwnProperty("link")) {
+                        delete job_setup_copy.task.options[file].link;
+                    }
                 }
+            } catch (e) {
+                console.log("Error deleting link property from file options");
+                console.log(e);
             }
             console.log(job_setup_copy);
             let res = await AuthenticatedHttpClient.post(

@@ -15,6 +15,7 @@ export interface UploadedFile {
     location: string;
     renamingPending?: boolean;
     deletionPending?: boolean;
+    is_demo_data?: boolean;
 }
 
 interface DataState {
@@ -60,7 +61,8 @@ export const dataSlice = createSlice({
                         updatedAt: convertTimestamp(element.updated_at),
                         database: element.database,
                         location: element.location,
-                        renamingPending: false
+                        renamingPending: false,
+                        is_demo_data: element.is_demo_data
                     });
                 });
             }

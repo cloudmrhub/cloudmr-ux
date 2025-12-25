@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography } from '@mui/material';
+import { Typography, FormControlLabel, Checkbox } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -8,11 +8,18 @@ import DialogTitle from '@mui/material/DialogTitle';
 import CmrButton from '../CmrButton/CmrButton';
 import {useEffect} from "react";
 
-export default function CmrNameDialog(props: {originalName: string; renamingCallback:(alias:string)=>Promise<boolean>, open:boolean, setOpen:(open:boolean)=>void}) {
-    let {originalName,open, setOpen} = props;
+export default function CmrNameDialog(props: {
+    originalName: string;
+    renamingCallback:(alias:string, isDemoData?:boolean)=>Promise<boolean>,
+    open:boolean,
+    setOpen:(open:boolean)=>void,
+    isDemoData?: boolean
+}) {
+    let {originalName, open, setOpen, isDemoData} = props;
     const [helperText, setHelperText] = React.useState('');
     const [text, setText] = React.useState(originalName);
     const [error, setError] = React.useState(false);
+    const [demoDataChecked, setDemoDataChecked] = React.useState(isDemoData ?? false);
 
     const renamingCallback = props.renamingCallback;
 
@@ -22,11 +29,12 @@ export default function CmrNameDialog(props: {originalName: string; renamingCall
 
     useEffect(() => {
         checkError(originalName);
-    }, [originalName]);
+        setDemoDataChecked(isDemoData ?? false);
+    }, [originalName, isDemoData]);
 
     const handleConfirm = async () => {
         // if(!error)
-        if(await renamingCallback(text))
+        if(await renamingCallback(text, isDemoData !== undefined ? demoDataChecked : undefined))
             handleClose();
     };
 
@@ -59,7 +67,7 @@ export default function CmrNameDialog(props: {originalName: string; renamingCall
             <Dialog open={open} onClose={handleClose}  fullWidth
                     maxWidth="xs">
                 <DialogTitle>
-                    <Typography> Rename the File {originalName} as:</Typography>
+                    <Typography> Rename the file {originalName} as:</Typography>
                 </DialogTitle>
                 <DialogContent>
                     {/*<DialogContentText>*/}
@@ -82,6 +90,19 @@ export default function CmrNameDialog(props: {originalName: string; renamingCall
                         error={error}
                         helperText={helperText}
                     />
+
+                    {isDemoData !== undefined && (
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={demoDataChecked}
+                                    onChange={(e) => setDemoDataChecked(e.target.checked)}
+                                />
+                            }
+                            label="Demo Data"
+                            style={{ marginTop: '16px' }}
+                        />
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <CmrButton variant={"outlined"} onClick={handleClose}>Cancel</CmrButton>

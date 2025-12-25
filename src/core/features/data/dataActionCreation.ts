@@ -37,16 +37,26 @@ export const getUploadedData = createAsyncThunk(
 
 export const renameUploadedData = createAsyncThunk(
     "RENAME_UPLOADED_DATA",
-    async ({ fileId, newName }: { fileId: number; newName: string }) => {
+    async ({ fileId, newName, is_demo_data }: { fileId: number; newName: string; is_demo_data?: boolean }) => {
         const endpoints = getEndpoints();
 
         try {
+            const payload: {
+                fileid: number;
+                filename: string;
+                is_demo_data?: boolean;
+            } = {
+                fileid: fileId,
+                filename: newName,
+            };
+
+            if (is_demo_data !== undefined && is_demo_data !== null) {
+                payload.is_demo_data = is_demo_data;
+            }
+
             const response = await AuthenticatedHttpClient.post(
                 endpoints.DATA_RENAME_API,
-                {
-                    fileid: fileId,
-                    filename: newName,
-                },
+                payload,
             );
             return response.data;
         } catch (e) {
