@@ -28,6 +28,7 @@ export default function CmrNameDialog(props: {
     };
 
     useEffect(() => {
+        setText(originalName);
         checkError(originalName);
         setDemoDataChecked(isDemoData ?? false);
     }, [originalName, isDemoData]);
@@ -79,7 +80,7 @@ export default function CmrNameDialog(props: {
                         margin="dense"
                         id="name"
                         // type="file"
-                        defaultValue = {originalName}
+                        value={text}
                         onFocus={event => {
                             event.target.select();
                         }}
