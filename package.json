@@ -257,7 +257,10 @@
   ],
   "scripts": {
     "build": "tsc && npm run copy-assets",
-    "copy-assets": "find src \\( -name '*.scss' -o -name '*.css' -o -name 'NiivuePatcher.js' -o -name 'util.js' \\) | while read file; do mkdir -p \"dist/$(dirname \"${file#src/}\")\" && cp \"$file\" \"dist/${file#src/}\"; done"
+    "copy-assets": "find src \\( -name '*.scss' -o -name '*.css' -o -name 'NiivuePatcher.js' -o -name 'util.js' \\) | while read file; do mkdir -p \"dist/$(dirname \"${file#src/}\")\" && cp \"$file\" \"dist/${file#src/}\"; done",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
+
   },
   "peerDependencies": {
     "@emotion/react": "^11.0.0",
