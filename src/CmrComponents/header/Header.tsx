@@ -20,9 +20,10 @@ interface HeaderProps {
     menuList: MenuItem[];
     siteLogo: string;
     dropdownMenuItems?: DropdownMenuItem[];
+    headerColor?: string;
 }
 
-const Header = ({ menuList, siteLogo, dropdownMenuItems = [] }: HeaderProps) => {
+const Header = ({ menuList, siteLogo, dropdownMenuItems = [],  headerColor = "#390063" }: HeaderProps) => {
     const config = getAppConfig();
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
@@ -60,7 +61,7 @@ const Header = ({ menuList, siteLogo, dropdownMenuItems = [] }: HeaderProps) => 
         <nav
             className="navbar navbar-expand-md navbar-dark bg-dark shadow-sm"
             style={{
-                background: "#390063",
+                background: headerColor,
                 paddingTop: "10px",
                 paddingBottom: "10px",
             }}
