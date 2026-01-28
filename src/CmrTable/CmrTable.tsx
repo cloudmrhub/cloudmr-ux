@@ -54,8 +54,21 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
             backgroundColor: headerBgColor,
             color: headerTextColor,
           },
-          '& .MuiDataGrid-columnHeaders .MuiSvgIcon-root': {
-            color: headerIconColor,
+          // '& .MuiDataGrid-columnHeaders .MuiSvgIcon-root': {
+          //   color: headerIconColor,
+          // },
+
+          '&& .MuiDataGrid-columnHeader .MuiSvgIcon-root': {
+            color: `${headerIconColor} !important`,
+          },
+          '&& .MuiDataGrid-columnHeader .MuiDataGrid-sortIcon': {
+            color: `${headerIconColor} !important`,
+          },
+          '&& .MuiDataGrid-columnHeader .MuiDataGrid-menuIconButton .MuiSvgIcon-root': {
+            color: `${headerIconColor} !important`,
+          },
+          '&& .MuiDataGrid-columnHeader .MuiDataGrid-iconButtonContainer .MuiSvgIcon-root': {
+            color: `${headerIconColor} !important`,
           },
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 'bold',
