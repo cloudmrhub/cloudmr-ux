@@ -9,6 +9,10 @@ export interface CmrTableProps extends Omit<DataGridProps, 'rows'> {
   name?: string;
   style?: CSSProperties;
   showCheckbox?: boolean;
+
+  headerBgColor?: string;
+  headerTextColor?: string;
+  headerIconColor?: string;
 }
 
 const CmrTable: React.FC<CmrTableProps> = (props) => {
@@ -20,6 +24,9 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
     onRowSelectionModelChange,
     style,
     showCheckbox = true,
+    headerBgColor = '#F3E5F5',
+    headerTextColor = '#333',
+    headerIconColor = '#580f8b',
     ...rest
   } = props;
 
@@ -44,11 +51,11 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
         }}
         sx={{
           '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#F3E5F5',
-            color: '#333',
+            backgroundColor: headerBgColor,
+            color: headerTextColor,
           },
           '& .MuiDataGrid-columnHeaders .MuiSvgIcon-root': {
-            color: '#580f8b',
+            color: headerIconColor,
           },
           '& .MuiDataGrid-columnHeaderTitle': {
             fontWeight: 'bold',
