@@ -54,7 +54,7 @@ const CmrCollapse = (props: CmrCollapseProps) => {
     if (Array.isArray(children)) {
       return children.map((child, index) => {
         const panelKey = index;
-        const expanded = activeKeys.includes(panelKey).toString();
+        const expanded = activeKeys.includes(panelKey);
 
         // Make header clickable
         const header = (
