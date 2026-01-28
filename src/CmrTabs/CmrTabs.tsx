@@ -10,6 +10,9 @@ import { cloneElement } from "react";
 interface CmrTabsProps {
     tabList: TabInfo[];
     onTabSelected?: (tabId: number) => void;
+
+    tabIndicatorColor?: string;
+    tabSelectedTextColor?: string;
 }
 
 interface TabPanelProps {
@@ -46,6 +49,9 @@ function a11yProps(index: number) {
 export default function CmrTabs(props: CmrTabsProps) {
     const [value, setValue] = React.useState(0);
 
+    const tabIndicatorColor = props.tabIndicatorColor ?? "#580F8B";
+    const tabSelectedTextColor = props.tabSelectedTextColor ?? "#580F8B";
+
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         setValue(newValue);
         if (props.onTabSelected)
@@ -66,11 +72,11 @@ export default function CmrTabs(props: CmrTabsProps) {
                     textColor='inherit'
                     TabIndicatorProps={{
                         style: {
-                            backgroundColor: "#580F8B",
+                            backgroundColor: tabIndicatorColor,
                         }
                     }}>
                     {props.tabList.map((tab, index) =>
-                        <Tab key={index} sx={{ color: (value == index) ? '#580F8B' : undefined }} style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 400 }} label={tab.text} {...a11yProps(index)} />)}
+                        <Tab key={index} sx={{ color: (value == index) ? tabSelectedTextColor : undefined }} style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: 400 }} label={tab.text} {...a11yProps(index)} />)}
                 </Tabs>
             </Box>
             {props.tabList.map((tab, index) =>
