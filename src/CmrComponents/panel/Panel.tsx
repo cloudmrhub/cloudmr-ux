@@ -10,8 +10,12 @@ interface CmrPanelProps extends React.HTMLAttributes<HTMLDivElement> {
     onToggle?: (key: number | undefined) => void;
     expanded?: boolean;
     cardProps?: React.HTMLAttributes<HTMLDivElement>;
+
+    headerFontWeight?: "normal" | "bold";
 }
 const CmrPanel = function (props: CmrPanelProps) {
+    const headerFontWeight = props.headerFontWeight ?? "normal";
+
     let { expanded, onToggle } = props;
     const toggle = () => {
         if (onToggle) onToggle(props.panelKey);
@@ -26,7 +30,7 @@ const CmrPanel = function (props: CmrPanelProps) {
                 }}
             >
                 <div className="row align-items-center">
-                    <div className="col">{props.header}</div>
+                    <div className="col"  style={{ fontWeight: headerFontWeight }}>{props.header}</div>
                     {onToggle && (
                         <div className="col text-end">
                             <span
