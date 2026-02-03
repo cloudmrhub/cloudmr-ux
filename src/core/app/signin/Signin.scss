@@ -84,3 +84,10 @@ body {
   display: flex;
 }
 
+.page-root {
+  min-height: 100vh;
+  box-sizing: border-box;
+
+  /* Reserve space so content can't be covered by a fixed footer */
+  padding-bottom: 96px;
+}
