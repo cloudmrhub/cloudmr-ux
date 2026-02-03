@@ -31,4 +31,5 @@ import CmrTableComponent from "./CmrTable/CmrTable";
 export const CmrTable: FC<CmrTableProps> = CmrTableComponent;
 export type { CmrTableProps };
 
-import "./core";
+export * from "./core";
+
