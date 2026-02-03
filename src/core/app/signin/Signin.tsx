@@ -34,9 +34,11 @@ const theme = createTheme({
 export default function Signin({
   appIcon,
   appTitle,
+  appIconHeight = "70pt", 
 }: {
   appIcon: string;
   appTitle: string;
+  appIconHeight?: string | number;
 }) {
   const dispatch = useAppDispatch();
   const { loading, error } = useAppSelector((state) => state.authenticate);
