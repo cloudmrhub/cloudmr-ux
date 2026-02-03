@@ -19,17 +19,16 @@ interface CmrCollapseProps {
 const CmrCollapse = (props: CmrCollapseProps) => {
   let { activeKey, defaultActiveKey, onChange, children } = props;
   defaultActiveKey = defaultActiveKey || [];
-  const [activeKeys, setActiveKeys] = React.useState(defaultActiveKey);
+
+  const [activeKeys, setActiveKeys] = React.useState<Array<string | number>>(
+    defaultActiveKey
+  );
 
   // Sync activeKey prop with state
   React.useEffect(() => {
-    if (activeKey !== undefined && activeKey !== activeKeys) {
-      if (Array.isArray(activeKey)) {
-        setActiveKeys(activeKey);
-      } else {
-        setActiveKeys([activeKey]);
-      }
-    }
+    if (activeKey === undefined) return;
+    const next = Array.isArray(activeKey) ? activeKey : [activeKey];
+    setActiveKeys(next);
   }, [activeKey]);
 
   // Handle toggling panels
@@ -37,14 +36,11 @@ const CmrCollapse = (props: CmrCollapseProps) => {
     const newKeys = [...activeKeys];
     const keyIndex = newKeys.indexOf(key);
 
-    if (keyIndex === -1) {
-      newKeys.push(key);
-    } else {
-      newKeys.splice(keyIndex, 1);
-    }
+    if (keyIndex === -1) newKeys.push(key);
+    else newKeys.splice(keyIndex, 1);
 
     setActiveKeys(newKeys);
-    if (onChange) onChange(newKeys);
+    onChange?.(newKeys);
   };
 
   // Render children
@@ -56,43 +52,26 @@ const CmrCollapse = (props: CmrCollapseProps) => {
         const panelKey = index;
         const expanded = activeKeys.includes(panelKey);
 
-        // Make header clickable
-        const header = (
-          <div onClick={() => onToggle(panelKey)} style={{ cursor: "pointer" }}>
-            {child.props.header}
-          </div>
-        );
-
         return (
           <React.Fragment key={panelKey}>
             {cloneElement(child, {
               expanded,
-              // panelKey,
+              panelKey,
               onToggle,
-              header, // Override header with clickable version
             })}
           </React.Fragment>
         );
       });
-    } else {
-      // Handle single child case
-      const panelKey = 0;
-      const expanded = activeKeys.includes(panelKey);
-
-      // Make header clickable
-      const header = (
-        <div onClick={() => onToggle(panelKey)} style={{ cursor: "pointer" }}>
-          {children.props.header}
-        </div>
-      );
-
-      return cloneElement(children, {
-        expanded,
-        // panelKey,
-        onToggle,
-        header, // Override header with clickable version
-      });
     }
+
+    const panelKey = 0;
+    const expanded = activeKeys.includes(panelKey);
+
+    return cloneElement(children, {
+      expanded,
+      panelKey,
+      onToggle,
+    });
   };
 
   return (
