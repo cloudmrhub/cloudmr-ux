@@ -2,7 +2,8 @@ import * as React from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
+import type { ContainerProps } from "@mui/material/Container";
+import type { SxProps, Theme } from "@mui/material/styles";
 import Box from '@mui/material/Box';
 import { TabInfo } from "./tab.model";
 import { cloneElement } from "react";
@@ -13,6 +14,11 @@ interface CmrTabsProps {
 
     tabIndicatorColor?: string;
     tabSelectedTextColor?: string;
+
+    containerMaxWidth?: ContainerProps["maxWidth"]; // 'xs'|'sm'|'md'|'lg'|'xl'|false
+    containerDisableGutters?: boolean;
+    containerSx?: SxProps<Theme>;
+
 }
 
 interface TabPanelProps {
@@ -60,13 +66,24 @@ export default function CmrTabs(props: CmrTabsProps) {
 
     // console.log(props.tabList);
     return (
-        <Container maxWidth="lg"
+        // <Container maxWidth="lg"
+        //     sx={{
+        //         flex: 1,
+        //         display: 'flex',
+        //         flexDirection: 'column',
+        //         mt: 4
+        //     }}>
+        <Container
+            maxWidth={props.containerMaxWidth ?? "lg"}
+            disableGutters={props.containerDisableGutters ?? false}
             sx={{
                 flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                mt: 4
-            }}>
+                display: "flex",
+                flexDirection: "column",
+                mt: 4,
+                ...(props.containerSx ?? {}),
+            }}
+        >
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example"
                     textColor='inherit'
