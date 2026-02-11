@@ -7,6 +7,7 @@ import Grid from "@mui/material/Grid";
 import Alert from "@mui/material/Alert";
 import Paper from "@mui/material/Paper";
 import Container from "@mui/material/Container";
+
 import {
   registerUser,
   RegisterDataType,
@@ -16,6 +17,7 @@ import {
   clearError,
   clearRegisterSuccess,
 } from "../../features/authenticate/authenticateSlice";
+
 import { useEffect, useState } from "react";
 import {
   validatePassword,
@@ -24,19 +26,30 @@ import {
 } from "../../utils/passwordValidation";
 import PasswordRequirements from "../../components/PasswordRequirements";
 
+type RegisterProps = {
+  onBackToSignin: () => void;
+
+  /**
+   * When true, do not render Container/Paper wrapper.
+   * Useful for embedded usage (e.g., inside a Popover) to avoid double-card outlines.
+   */
+  hidePaper?: boolean;
+};
+
 export default function Register({
   onBackToSignin,
-}: {
-  onBackToSignin: () => void;
-}) {
+  hidePaper = false,
+}: RegisterProps) {
   const dispatch = useAppDispatch();
   const { loading, error, registerSuccess } = useAppSelector(
     (state) => state.authenticate,
   );
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
+
   const [passwordValidation, setPasswordValidation] =
     useState<PasswordValidation>({
       minLength: false,
@@ -85,8 +98,7 @@ export default function Register({
   };
 
   const handleConfirmPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+    e: React.ChangeEvent<HTMLInputElement>) => {
     setConfirmPassword(e.target.value);
   };
 
@@ -118,7 +130,6 @@ export default function Register({
     if (!isEmailValid(emailValue)) {
       return;
     }
-
     // Do immediate validation before submit
     const currentValidation = validatePassword(password);
     setPasswordValidation(currentValidation);
@@ -145,13 +156,11 @@ export default function Register({
     dispatch(registerUser(registerData));
   };
 
-  return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-            Create Account
-          </Typography>
+  const body = (
+    <Box component="form" onSubmit={handleSubmit} noValidate>
+      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+        Create Account
+      </Typography>
 
       {error && (
         <Alert
@@ -165,8 +174,7 @@ export default function Register({
 
       {showSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
-          Registration successful! Please wait for admin approval before signing
-          in.
+          Registration successful! Please wait for admin approval before signing in.
         </Alert>
       )}
 
@@ -251,9 +259,7 @@ export default function Register({
         onChange={handleConfirmPasswordChange}
         error={confirmPassword.length > 0 && !passwordsMatch}
         helperText={
-          confirmPassword.length > 0 && !passwordsMatch
-            ? "Passwords do not match"
-            : ""
+          confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : ""
         }
       />
 
@@ -267,22 +273,32 @@ export default function Register({
         {loading ? "Registering..." : "Register"}
       </Button>
 
-          <Grid container justifyContent="flex-end">
-            <Grid item>
-              <Link
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onBackToSignin();
-                }}
-                variant="body2"
-              >
-                Already have an account? Sign in
-              </Link>
-            </Grid>
-          </Grid>
-        </Box>
-      </Paper>
+      <Grid container justifyContent="flex-end">
+        <Grid item>
+          <Link
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onBackToSignin();
+            }}
+            variant="body2"
+          >
+            Already have an account? Sign in
+          </Link>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  // Embedded mode: no container/paper outline (popover provides the frame)
+  if (hidePaper) {
+    return <Box sx={{ p: 0 }}>{body}</Box>;
+  }
+
+  // Default mode: same as before
+  return (
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper sx={{ p: 3 }}>{body}</Paper>
     </Container>
   );
 }

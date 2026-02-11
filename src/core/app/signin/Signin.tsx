@@ -241,7 +241,7 @@ export default function Signin({
         ) : showForgotPassword ? (
           <ForgotPassword onBackToSignin={() => setShowForgotPassword(false)} />
         ) : (
-          <Register onBackToSignin={() => setShowRegister(false)} />
+          <Register onBackToSignin={() => setShowRegister(false)} hidePaper={variant === "embed"}/>
         )}
       </div>
     </div>
