@@ -89,7 +89,7 @@ export default function Signin({
   };
 
   const content = (
-    <div id="welcome">
+    <div id="welcome" className={variant === "embed" ? "welcome-embed" : ""}>
       <div id="welcome-logo">
         <div
           style={{

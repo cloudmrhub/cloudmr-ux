@@ -48,14 +48,14 @@ body {
   text-transform: uppercase;
 }
 
-#welcome{
+#welcome {
   display: grid;
   grid-template-columns: 25% 50% 25%;
   grid-template-rows: fit-content(30%) 0pt 1fr;
   row-gap: 5px;
 }
 
-#welcome-logo{
+#welcome-logo {
   grid-row: 1;
   grid-column: 2;
   width: 90%;
@@ -66,19 +66,20 @@ body {
   color: #555;
 }
 
-#welcome-login{
+#welcome-login {
   grid-row: 3;
   grid-column: 2 / span 1;
   display: flex;
   justify-content: center;
 }
 
-#welcome-icon{
-  position:absolute;
-  top:-50pt; /*it pushes away div element from top 30pt down Remember with
+#welcome-icon {
+  position: absolute;
+  top: -50pt;
+  /*it pushes away div element from top 30pt down Remember with
   browser window*/
-  left:0;
-  right:0;
+  left: 0;
+  right: 0;
   /*last three property excatly similar to top property it just pushes away
   from specified direction*/
   display: flex;
@@ -90,4 +91,22 @@ body {
 
   /* Reserve space so content can't be covered by a fixed footer */
   padding-bottom: 96px;
+}
+
+/* ---------- Embedded mode (Popover/Card) overrides ---------- */
+#welcome.welcome-embed {
+  display: block;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  row-gap: 0;
+}
+
+#welcome.welcome-embed #welcome-logo {
+  display: none;
+}
+
+#welcome.welcome-embed #welcome-login {
+  display: block;
+  justify-content: initial;
+  width: 100%;
 }
