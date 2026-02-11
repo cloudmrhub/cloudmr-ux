@@ -68,7 +68,7 @@ export default function Signin({
     <ThemeProvider theme={theme}>
       <div
         className="flex-center"
-        // style={{ paddingTop: "clamp(16px, 12vh, 140px)" }}
+        style={{ paddingTop: "clamp(16px, 12vh, 140px)" }}
       >
         <div id="welcome">
           <div id="welcome-logo">
