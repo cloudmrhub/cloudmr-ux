@@ -28,37 +28,44 @@ export interface CmrSelectProps {
   primaryColor?: string;
 }
 
-const createStyles = (primaryColor: string): StylesConfig<Option, false> => ({
-  control: (base, state) => ({
-    ...base,
-    minHeight: 40,
-    borderColor: state.isFocused ? primaryColor : base.borderColor,
-    boxShadow: state.isFocused ? `0 0 0 1px ${primaryColor}` : 'none',
-    '&:hover': { borderColor: primaryColor },
-    fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
-    borderRadius: 4,
-  }),
-  placeholder: (base) => ({
-    ...base,
-    color: 'rgba(0,0,0,0.6)',
-  }),
-  singleValue: (base) => ({
-    ...base,
-    color: primaryColor,
-    fontWeight: 400,
-    fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
-  }),
-  option: (base, state) => ({
-    ...base,
-    backgroundColor:
-      state.isFocused || state.isSelected ? '#F3E5F5' : 'white',
-    color: '#000',
-    fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
-    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
-  }),
-  menuPortal: (base) => ({ ...base, zIndex: 2000 }),
-  menu: (base) => ({ ...base, zIndex: 1300 }),
-});
+const createStyles = (primaryColor: string): StylesConfig<Option, false> => {
+  const optionHighlight =
+    primaryColor === "#580F8B"
+      ? "#F3E5F5"
+      : `${primaryColor}20`; // soft tint derived from primary
+
+  return {
+    control: (base, state) => ({
+      ...base,
+      minHeight: 40,
+      borderColor: primaryColor,
+      boxShadow: state.isFocused ? `0 0 0 1px ${primaryColor}` : "none",
+      "&:hover": { borderColor: primaryColor },
+      fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
+      borderRadius: 4,
+    }),
+
+    singleValue: (base) => ({
+      ...base,
+      color: primaryColor,
+      fontWeight: 400,
+      fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
+    }),
+
+    option: (base, state) => ({
+      ...base,
+      backgroundColor:
+        state.isFocused || state.isSelected ? optionHighlight : "white",
+      color: "#000",
+      fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
+      cursor: state.isDisabled ? "not-allowed" : "pointer",
+    }),
+
+    menuPortal: (base) => ({ ...base, zIndex: 2000 }),
+    menu: (base) => ({ ...base, zIndex: 1300 }),
+  };
+};
+
 
 const CmrSelect: React.FC<CmrSelectProps> = ({
   options,
