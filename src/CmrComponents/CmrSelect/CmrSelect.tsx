@@ -24,15 +24,17 @@ export interface CmrSelectProps {
 
   /** Pass-through kept for compatibility */
   SelectProps?: Record<string, any>;
+
+  primaryColor?: string;
 }
 
-const baseStyles: StylesConfig<Option, false> = {
+const createStyles = (primaryColor: string): StylesConfig<Option, false> => ({
   control: (base, state) => ({
     ...base,
     minHeight: 40,
-    borderColor: state.isFocused ? '#580F8B' : base.borderColor,
-    boxShadow: state.isFocused ? '0 0 0 1px #580F8B' : 'none',
-    '&:hover': { borderColor: '#580F8B' },
+    borderColor: state.isFocused ? primaryColor : base.borderColor,
+    boxShadow: state.isFocused ? `0 0 0 1px ${primaryColor}` : 'none',
+    '&:hover': { borderColor: primaryColor },
     fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
     borderRadius: 4,
   }),
@@ -42,20 +44,21 @@ const baseStyles: StylesConfig<Option, false> = {
   }),
   singleValue: (base) => ({
     ...base,
-    color: '#580F8B',
+    color: primaryColor,
     fontWeight: 400,
     fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
   }),
   option: (base, state) => ({
     ...base,
-    backgroundColor: state.isFocused || state.isSelected ? '#F3E5F5' : 'white',
+    backgroundColor:
+      state.isFocused || state.isSelected ? '#F3E5F5' : 'white',
     color: '#000',
     fontFamily: 'Inter, Roboto, Helvetica, Arial, sans-serif',
     cursor: state.isDisabled ? 'not-allowed' : 'pointer',
   }),
   menuPortal: (base) => ({ ...base, zIndex: 2000 }),
   menu: (base) => ({ ...base, zIndex: 1300 }),
-};
+});
 
 const CmrSelect: React.FC<CmrSelectProps> = ({
   options,
@@ -66,6 +69,7 @@ const CmrSelect: React.FC<CmrSelectProps> = ({
   fullWidth,
   sx,
   className,
+  primaryColor = '#580F8B',
 }) => {
   const isControlled = value !== undefined;
   const [internal, setInternal] = useState<string>(defaultValue);
@@ -105,7 +109,7 @@ const CmrSelect: React.FC<CmrSelectProps> = ({
         onChange={handleChange}
         placeholder="Select"
         isClearable
-        styles={baseStyles}
+        styles={createStyles(primaryColor)}
         menuPortalTarget={document.body}
       />
     </div>
