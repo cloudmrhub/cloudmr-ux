@@ -276,7 +276,7 @@ const ALLOWED_EXTENSIONS = [
     "png",
     "jpg",
     "jpeg",
-    ".zip"
+    "zip"
 ];
 
 const createPayload = async (
