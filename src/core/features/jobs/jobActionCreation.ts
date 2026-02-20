@@ -51,7 +51,10 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
                                              part: any, cancelTokenSource: any,
                                              index: number, retries = 2) {
             try {
-                const response = await AuthenticatedHttpClient.put(partUrl, part, {
+                // S3 presigned URLs contain auth in query params; do NOT add Authorization header
+                // (use plain axios - AuthenticatedHttpClient adds Bearer token and causes S3 400)
+                const response = await axios.put(partUrl, part, {
+                // const response = await AuthenticatedHttpClient.put(partUrl, part, {
                     headers: {
                         'Content-Type': ""
                     },
@@ -158,7 +161,7 @@ const createPayload = async (uploadToken: string, file: File, fileAlias: string)
         const UploadHeaders: AxiosRequestConfig = {
             headers: {
                 'Content-Type': 'application/json',
-                // 'X-Api-Key': uploadToken
+                'X-Api-Key': uploadToken
             },
         };
         return {destination: endpoints.JOB_UPLOAD_INIT, lambdaFile: lambdaFile, file: file, config: UploadHeaders};
