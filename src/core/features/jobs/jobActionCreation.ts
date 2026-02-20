@@ -125,7 +125,9 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
             onUploaded(initResponse, file);
 
         thunkAPI.dispatch(getUpstreamJobs());
-        return {code: 200, response: initResponse.data.response, file: payload.lambdaFile, uploadTarget: uploadTarget};
+        // Omit File object from payload (non-serializable); keep metadata for consumers
+        const { file: _file, ...lambdaFileMeta } = payload.lambdaFile;
+        return {code: 200, response: initResponse.data.response, file: lambdaFileMeta, uploadTarget: uploadTarget};
     } catch (e: any) {
         console.log("Following error encountered during uploading:");
         console.error(e);
