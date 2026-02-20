@@ -111,8 +111,8 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
             return {partNumber: index + 1, etag};
         }));
 
-        // Step 4: Finalize the upload
-        const finalizeResponse = await axios.post(endpoints.JOB_UPLOAD_FINALIZE, {
+        // Step 4: Finalize the upload (backend API call - needs Bearer token via AuthenticatedHttpClient)
+        const finalizeResponse = await AuthenticatedHttpClient.post(endpoints.JOB_UPLOAD_FINALIZE, {
             uploadId,
             parts: uploadedParts,
             Key: Key
