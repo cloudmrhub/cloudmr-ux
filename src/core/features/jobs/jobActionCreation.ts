@@ -51,10 +51,7 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
                                              part: any, cancelTokenSource: any,
                                              index: number, retries = 2) {
             try {
-                // S3 presigned URLs contain auth in query params; do NOT add Authorization header
-                // (use plain axios - AuthenticatedHttpClient adds Bearer token and causes S3 400)
-                const response = await axios.put(partUrl, part, {
-                // const response = await AuthenticatedHttpClient.put(partUrl, part, {
+                const response = await AuthenticatedHttpClient.put(partUrl, part, {
                     headers: {
                         'Content-Type': ""
                     },
@@ -111,8 +108,8 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
             return {partNumber: index + 1, etag};
         }));
 
-        // Step 4: Finalize the upload (backend API call - needs Bearer token via AuthenticatedHttpClient)
-        const finalizeResponse = await AuthenticatedHttpClient.post(endpoints.JOB_UPLOAD_FINALIZE, {
+        // Step 4: Finalize the upload
+        const finalizeResponse = await axios.post(endpoints.JOB_UPLOAD_FINALIZE, {
             uploadId,
             parts: uploadedParts,
             Key: Key
@@ -125,9 +122,7 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
             onUploaded(initResponse, file);
 
         thunkAPI.dispatch(getUpstreamJobs());
-        // Omit File object from payload (non-serializable); keep metadata for consumers
-        const { file: _file, ...lambdaFileMeta } = payload.lambdaFile;
-        return {code: 200, response: initResponse.data.response, file: lambdaFileMeta, uploadTarget: uploadTarget};
+        return {code: 200, response: initResponse.data.response, file: payload.lambdaFile, uploadTarget: uploadTarget};
     } catch (e: any) {
         console.log("Following error encountered during uploading:");
         console.error(e);
@@ -163,7 +158,7 @@ const createPayload = async (uploadToken: string, file: File, fileAlias: string)
         const UploadHeaders: AxiosRequestConfig = {
             headers: {
                 'Content-Type': 'application/json',
-                'X-Api-Key': uploadToken
+                // 'X-Api-Key': uploadToken
             },
         };
         return {destination: endpoints.JOB_UPLOAD_INIT, lambdaFile: lambdaFile, file: file, config: UploadHeaders};
