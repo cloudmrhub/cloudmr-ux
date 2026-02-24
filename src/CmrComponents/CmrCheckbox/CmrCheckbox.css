@@ -15,7 +15,7 @@
 }
 
 .Mui-checked {
-    color: #580F8B !important;  /* Checked state color */
+    color: var(--cmr-checkbox-checked-color, #580f8b) !important;  /* Default #580f8b; override via checkedColor prop */
 }
 
 .MuiCheckbox-root:active, .MuiCheckbox-root:focus {
