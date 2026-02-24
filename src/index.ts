@@ -12,7 +12,7 @@ export { default as CmrConfirmation } from "./CmrComponents/dialogue/Confirmatio
 export { default as CmrDeletionDialog } from "./CmrComponents/dialogue/DeletionDialog";
 export { default as CmrEditConfirmation } from "./CmrComponents/dialogue/EditConfirmation";
 export { default as CmrTabs } from "./CmrTabs/CmrTabs";
-export { default as CmrCheckbox } from "./CmrComponents/checkbox/Checkbox";
+// export { default as CmrCheckbox } from "./CmrComponents/checkbox/Checkbox";
 export { default as CmrLabel } from "./CmrComponents/label/Label";
 export { default as CmrButton } from "./CmrComponents/CmrButton/CmrButton";
 export { default as CmrInputNumber } from "./CmrComponents/input-number/InputNumber";
