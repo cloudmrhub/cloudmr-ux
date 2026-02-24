@@ -14,7 +14,8 @@
     background-color: transparent !important; /* Ensure no background by default */
 }
 
-.Mui-checked {
+/* More specific so we win over app theme .MuiCheckbox-root.Mui-checked */
+.cmr-checkbox-wrapper .MuiCheckbox-root.Mui-checked {
     color: var(--cmr-checkbox-checked-color, #580f8b) !important;  /* Default #580f8b; override via checkedColor prop */
 }
 
