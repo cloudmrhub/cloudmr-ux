@@ -1,5 +1,6 @@
 import React from "react";
 import "./tk-dual-range.css";
+import CmrLabel from "../label/Label";
 
 type Props = {
   name?: string;
@@ -72,7 +73,7 @@ export default function TKDualRange({
       {/* Header row: two inputs at the ends with Min / Max labels */}
       <div className="tkdr__row tkdr__row--ends">
         <div className="tkdr__group">
-          <span className="tkdr__hint">Min</span>
+          <CmrLabel>Min</CmrLabel>
           <input
             className="tkdr__num"
             type="number"
@@ -92,7 +93,7 @@ export default function TKDualRange({
         </div>
 
         <div className="tkdr__group">
-          <span className="tkdr__hint">Max</span>
+          <CmrLabel>Max</CmrLabel>
           <input
             className="tkdr__num"
             type="number"
