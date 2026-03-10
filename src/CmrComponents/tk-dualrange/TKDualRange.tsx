@@ -60,8 +60,14 @@ export default function TKDualRange({
     onChangeHigh(nextReal);
   };
 
-  // Editable inputs show RENDER values (like the article)
-  const fmt = (v: number) => (Number.isFinite(v) ? v.toFixed(precision) : "");
+  // Editable inputs show RENDER values; use scientific notation for small non-zero
+  // values (e.g. B1 maps) so they don't display as "0.000"
+  const fmt = (v: number) =>
+    Number.isFinite(v)
+      ? v !== 0 && Math.abs(v) < 0.01
+        ? Number(v).toExponential(precision)
+        : v.toFixed(precision)
+      : "";
   const parse = (s: string) => {
     const n = Number(s);
     return Number.isFinite(n) ? n : NaN;

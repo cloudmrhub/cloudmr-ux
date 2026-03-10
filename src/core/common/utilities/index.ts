@@ -141,3 +141,20 @@ export function getMin(array: number[]): number {
   }
   return min;
 }
+
+/**
+ * Format a number for UI display, preserving scientific notation for small
+ * non-zero values (e.g. B1 maps with values like 1e-5).
+ * Uses toExponential when |v| < threshold and v !== 0, otherwise toFixed.
+ */
+export function formatNumberForDisplay(
+  v: number,
+  precision = 3,
+  scientificThreshold = 0.01,
+): string {
+  if (!Number.isFinite(v)) return "";
+  if (v !== 0 && Math.abs(v) < scientificThreshold) {
+    return Number(v).toExponential(precision);
+  }
+  return v.toFixed(precision);
+}

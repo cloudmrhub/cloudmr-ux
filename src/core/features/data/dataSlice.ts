@@ -79,10 +79,12 @@ export const dataSlice = createSlice({
             }
         }),
         builder.addCase(renameUploadedData.fulfilled, (state: DataState, action) => {
-            let id = action.meta.arg.fileId;
+            const { fileId, newName } = action.meta.arg;
             for (let file of state.files) {
-                if (file.id == id) {
+                if (file.id === fileId) {
+                    file.fileName = newName;
                     delete file.renamingPending;
+                    break;
                 }
             }
         }),
@@ -95,12 +97,8 @@ export const dataSlice = createSlice({
             }
         }),
         builder.addCase(deleteUploadedData.fulfilled, (state: DataState, action) => {
-            let id = action.meta.arg.fileId;
-            for (let file of state.files) {
-                if (file.id == id) {
-                    delete file.deletionPending;
-                }
-            }
+            const id = action.meta.arg.fileId;
+            state.files = state.files.filter((file) => file.id !== id);
         })
     ),
 });
