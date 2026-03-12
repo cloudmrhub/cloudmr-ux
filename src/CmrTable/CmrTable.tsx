@@ -3,6 +3,19 @@ import './CmrTable.css';
 import { DataGrid, DataGridProps } from '@mui/x-data-grid';
 import { CSSProperties } from 'react';
 
+/** Extracts a comparable timestamp from a row for sorting. Supports createdAt, created_at, or similar date fields. */
+function getSubmittedTimestamp(row: any): number {
+  const val = row.createdAt ?? row.created_at ?? row.updatedAt ?? row.updated_at;
+  if (val == null) return 0;
+  const ts = typeof val === 'number' ? val : new Date(val).getTime();
+  return isNaN(ts) ? 0 : ts;
+}
+
+/** Default sort: most recently submitted first (by createdAt or created_at descending). */
+function defaultSortByRecent<T extends Record<string, unknown>>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => getSubmittedTimestamp(b) - getSubmittedTimestamp(a));
+}
+
 export interface CmrTableProps extends Omit<DataGridProps, 'rows'> {
   dataSource: any[];
   idAlias?: string;
@@ -13,6 +26,13 @@ export interface CmrTableProps extends Omit<DataGridProps, 'rows'> {
   headerBgColor?: string;
   headerTextColor?: string;
   headerIconColor?: string;
+
+  /**
+   * Optional function to customize how rows are filtered/sorted before display.
+   * Receives the mapped rows; return a new array in the desired order.
+   * When omitted, rows are sorted by most recently submitted (createdAt/created_at descending).
+   */
+  processRows?: (rows: any[]) => any[];
 }
 
 const CmrTable: React.FC<CmrTableProps> = (props) => {
@@ -27,20 +47,23 @@ const CmrTable: React.FC<CmrTableProps> = (props) => {
     headerBgColor = '#F3E5F5',
     headerTextColor = '#333',
     headerIconColor = '#580f8b',
+    processRows,
     ...rest
   } = props;
+
+  const mappedRows = dataSource
+    ? dataSource.map((row) => ({
+        id: idAlias ? row[idAlias] : row['id'],
+        ...row,
+      }))
+    : [];
+
+  const displayRows = processRows ? processRows(mappedRows) : defaultSortByRecent(mappedRows);
 
   return (
     <div style={style ?? { height: '400px', width: '100%' }} className={className ?? ''}>
       <DataGrid
-        rows={
-          dataSource
-            ? dataSource.map((row) => ({
-              id: idAlias ? row[idAlias] : row['id'],
-              ...row,
-            }))
-            : []
-        }
+        rows={displayRows}
         columns={columns}
         checkboxSelection={showCheckbox}
         onRowSelectionModelChange={onRowSelectionModelChange}

@@ -196,14 +196,12 @@ const Upload = () => {
       >
         <CmrPanel key="0" header="Uploaded Data" className="mb-2">
           <CmrTable
-            dataSource={[...files]
-              .filter((file) => {
-                const name = file.fileName.toLowerCase();
-                // return !name.endsWith(".zip") && !name.endsWith(".nii");
-                // TODO RJW: does this make sense? confusing if you upload a zip, it just disappears
-                return true; // Show all files for now
-              })
-              .reverse()}
+            dataSource={[...files].filter((file) => {
+              const name = file.fileName.toLowerCase();
+              // return !name.endsWith(".zip") && !name.endsWith(".nii");
+              // TODO RJW: does this make sense? confusing if you upload a zip, it just disappears
+              return true; // Show all files for now
+            })}
             rowSelectionModel={selectedData}
             onRowSelectionModelChange={(rowSelectionModel) => {
               setSelectedData(rowSelectionModel);
