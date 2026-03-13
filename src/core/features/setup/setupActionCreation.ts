@@ -32,21 +32,43 @@ export const submitJobs = createAsyncThunk(
                 console.log(e);
             }
             console.log(job_setup_copy);
-            let res = await AuthenticatedHttpClient.post(
-                endpoints.JOBS_API,
-                job_setup_copy,
-                {
-                    headers: {
-                        accept: "*/*",
-                        // "X-Api-Key": API_TOKEN,
-                        "Content-Type": "application/json",
+            try {
+                let res = await AuthenticatedHttpClient.post(
+                    endpoints.JOBS_API,
+                    job_setup_copy,
+                    {
+                        headers: {
+                            accept: "*/*",
+                            // "X-Api-Key": API_TOKEN,
+                            "Content-Type": "application/json",
+                        },
                     },
-                },
-            );
-            responses.push({
-                id: job.id,
-                status: res.status,
-            });
+                );
+                responses.push({
+                    id: job.id,
+                    status: res.status,
+                });
+            } catch (error: any) {
+                // Check for monthly limit error
+                const errorData = error?.response?.data;
+                if (errorData?.error?.includes?.('Monthly limit') || 
+                    (errorData?.current_count !== undefined && errorData?.limit !== undefined)) {
+                    // Extract mode from error message (e.g., "mode_1 calculations" or "mode_2 calculations")
+                    const errorMsg = errorData?.error || '';
+                    const modeMatch = errorMsg.match(/(mode_[12])/);
+                    const mode = modeMatch ? modeMatch[1] : undefined;
+                    
+                    return thunkAPI.rejectWithValue({
+                        error: errorMsg || 'Monthly limit reached',
+                        current_count: errorData?.current_count,
+                        limit: errorData?.limit,
+                        mode: mode,
+                        app: errorData?.app || errorData?.cloudapp_name,
+                    });
+                }
+                // Re-throw other errors
+                throw error;
+            }
         }
         // //Update upstream jobs right after submission
         thunkAPI.dispatch(getUpstreamJobs());
