@@ -6,6 +6,7 @@ import { DrawToolkit, DrawToolkitProps } from "./DrawToolKit";
 // import GUI from "lil-gui";
 import "./Toolbar.scss";
 import TKDualRange from "../../../../../CmrComponents/tk-dualrange/TKDualRange";
+import { CmrLabel } from "../../../../../index";
 
 interface NiivuePanelProps {
   nv: any;
@@ -275,7 +276,7 @@ export function NiivuePanel(props: NiivuePanelProps) {
                     marginBottom: 6,
                   }}
                 >
-                  <label htmlFor="xSlice">X:</label>
+                  <CmrLabel style={{ fontSize: "0.9rem" }}>X:</CmrLabel>
                   <input
                     type="number"
                     value={xVal}
@@ -388,7 +389,7 @@ export function NiivuePanel(props: NiivuePanelProps) {
                     marginBottom: 6,
                   }}
                 >
-                  <label htmlFor="zSlice">Z:</label>
+                  <CmrLabel style={{ fontSize: "0.9rem" }}>Z:</CmrLabel>
                   <input
                     type="number"
                     value={zVal.toFixed(3)} // show up to 3 decimals

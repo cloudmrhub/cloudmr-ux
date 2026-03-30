@@ -1,21 +1,40 @@
 import { CmrTable, CMRUpload, CmrConfirmation } from "../../../index";
 import { CSSProperties, useState } from "react";
-import { Tooltip, IconButton } from "@mui/material";
+import {
+  Tooltip,
+  IconButton,
+  type SxProps,
+  type Theme,
+} from "@mui/material";
 import { getEndpoints } from "../../config/AppConfig";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { GridRowSelectionModel, GridValueSetterParams } from "@mui/x-data-grid";
 import Box from "@mui/material/Box";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faObjectGroup,
-  faObjectUngroup,
-  faDownload,
-  faTrash,
-} from "@fortawesome/free-solid-svg-icons";
+import GetAppIcon from "@mui/icons-material/GetApp";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { Icon as WpIcon, group as wpGroup, ungroup as wpUngroup } from "@wordpress/icons";
 import { getPipelineROI } from "../../features/rois/resultActionCreation";
 import { AuthenticatedHttpClient } from "../../common/utilities/AuthenticatedRequests";
+
+/** Default merged ROI label in NiivuePatcher `groupLabelsInto` — keep in sync with patcher */
+const GROUP_TARGET_LABEL = 7;
+
+/** Toolbar action icons: `action.active` → rgba(0, 0, 0, 0.54) in default MUI light theme */
+const ROI_TOOLBAR_ICON_SIZE_PX = 24;
+
+const ROI_TOOLBAR_ICON_BUTTON_SX: SxProps<Theme> = {
+  color: "action.active",
+  "&.Mui-disabled": {
+    color: (theme) => theme.palette.action.disabled,
+  },
+};
+
+const ROI_TOOLBAR_MUI_ICON_SX = {
+  fontSize: ROI_TOOLBAR_ICON_SIZE_PX,
+  color: "inherit",
+} as const;
 
 export const ROITable = (props: {
   pipelineID: string;
@@ -160,6 +179,20 @@ export const ROITable = (props: {
     setWarningMessage(message);
     setWarningVisible(true);
   };
+
+  const selectedNums = selectedData.map((v) => Number(v));
+  const uniqueSelected = new Set(selectedNums);
+  const canGroupSelection =
+    selectedNums.length >= 2 && uniqueSelected.size >= 2;
+  const groupButtonDisabled =
+    selectedData.length > 0 && !canGroupSelection;
+  const groupTooltip =
+    selectedData.length === 0
+      ? "Group selected ROIs"
+      : uniqueSelected.size < 2 || selectedNums.length < 2
+        ? "Select at least two different ROIs to group"
+        : "Group selected ROIs";
+
   return (
     <Box style={props.style}>
       <CmrTable
@@ -209,40 +242,62 @@ export const ROITable = (props: {
           borderRadius: "0 0 4px 4px",
         }}
       >
-        <Tooltip title="Group">
-          <IconButton
-            onClick={() => {
-              props.nv.groupLabelsInto(
-                selectedData.map((value) => Number(value)),
-              );
-              props.nv.drawScene();
-              props.resampleImage();
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faObjectGroup}
-              style={{ fontSize: "16px" }}
-            />
-          </IconButton>
+        <Tooltip title={groupTooltip}>
+          <span>
+            <IconButton
+              disabled={groupButtonDisabled}
+              sx={ROI_TOOLBAR_ICON_BUTTON_SX}
+              onClick={() => {
+                if (selectedData.length === 0) {
+                  warnEmptySelection("Please select an ROI to group");
+                  return;
+                }
+                if (!canGroupSelection) {
+                  warnEmptySelection(
+                    "Please select at least two different ROIs to group",
+                  );
+                  return;
+                }
+                if (typeof props.nv.groupLabelsFromSelection === "function") {
+                  props.nv.groupLabelsFromSelection(
+                    selectedNums,
+                    GROUP_TARGET_LABEL,
+                  );
+                } else {
+                  props.nv.groupLabelsInto(
+                    selectedNums,
+                    GROUP_TARGET_LABEL,
+                  );
+                }
+                props.nv.drawScene();
+                props.resampleImage();
+              }}
+            >
+              <WpIcon
+                icon={wpGroup}
+                size={ROI_TOOLBAR_ICON_SIZE_PX}
+                fill="currentColor"
+              />
+            </IconButton>
+          </span>
         </Tooltip>
 
         <Tooltip title="Ungroup">
           <IconButton
+            sx={ROI_TOOLBAR_ICON_BUTTON_SX}
             onClick={() => {
               props.nv.ungroup();
               props.nv.drawScene();
               props.resampleImage();
             }}
           >
-            <FontAwesomeIcon
-              icon={faObjectUngroup}
-              style={{ fontSize: "16px" }}
-            />
+            <WpIcon icon={wpUngroup} size={16} fill="currentColor" />
           </IconButton>
         </Tooltip>
 
         <Tooltip title="Download">
           <IconButton
+            sx={ROI_TOOLBAR_ICON_BUTTON_SX}
             onClick={async () => {
               let fileName = "label";
               let selectedLabels = [];
@@ -258,12 +313,13 @@ export const ROITable = (props: {
               await props.nv.saveImageByLabels(fileName, selectedLabels);
             }}
           >
-            <FontAwesomeIcon icon={faDownload} style={{ fontSize: "16px" }} />
+            <GetAppIcon sx={ROI_TOOLBAR_MUI_ICON_SX} />
           </IconButton>
         </Tooltip>
 
         <Tooltip title="Delete">
           <IconButton
+            sx={ROI_TOOLBAR_ICON_BUTTON_SX}
             onClick={() => {
               props.nv.deleteDrawingByLabel(
                 selectedData.map((value) => Number(value)),
@@ -272,7 +328,7 @@ export const ROITable = (props: {
               props.nv.drawScene();
             }}
           >
-            <FontAwesomeIcon icon={faTrash} style={{ fontSize: "16px" }} />
+            <DeleteIcon sx={ROI_TOOLBAR_MUI_ICON_SX} />
           </IconButton>
         </Tooltip>
 

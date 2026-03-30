@@ -1094,7 +1094,11 @@ export default function NiiVueport(props: {
     });
   };
 
-  const unzipAndRenderDrawingLayer = async (accessURL: string) => {
+  /** mergeIntoExisting: true for ROI file upload; false when opening a saved ROI from the list */
+  const unzipAndRenderDrawingLayer = async (
+    accessURL: string,
+    mergeIntoExisting = false,
+  ) => {
     // console.log(props.rois[roiIndex]);
     // console.trace();
 
@@ -1119,15 +1123,52 @@ export default function NiiVueport(props: {
       const content = await fileInfo.async("string");
       let info = JSON.parse(content);
       let niiFilePath = info.data[0].filename;
+      const importedLabels = info.data[0].labelMapping || {};
       const niiDrawing = zip.file(niiFilePath);
       if (niiDrawing) {
         // Read the content as a blob
         const base64 = await niiDrawing.async("base64");
         console.log(niiFilePath);
-        nv.loadDrawingFromBase64(niiFilePath, base64).then(() => {
-          setLabelMapping(info.data[0].labelMapping);
-          resampleImage(info.data[0].labelMapping);
-        });
+        if (
+          mergeIntoExisting &&
+          typeof (nv as any).mergeDrawingFromBase64 === "function"
+        ) {
+          const mergeResult = await (nv as any).mergeDrawingFromBase64(
+            niiFilePath,
+            base64,
+          );
+          if (!mergeResult || !mergeResult.ok) {
+            props.warn(
+              "Failed to merge ROI upload (invalid file or size mismatch).",
+            );
+            return null;
+          }
+          if (mergeResult.importLabelRemap === null) {
+            setLabelMapping(importedLabels);
+            resampleImage(importedLabels);
+          } else {
+            const merged = { ...labelMapping } as Record<string, string>;
+            for (const [oldL, newId] of Object.entries(
+              mergeResult.importLabelRemap,
+            )) {
+              const oldN = Number(oldL);
+              const newN = Number(newId);
+              const alias =
+                oldN === newN
+                  ? (importedLabels[oldL] ??
+                    importedLabels[String(oldL)] ??
+                    String(newId))
+                  : String(newId);
+              merged[String(newId)] = alias as string;
+            }
+            setLabelMapping(merged);
+            resampleImage(merged);
+          }
+        } else {
+          await nv.loadDrawingFromBase64(niiFilePath, base64);
+          setLabelMapping(importedLabels);
+          resampleImage(importedLabels);
+        }
       } else {
         console.log(`${niiFilePath} not found in the ZIP file.`);
         props.warn(`${niiFilePath} not found in the ZIP file.`);
@@ -1153,7 +1194,7 @@ export default function NiiVueport(props: {
     setDrawingChanged(false);
   };
   const unpackROI = async (accessURL: string) => {
-    await unzipAndRenderDrawingLayer(accessURL);
+    await unzipAndRenderDrawingLayer(accessURL, true);
     setDrawingChanged(false);
     setSelectedDrawingLayer(props.rois.length);
   };
