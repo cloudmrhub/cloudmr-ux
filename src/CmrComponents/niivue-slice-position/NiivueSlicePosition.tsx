@@ -33,6 +33,11 @@ export interface NiivueSlicePositionProps {
    */
   mms: number[];
   /**
+   * Heading displayed above the sliders.
+   * @default "Slice Position"
+   */
+  title?: string;
+  /**
    * CSS accent color for all three range inputs.
    * @default "#580f8b"
    */
@@ -81,6 +86,7 @@ export function NiivueSlicePosition({
   mins,
   maxs,
   mms,
+  title = "Slice Position",
   accentColor = "#580f8b",
   style,
   className,
@@ -275,6 +281,11 @@ export function NiivueSlicePosition({
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: "flex", flexDirection: "column", ...style }} className={className}>
+      {title !== "" && (
+        <div className="title" style={{ width: "100%", marginBottom: 8 }}>
+          {title}
+        </div>
+      )}
 
       {/* X */}
       <div style={{ marginBottom: 20 }}>
