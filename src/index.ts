@@ -25,6 +25,8 @@ export { InvertibleDualSlider } from "./CmrComponents/double-slider/InvertibleDu
 export type { LambdaFile } from "./CmrComponents/upload/Upload";
 export { NiivueSlicePosition } from "./CmrComponents/niivue-slice-position/NiivueSlicePosition";
 export type { NiivueSlicePositionProps } from "./CmrComponents/niivue-slice-position/NiivueSlicePosition";
+export { NiivueContrastAdjustments } from "./CmrComponents/niivue-contrast-adjustments/NiivueContrastAdjustments";
+export type { NiivueContrastAdjustmentsProps } from "./CmrComponents/niivue-contrast-adjustments/NiivueContrastAdjustments";
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
