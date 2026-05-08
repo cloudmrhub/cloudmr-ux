@@ -1,4 +1,5 @@
 import React from "react";
+import { Card, CardContent } from "@mui/material";
 import CmrLabel from "../label/Label";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
@@ -280,12 +281,15 @@ export function NiivueSlicePosition({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", ...style }} className={className}>
+    <div style={style} className={className}>
       {title !== "" && (
-        <div className="title" style={{ width: "100%", marginBottom: 8 }}>
+        <div className="title" style={{ width: "100%" }}>
           {title}
         </div>
       )}
+      <Card variant="outlined" sx={{ mb: 2, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+        <CardContent>
+        <div style={{ display: "flex", flexDirection: "column" }}>
 
       {/* X */}
       <div style={{ marginBottom: 20 }}>
@@ -383,6 +387,9 @@ export function NiivueSlicePosition({
         />
       </div>
 
+        </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
