@@ -19,6 +19,5 @@ npx parcel public/index.html
 that's it!
 
 ## License
-MIT © 
-[erosmontin](https://github.com/erosmontin)
+The code is released under the MIT License
 
