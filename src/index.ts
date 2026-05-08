@@ -27,6 +27,8 @@ export { NiivueSlicePosition } from "./CmrComponents/niivue-slice-position/Niivu
 export type { NiivueSlicePositionProps } from "./CmrComponents/niivue-slice-position/NiivueSlicePosition";
 export { NiivueContrastAdjustments } from "./CmrComponents/niivue-contrast-adjustments/NiivueContrastAdjustments";
 export type { NiivueContrastAdjustmentsProps } from "./CmrComponents/niivue-contrast-adjustments/NiivueContrastAdjustments";
+export { DrawToolkit } from "./CmrComponents/draw-toolkit/DrawToolkit";
+export type { DrawToolkitProps } from "./CmrComponents/draw-toolkit/DrawToolkit";
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
