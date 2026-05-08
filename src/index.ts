@@ -23,6 +23,8 @@ export { DualSlider } from "./CmrComponents/double-slider/DualSlider";
 export { Slider } from "./CmrComponents/gui-slider/Slider";
 export { InvertibleDualSlider } from "./CmrComponents/double-slider/InvertibleDualSlider";
 export type { LambdaFile } from "./CmrComponents/upload/Upload";
+export { NiivueSlicePosition } from "./CmrComponents/niivue-slice-position/NiivueSlicePosition";
+export type { NiivueSlicePositionProps } from "./CmrComponents/niivue-slice-position/NiivueSlicePosition";
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
