@@ -39,6 +39,11 @@ export type {
 } from "./CmrComponents/niivue-roi-histogram/resampleNiivueRoiHistogram";
 export { NiivueRoiHistogram } from "./CmrComponents/niivue-roi-histogram/NiivueRoiHistogram";
 export { useNiivueRoiHistogram } from "./CmrComponents/niivue-roi-histogram/useNiivueRoiHistogram";
+export {
+  NiivueRoiTable,
+  DEFAULT_ROI_GROUP_TARGET_LABEL,
+} from "./CmrComponents/niivue-roi-table/NiivueRoiTable";
+export type { NiivueRoiTableProps } from "./CmrComponents/niivue-roi-table/NiivueRoiTable";
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
