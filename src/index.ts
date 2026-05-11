@@ -29,6 +29,16 @@ export { NiivueContrastAdjustments } from "./CmrComponents/niivue-contrast-adjus
 export type { NiivueContrastAdjustmentsProps } from "./CmrComponents/niivue-contrast-adjustments/NiivueContrastAdjustments";
 export { DrawToolkit } from "./CmrComponents/draw-toolkit/DrawToolkit";
 export type { DrawToolkitProps } from "./CmrComponents/draw-toolkit/DrawToolkit";
+export {
+  resampleNiivueRoiHistogram,
+  getDefaultRoiHistogramLayout,
+} from "./CmrComponents/niivue-roi-histogram/resampleNiivueRoiHistogram";
+export type {
+  NiivueRoiHistogramRow,
+  RoiLabelMapping,
+} from "./CmrComponents/niivue-roi-histogram/resampleNiivueRoiHistogram";
+export { NiivueRoiHistogram } from "./CmrComponents/niivue-roi-histogram/NiivueRoiHistogram";
+export { useNiivueRoiHistogram } from "./CmrComponents/niivue-roi-histogram/useNiivueRoiHistogram";
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
