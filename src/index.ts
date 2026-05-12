@@ -47,10 +47,11 @@ export type { NiivueRoiTableProps } from "./CmrComponents/niivue-roi-table/Niivu
 
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
-import CmrTableComponent from "./CmrTable/CmrTable";
+import CmrTableComponent, { CMR_TABLE_DEFAULT_HEADER_ICON } from "./CmrTable/CmrTable";
 
 export const CmrTable: FC<CmrTableProps> = CmrTableComponent;
 export type { CmrTableProps };
+export { CMR_TABLE_DEFAULT_HEADER_ICON };
 
 export * from "./core";
 

@@ -6,18 +6,42 @@
   margin-bottom: 0;
 } */
 
-.MuiDataGrid-columnHeaders{
-  background: #F3E5F5;
-  color: #333;
+/**
+ * CmrTable root — colors are driven by CSS variables set on `.cmr-table` from props.
+ * Defaults preserve the package purple accent (#580f8b). Host apps can override per instance
+ * via `headerIconColor` / `checkboxCheckedColor` / `checkboxUncheckedColor`, or by setting
+ * variables on a parent: `--cmr-table-header-icon`, etc.
+ */
+.cmr-table {
+  /* Fallbacks = package defaults */
+  --cmr-table-header-bg: #f3e5f5;
+  --cmr-table-header-text: #333;
+  --cmr-table-header-icon: #580f8b;
+  --cmr-table-checkbox-unchecked: rgba(88, 15, 139, 0.54);
+  --cmr-table-checkbox-checked: #580f8b;
+}
+
+.cmr-table .MuiDataGrid-columnHeaders {
+  background: var(--cmr-table-header-bg);
+  color: var(--cmr-table-header-text);
   font-weight: bold;
 }
 
-.MuiDataGrid-columnHeaders .MuiSvgIcon-root {
-  color: #580f8b !important;
+.cmr-table .MuiDataGrid-columnHeaders .MuiSvgIcon-root {
+  color: var(--cmr-table-header-icon) !important;
 }
 
-/* // Religning MUI checkbox in the header */
-.MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainerContent {
+.cmr-table .MuiCheckbox-root {
+  color: var(--cmr-table-checkbox-unchecked);
+}
+
+.cmr-table .MuiCheckbox-root.Mui-checked,
+.cmr-table .MuiCheckbox-root.MuiCheckbox-indeterminate {
+  color: var(--cmr-table-checkbox-checked) !important;
+}
+
+/* Religning MUI checkbox in the header */
+.cmr-table .MuiDataGrid-columnHeaderCheckbox .MuiDataGrid-columnHeaderTitleContainerContent {
   padding: 0 !important;
   margin: 0 !important;
   display: flex;

@@ -59,7 +59,9 @@ export const resultSlice = createSlice({
       state.activeJob.setup.task = action.payload.result.headers.options;
       //@ts-ignore
       state.activeJob.logs =
-        action.payload.result.log || action.payload.result.headers.log;
+        action.payload.result.log ??
+        action.payload.result.headers?.log ??
+        action.payload.result.headers?.logs;
       //@ts-ignore
       state.activeJob.slices = action.payload.result.info?.slices;
       //@ts-ignore
