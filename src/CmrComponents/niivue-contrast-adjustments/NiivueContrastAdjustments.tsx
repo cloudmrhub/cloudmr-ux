@@ -131,7 +131,7 @@ export function NiivueContrastAdjustments({
         </div>
       )}
       <Card variant="outlined" sx={{ mb: 2, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-        <CardContent>
+        <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
           <Box style={{ display: "flex", flex: 1, minWidth: "245px", flexDirection: "column" }}>
 
             <TKDualRange
@@ -144,7 +144,7 @@ export function NiivueContrastAdjustments({
                 const v = nv.volumes[0];
                 if (!v) return;
                 v.cal_min = newMin;
-                nv.refreshLayers(v, 0, nv.volumes.length);
+                nv.refreshLayers(v, 0);
                 nv.drawScene();
                 setMin(newMin);
               }}
@@ -152,7 +152,7 @@ export function NiivueContrastAdjustments({
                 const v = nv.volumes[0];
                 if (!v) return;
                 v.cal_max = newMax;
-                nv.refreshLayers(v, 0, nv.volumes.length);
+                nv.refreshLayers(v, 0);
                 nv.drawScene();
                 setMax(newMax);
               }}

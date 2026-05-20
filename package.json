@@ -1,6 +1,6 @@
 {
   "name": "cloudmr-ux",
-  "version": "4.3.7",
+  "version": "4.3.8",
   "author": "erosmontin@gmail.com",
   "license": "MIT",
   "repository": "erosmontin/cloudmr-ux",
@@ -261,7 +261,7 @@
   ],
   "scripts": {
     "build": "tsc && npm run copy-assets",
-    "copy-assets": "find src \\( -name '*.scss' -o -name '*.css' -o -name 'NiivuePatcher.js' -o -name 'util.js' \\) | while read file; do mkdir -p \"dist/$(dirname \"${file#src/}\")\" && cp \"$file\" \"dist/${file#src/}\"; done",
+    "copy-assets": "node scripts/copy-assets.mjs",
     "prepublishOnly": "npm run build",
     "prepare": "npm run build"
   },
@@ -301,7 +301,7 @@
     "@mui/icons-material": "^5.14.1",
     "@mui/material": "^5.14.2",
     "@mui/x-data-grid": "^6.10.1",
-    "@niivue/niivue": "^0.39.0",
+    "@niivue/niivue": "0.68.2",
     "antd": "^5.22.1",
     "css-loader": "^7.1.2",
     "jszip": "^3.10.1",

@@ -287,8 +287,8 @@ export function NiivueSlicePosition({
           {title}
         </div>
       )}
-      <Card variant="outlined" sx={{ mb: 2, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-        <CardContent>
+        <Card variant="outlined" sx={{ mb: 2, borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+          <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
 
       {/* X */}

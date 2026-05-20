@@ -45,6 +45,13 @@ export {
 } from "./CmrComponents/niivue-roi-table/NiivueRoiTable";
 export type { NiivueRoiTableProps } from "./CmrComponents/niivue-roi-table/NiivueRoiTable";
 
+export { default as CloudMrNiivueViewer, nv } from "./CmrComponents/niivue-viewer/CloudMrNiivueViewer.js";
+export { CloudMrNiivuePanel } from "./CmrComponents/niivue-viewer/CloudMrNiivuePanel";
+export type {
+  CloudMrNiivuePanelProps,
+  CloudMrDrawToolkitProps,
+} from "./CmrComponents/niivue-viewer/CloudMrNiivuePanel";
+
 import type { FC } from "react";
 import type { CmrTableProps } from "./CmrTable/CmrTable";
 import CmrTableComponent, { CMR_TABLE_DEFAULT_HEADER_ICON } from "./CmrTable/CmrTable";
