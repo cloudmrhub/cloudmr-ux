@@ -29,10 +29,11 @@ export interface NiivueContrastAdjustmentsProps {
 
   /**
    * Scaling factors used to convert between real space and the display (render)
-   * space shown in the dual-range input boxes.
+   * space used for thumb positioning on the dual-range track (matches legacy
+   * NiivuePanel / TestKarts-style masking).
    *
-   * Transform: `renderValue = a * realValue - a * b`
-   * Inverse:   `realValue  = renderValue / a + b`
+   * Transform: `renderValue = realValue / a + b`
+   * Inverse:   `realValue  = a * renderValue - a * b`
    *
    * Pass `{ a: 1, b: 0 }` for a 1-to-1 mapping (no scientific-notation scaling).
    */
@@ -156,8 +157,8 @@ export function NiivueContrastAdjustments({
                 nv.drawScene();
                 setMax(newMax);
               }}
-              transform={(x) => a * x - a * b}
-              inverse={(y) => y / a + b}
+              transform={(x) => x / a + b}
+              inverse={(y) => a * y - a * b}
               step={0.001}
               precision={3}
               accentColor={accentColor}
