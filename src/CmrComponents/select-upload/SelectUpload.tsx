@@ -91,6 +91,12 @@ const CMRSelectUpload = (props: CMRSelectUploadProps) => {
                     options={
                         props.fileSelection
                             .filter(file => checkExtension(file.fileName, props.fileExtension))
+                            .sort((a, b) =>
+                                a.fileName.localeCompare(b.fileName, undefined, {
+                                    sensitivity: 'base',
+                                    numeric: true,
+                                })
+                            )
                             .map(file => ({
                                 value: file.id,
                                 label: file.fileName,
