@@ -1,11 +1,12 @@
 import * as React from 'react';
-import { Typography, FormControlLabel, Checkbox } from '@mui/material';
+import { Typography } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import CmrButton from '../CmrButton/CmrButton';
+import { CmrCheckbox } from '../CmrCheckbox/CmrCheckbox';
 import {useEffect} from "react";
 
 export default function CmrNameDialog(props: {
@@ -14,8 +15,10 @@ export default function CmrNameDialog(props: {
     open:boolean,
     setOpen:(open:boolean)=>void,
     isDemoData?: boolean
+    /** Checked state color for the Demo Data checkbox (e.g. CAMRIE `#1578A1`). */
+    checkboxCheckedColor?: string;
 }) {
-    let {originalName, open, setOpen, isDemoData} = props;
+    let {originalName, open, setOpen, isDemoData, checkboxCheckedColor = '#1578A1'} = props;
     const [helperText, setHelperText] = React.useState('');
     const [text, setText] = React.useState(originalName);
     const [error, setError] = React.useState(false);
@@ -93,16 +96,14 @@ export default function CmrNameDialog(props: {
                     />
 
                     {isDemoData !== undefined && (
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={demoDataChecked}
-                                    onChange={(e) => setDemoDataChecked(e.target.checked)}
-                                />
-                            }
-                            label="Demo Data"
+                        <CmrCheckbox
+                            checked={demoDataChecked}
+                            checkedColor={checkboxCheckedColor}
+                            onChange={(e) => setDemoDataChecked(e.target.checked)}
                             style={{ marginTop: '16px' }}
-                        />
+                        >
+                            Demo Data
+                        </CmrCheckbox>
                     )}
                 </DialogContent>
                 <DialogActions>

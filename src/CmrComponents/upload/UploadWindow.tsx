@@ -421,12 +421,6 @@ export default function CmrUploadWindow({
                                     </CmrLabel>
                                 )}
 
-                                {template.showFileName && selectedFiles.length > 1 && (
-                                    <CmrLabel style={{ marginLeft: '16px', marginTop: '16px', fontSize: '9pt', color: '#267833' }}>
-                                        {selectedFiles.length} files selected — each will upload using its original filename
-                                    </CmrLabel>
-                                )}
-
                                 {template.showDatabase && (
                                     <TextField
                                         select
