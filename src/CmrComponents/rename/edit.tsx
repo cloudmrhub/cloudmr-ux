@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography } from '@mui/material';
+import { Typography, Box } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -96,14 +96,27 @@ export default function CmrNameDialog(props: {
                     />
 
                     {isDemoData !== undefined && (
-                        <CmrCheckbox
-                            checked={demoDataChecked}
-                            checkedColor={checkboxCheckedColor}
-                            onChange={(e) => setDemoDataChecked(e.target.checked)}
-                            style={{ marginTop: '16px' }}
+                        <Box
+                            className="cmr-name-dialog-demo-data"
+                            sx={{
+                                mt: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                '& .MuiFormControlLabel-root': {
+                                    margin: 0,
+                                    marginLeft: 0,
+                                    alignItems: 'center',
+                                },
+                            }}
                         >
-                            Demo Data
-                        </CmrCheckbox>
+                            <CmrCheckbox
+                                checked={demoDataChecked}
+                                checkedColor={checkboxCheckedColor}
+                                onChange={(e) => setDemoDataChecked(e.target.checked)}
+                            >
+                                Demo Data
+                            </CmrCheckbox>
+                        </Box>
                     )}
                 </DialogContent>
                 <DialogActions>
