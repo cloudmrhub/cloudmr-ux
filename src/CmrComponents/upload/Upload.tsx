@@ -191,8 +191,14 @@ const CmrUpload = ({ changeNameAfterUpload = true, ...props }: CMRUploadProps) =
                 <Button fullWidth={props.fullWidth} style={props.style} variant={"contained"} sx={{ overflowWrap: 'inherit' }} color={'primary'} disabled>
                     Uploading {progress}%
                 </Button>}
-            <UploadWindow open={open} setOpen={setOpen} upload={upload} fileExtension={props.fileExtension}
-                template={{ showFileName: true, showFileSize: true }} />
+            <UploadWindow
+                open={open}
+                setOpen={setOpen}
+                upload={upload}
+                maxCount={props.maxCount}
+                fileExtension={props.fileExtension}
+                template={{ showFileName: true, showFileSize: true }}
+            />
         </React.Fragment>
     );
 };
