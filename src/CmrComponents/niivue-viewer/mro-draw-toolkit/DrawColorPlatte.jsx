@@ -1,82 +1,93 @@
 /**
  * Shared ROI label color row (NiiVue pen indices 1–6). Used by pen, rectangle, and ellipse tools.
+ * Rectangle/ellipse palettes may also show Apply/Cancel while a shape draft is being adjusted.
  */
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { Stack, IconButton } from "@mui/material";
+import { Stack, IconButton, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 
-var __assign = function () {
-  __assign =
-    Object.assign ||
-    function (t) {
-      for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-      }
-      return t;
-    };
-  return __assign.apply(this, arguments);
-};
+const FILLED_COLORS = [
+  { sx: { color: "red" } },
+  { sx: { color: "green" } },
+  { sx: { color: "blue" } },
+  { sx: { color: "yellow" } },
+  { sx: { color: "cyan" } },
+  { sx: { color: "#e81ce8" } },
+];
 
-var DrawColorPlatte = function (_a) {
-  var expanded = _a.expanded,
-    updateDrawPen = _a.updateDrawPen,
-    setDrawingEnabled = _a.setDrawingEnabled;
-  var filledOptions = [
-    _jsx(FiberManualRecordIcon, { sx: { color: "red" } }, "f0"),
-    _jsx(FiberManualRecordIcon, { sx: { color: "green" } }, "f1"),
-    _jsx(FiberManualRecordIcon, { sx: { color: "blue" } }, "f2"),
-    _jsx(FiberManualRecordIcon, { sx: { color: "yellow" } }, "f3"),
-    _jsx(FiberManualRecordIcon, { sx: { color: "cyan" } }, "f4"),
-    _jsx(FiberManualRecordIcon, { sx: { color: "#e81ce8" } }, "f5"),
-  ];
-  return _jsxs(
-    Stack,
-    __assign(
-      {
-        style: {
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          zIndex: 1500,
-          border: "".concat(expanded ? "1px" : 0, " solid #bbb"),
-          maxWidth: expanded ? 300 : 0,
-          overflow: expanded ? "visible" : "hidden",
-          borderRadius: "16px",
-          borderTopLeftRadius: "6pt",
-          borderTopRightRadius: "6pt",
-          background: "#333",
-        },
-        direction: "column",
-      },
-      {
-        children: [
-          _jsx(
-            Stack,
-            __assign(
-              { direction: "row" },
-              {
-                children: filledOptions.map(function (value, index) {
-                  return _jsx(
-                    IconButton,
-                    __assign(
-                      {
-                        onClick: function () {
-                          updateDrawPen({ target: { value: index + 1 } });
-                          setDrawingEnabled(true);
-                        },
-                      },
-                      { children: value }
-                    ),
-                    index
-                  );
-                }),
-              }
-            )
-          ),
-        ],
-      }
-    )
+export default function DrawColorPlatte({
+  expanded,
+  updateDrawPen,
+  setDrawingEnabled,
+  shapeDraftActive = false,
+  onApplyShapeDraft,
+  onCancelShapeDraft,
+}) {
+  return (
+    <Stack
+      style={{
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        zIndex: 1500,
+        border: `${expanded ? "1px" : 0} solid #bbb`,
+        maxWidth: expanded ? 300 : 0,
+        overflow: expanded ? "visible" : "hidden",
+        borderRadius: "16px",
+        borderTopLeftRadius: "6pt",
+        borderTopRightRadius: "6pt",
+        background: "#333",
+      }}
+      direction="column"
+      spacing={0.5}
+      sx={{ py: shapeDraftActive && expanded ? 0.5 : 0 }}
+    >
+      <Stack direction="row">
+        {FILLED_COLORS.map((color, index) => (
+          <IconButton
+            key={index}
+            onClick={() => {
+              updateDrawPen({ target: { value: index + 1 } });
+              setDrawingEnabled(true);
+            }}
+          >
+            <FiberManualRecordIcon sx={color.sx} />
+          </IconButton>
+        ))}
+      </Stack>
+      {shapeDraftActive && expanded && (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.5}
+          sx={{ px: 0.5, pb: 0.5, borderTop: "1px solid #555" }}
+        >
+          <Tooltip title="Apply shape (Enter)">
+            <IconButton
+              aria-label="apply shape"
+              size="small"
+              onClick={() => onApplyShapeDraft?.()}
+              sx={{ color: "#c9a0e8" }}
+            >
+              <CheckIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Cancel shape (Esc)">
+            <IconButton
+              aria-label="cancel shape"
+              size="small"
+              onClick={() => onCancelShapeDraft?.()}
+              sx={{ color: "#ccc" }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Typography component="span" sx={{ fontSize: "0.68rem", color: "#bbb", userSelect: "none" }}>
+            Apply or cancel
+          </Typography>
+        </Stack>
+      )}
+    </Stack>
   );
-};
-export default DrawColorPlatte;
+}

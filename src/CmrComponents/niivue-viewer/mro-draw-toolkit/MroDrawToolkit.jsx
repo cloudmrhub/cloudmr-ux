@@ -5,7 +5,7 @@
  *
  * Layout matches {@link NiivueSlicePosition}: outer wrapper → `.title` → `Card` + `CardContent` (no custom fill).
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -28,8 +28,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import OpacityIcon from "@mui/icons-material/Opacity";
-import CheckIcon from "@mui/icons-material/Check";
-import CloseIcon from "@mui/icons-material/Close";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import DrawColorPlatte from "./DrawColorPlatte";
 import EraserPlatte from "./EraserPlatte";
@@ -96,6 +94,12 @@ export function MroDrawToolkit(props) {
   const [, setMaskColor] = useState(undefined);
 
   const filled = props.drawPen > 7;
+
+  useEffect(() => {
+    if (!props.shapeDraftActive) return;
+    if (drawShapeTool === "rectangle") setExpandedOption("r");
+    else if (drawShapeTool === "ellipse") setExpandedOption("l");
+  }, [props.shapeDraftActive, drawShapeTool]);
 
   const shapeSelectedSx = (shape) =>
     drawShapeTool === shape
@@ -230,6 +234,9 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "r"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  shapeDraftActive={props.shapeDraftActive && drawShapeTool === "rectangle"}
+                  onApplyShapeDraft={props.onApplyShapeDraft}
+                  onCancelShapeDraft={props.onCancelShapeDraft}
                 />
               </Box>
 
@@ -243,6 +250,9 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "l"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  shapeDraftActive={props.shapeDraftActive && drawShapeTool === "ellipse"}
+                  onApplyShapeDraft={props.onApplyShapeDraft}
+                  onCancelShapeDraft={props.onCancelShapeDraft}
                 />
               </Box>
 
@@ -268,41 +278,6 @@ export function MroDrawToolkit(props) {
                   <ReplyIcon sx={{ color: ICON_COLOR }} />
                 </IconButton>
               </Tooltip>
-
-              {props.shapeDraftActive && (
-                <>
-                  <Tooltip title="Apply shape (Enter)">
-                    <IconButton
-                      aria-label="apply shape"
-                      size="small"
-                      onClick={() => props.onApplyShapeDraft?.()}
-                      sx={{
-                        ...toolBtnSx,
-                        backgroundColor: "rgba(88, 15, 139, 0.12)",
-                        color: "#580f8b",
-                      }}
-                    >
-                      <CheckIcon sx={{ color: "inherit" }} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Cancel shape (Esc)">
-                    <IconButton
-                      aria-label="cancel shape"
-                      size="small"
-                      onClick={() => props.onCancelShapeDraft?.()}
-                      sx={toolBtnSx}
-                    >
-                      <CloseIcon sx={{ color: ICON_COLOR }} />
-                    </IconButton>
-                  </Tooltip>
-                  <Typography
-                    component="span"
-                    sx={{ fontSize: "0.72rem", color: "#580f8b", userSelect: "none", ml: 0.5 }}
-                  >
-                    Adjust shape, then Apply
-                  </Typography>
-                </>
-              )}
 
               <Tooltip title="Save screenshot">
                 <span>
