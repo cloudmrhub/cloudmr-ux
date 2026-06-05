@@ -2,7 +2,7 @@
  * Shared ROI label color row (NiiVue pen indices 1–6). Used by pen, rectangle, and ellipse tools.
  * Rectangle/ellipse palettes may also show Apply/Cancel while a shape draft is being adjusted.
  */
-import { Stack, IconButton, Tooltip, Typography } from "@mui/material";
+import { Stack, IconButton, Button, Tooltip } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
@@ -15,6 +15,9 @@ const FILLED_COLORS = [
   { sx: { color: "cyan" } },
   { sx: { color: "#e81ce8" } },
 ];
+
+const ACTION_FONT_SIZE = "0.75rem";
+const ACTION_ICON_SIZE = "0.875rem";
 
 export default function DrawColorPlatte({
   expanded,
@@ -60,32 +63,48 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          spacing={0.5}
-          sx={{ px: 0.5, pb: 0.5, borderTop: "1px solid #555" }}
+          justifyContent="flex-end"
+          spacing={1.5}
+          sx={{ px: 1, py: 0.5, borderTop: "1px solid #555" }}
         >
-          <Tooltip title="Apply shape (Enter)">
-            <IconButton
-              aria-label="apply shape"
-              size="small"
-              onClick={() => onApplyShapeDraft?.()}
-              sx={{ color: "#c9a0e8" }}
-            >
-              <CheckIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
           <Tooltip title="Cancel shape (Esc)">
-            <IconButton
-              aria-label="cancel shape"
+            <Button
               size="small"
+              aria-label="cancel shape"
               onClick={() => onCancelShapeDraft?.()}
-              sx={{ color: "#ccc" }}
+              startIcon={<CloseIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+              sx={{
+                color: "#ccc",
+                fontSize: ACTION_FONT_SIZE,
+                textTransform: "none",
+                minWidth: 0,
+                py: 0.25,
+                px: 0.75,
+                "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
+              }}
             >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+              Cancel
+            </Button>
           </Tooltip>
-          <Typography component="span" sx={{ fontSize: "0.68rem", color: "#bbb", userSelect: "none" }}>
-            Apply or cancel
-          </Typography>
+          <Tooltip title="Apply shape (Enter)">
+            <Button
+              size="small"
+              aria-label="apply shape"
+              onClick={() => onApplyShapeDraft?.()}
+              startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+              sx={{
+                color: "#c9a0e8",
+                fontSize: ACTION_FONT_SIZE,
+                textTransform: "none",
+                minWidth: 0,
+                py: 0.25,
+                px: 0.75,
+                "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
+              }}
+            >
+              Apply
+            </Button>
+          </Tooltip>
         </Stack>
       )}
     </Stack>
