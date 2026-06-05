@@ -30,6 +30,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import OpacityIcon from "@mui/icons-material/Opacity";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
 import DrawColorPlatte from "./DrawColorPlatte";
 import EraserPlatte from "./EraserPlatte";
 import MaskPlatte from "./MaskPlatte";
