@@ -2,12 +2,13 @@ import React from "react";
 import { Box } from "@mui/material";
 import { NI_PEN_TYPE } from "./niivuePenType";
 import LocationTable from "../../core/common/components/NiivueTools/components/LocationTable";
-import "./Toolbar.scss";
+import "./Toolbar.css";
 import { NiivueSlicePosition } from "../niivue-slice-position/NiivueSlicePosition";
 import { NiivueContrastAdjustments } from "../niivue-contrast-adjustments/NiivueContrastAdjustments";
 import { NiivueRoiTable } from "../niivue-roi-table/NiivueRoiTable";
 import type { DrawToolkitProps } from "../draw-toolkit/DrawToolkit";
 import { MroDrawToolkit } from "./mro-draw-toolkit/MroDrawToolkit";
+import { ShapeDraftOverlay } from "./ShapeDraftOverlay";
 
 /** Props for {@link DrawToolkit} minus brush controls when using {@link MroDrawToolkit}. */
 export type CloudMrDrawToolkitProps = Omit<DrawToolkitProps, "brushSize" | "updateBrushSize">;
@@ -43,6 +44,11 @@ export interface CloudMrNiivuePanelProps {
   gamma: number;
   gammaKey: number;
   setGamma: (val: number) => void;
+
+  shapeDraft: import("./shapeDraftUtils").ShapeDraft | null;
+  onShapeDraftChange: (draft: import("./shapeDraftUtils").ShapeDraft) => void;
+  onApplyShapeDraft: () => void;
+  onCancelShapeDraft: () => void;
 }
 
 export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
@@ -88,8 +94,12 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
   }, [histogram]);
 
   function applyDrawShapeTool(tool: "pen" | "rectangle" | "ellipse") {
+    if (props.shapeDraft) {
+      props.onCancelShapeDraft();
+    }
     props.setDrawShapeTool(tool);
     const { nv } = props;
+    nv.opts.deferShapeCommit = tool === "rectangle" || tool === "ellipse";
     nv.opts.penType =
       tool === "rectangle"
         ? NI_PEN_TYPE.RECTANGLE
@@ -132,7 +142,15 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
           {...props.drawToolkitProps}
           drawShapeTool={props.drawShapeTool}
           onDrawShapeToolChange={applyDrawShapeTool}
-          onExitDrawMode={() => props.setDrawShapeTool(null)}
+          onExitDrawMode={() => {
+            if (props.shapeDraft) {
+              props.onCancelShapeDraft();
+            }
+            props.setDrawShapeTool(null);
+          }}
+          shapeDraftActive={props.shapeDraft != null}
+          onApplyShapeDraft={props.onApplyShapeDraft}
+          onCancelShapeDraft={props.onCancelShapeDraft}
           style={{
             marginBottom: 0,
             width: "100%",
@@ -182,6 +200,14 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
               height: "100%",
             }}
           />
+          {props.shapeDraft && (
+            <ShapeDraftOverlay
+              nv={props.nv}
+              draft={props.shapeDraft}
+              onDraftChange={props.onShapeDraftChange}
+              overlayKey={props.mms}
+            />
+          )}
         </Box>
       </Box>
 

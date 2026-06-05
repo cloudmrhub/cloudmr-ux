@@ -125,6 +125,11 @@ export default function CloudMrNiivueViewer(props) {
   const [saving, setSaving] = useState(false);
 
   const [drawShapeTool, setDrawShapeTool] = useState(null);
+  const [shapeDraft, setShapeDraft] = useState(null);
+  const shapeDraftRef = React.useRef(null);
+  const drawShapeToolRef = React.useRef(null);
+  drawShapeToolRef.current = drawShapeTool;
+  shapeDraftRef.current = shapeDraft;
 
   React.useEffect(() => {
     nv.opts.penBounds = 0;
@@ -387,8 +392,12 @@ export default function CloudMrNiivueViewer(props) {
     // }
     // console.log(nv.scene.pan2Dxyzmm);
   }
-  nv.onMouseUp = (data) => {
-    if (drawingEnabled) {
+  nv.onMouseUp = () => {
+    if (nv._cloudMrSuppressDrawingChangedMouseUp) {
+      nv._cloudMrSuppressDrawingChangedMouseUp = false;
+      return;
+    }
+    if (nv.opts.drawingEnabled) {
       setDrawingChanged(true);
       resampleImage();
     }
@@ -737,6 +746,60 @@ export default function CloudMrNiivueViewer(props) {
       setROIs(next);
     }
   }
+
+  function cancelShapeDraft() {
+    const draft = shapeDraftRef.current;
+    if (!draft) return;
+    nv.drawBitmap.set(draft.baseBitmap);
+    nv.refreshDrawing(true, false);
+    nv.drawScene();
+    setShapeDraft(null);
+    shapeDraftRef.current = null;
+    nv._cloudMrShapeDraftActive = false;
+    if (drawShapeToolRef.current) {
+      nvSetDrawingEnabled(true);
+    }
+  }
+
+  function applyShapeDraft() {
+    if (!shapeDraftRef.current) return;
+    nv.drawAddUndoBitmap(nv.drawFillOverwrites);
+    setDrawingChanged(true);
+    setShapeDraft(null);
+    shapeDraftRef.current = null;
+    nv._cloudMrShapeDraftActive = false;
+    if (drawShapeToolRef.current) {
+      nvSetDrawingEnabled(true);
+    }
+    resampleImage();
+  }
+
+  function onShapeDraftChange(draft) {
+    setShapeDraft(draft);
+    shapeDraftRef.current = draft;
+  }
+
+  nv.onShapeDraftReady = (draft) => {
+    setShapeDraft(draft);
+    shapeDraftRef.current = draft;
+    nv._cloudMrShapeDraftActive = true;
+    nvSetDrawingEnabled(false);
+  };
+
+  React.useEffect(() => {
+    if (!shapeDraft) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyShapeDraft();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        cancelShapeDraft();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [shapeDraft]);
 
   function nvUpdateSelectionBoxColor(rgb01) {
     setSelectionBoxColor([...rgb01, 0.5])
@@ -1142,6 +1205,10 @@ export default function CloudMrNiivueViewer(props) {
     changesMade: drawingChanged,
     // toggleSampleDistribution,
     drawUndo: () => {//To be moved and organized
+      if (shapeDraftRef.current) {
+        cancelShapeDraft();
+        return;
+      }
       nv.drawUndo();
       resampleImage();
       if (nv.drawBitmap && nv.drawBitmap.every(v => v === 0)) {
@@ -1519,6 +1586,11 @@ export default function CloudMrNiivueViewer(props) {
         gamma={gamma}
         gammaKey={gammaKey}
         setGamma={setGamma}
+
+        shapeDraft={shapeDraft}
+        onShapeDraftChange={onShapeDraftChange}
+        onApplyShapeDraft={applyShapeDraft}
+        onCancelShapeDraft={cancelShapeDraft}
       />}
     </Box>
   )

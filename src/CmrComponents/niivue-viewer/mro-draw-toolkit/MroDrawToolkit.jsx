@@ -28,7 +28,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import OpacityIcon from "@mui/icons-material/Opacity";
-import ClickAwayListener from "@mui/material/ClickAwayListener";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import DrawColorPlatte from "./DrawColorPlatte";
 import EraserPlatte from "./EraserPlatte";
 import MaskPlatte from "./MaskPlatte";
@@ -168,6 +169,7 @@ export function MroDrawToolkit(props) {
     <ClickAwayListener
       onClickAway={(event) => {
         if (clickTargetIsNiivueCanvas(event.target)) return;
+        if (props.shapeDraftActive) return;
         setExpandedOption("n");
         setExpandOpacityOptions(false);
         props.setDrawingEnabled(false);
@@ -265,6 +267,41 @@ export function MroDrawToolkit(props) {
                   <ReplyIcon sx={{ color: ICON_COLOR }} />
                 </IconButton>
               </Tooltip>
+
+              {props.shapeDraftActive && (
+                <>
+                  <Tooltip title="Apply shape (Enter)">
+                    <IconButton
+                      aria-label="apply shape"
+                      size="small"
+                      onClick={() => props.onApplyShapeDraft?.()}
+                      sx={{
+                        ...toolBtnSx,
+                        backgroundColor: "rgba(88, 15, 139, 0.12)",
+                        color: "#580f8b",
+                      }}
+                    >
+                      <CheckIcon sx={{ color: "inherit" }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Cancel shape (Esc)">
+                    <IconButton
+                      aria-label="cancel shape"
+                      size="small"
+                      onClick={() => props.onCancelShapeDraft?.()}
+                      sx={toolBtnSx}
+                    >
+                      <CloseIcon sx={{ color: ICON_COLOR }} />
+                    </IconButton>
+                  </Tooltip>
+                  <Typography
+                    component="span"
+                    sx={{ fontSize: "0.72rem", color: "#580f8b", userSelect: "none", ml: 0.5 }}
+                  >
+                    Adjust shape, then Apply
+                  </Typography>
+                </>
+              )}
 
               <Tooltip title="Save screenshot">
                 <span>

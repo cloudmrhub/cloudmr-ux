@@ -2,6 +2,11 @@
  * This file patches the original NiiVue library to produce customized behaviors and effects.
  */
 import { Niivue, NVImage, NVImageFromUrlOptions } from "@niivue/niivue";
+import {
+  captureDeferredShapeDraft,
+  isDraftTooSmall,
+  shouldDeferShapeCommit,
+} from "./shapeDraftUtils.js";
 
 /*
  * bitmapOverlay — in-browser state only: remembers each voxel's label *before* Group
@@ -1399,4 +1404,37 @@ Niivue.prototype.drawCrossLinesMM = function (sliceIndex, axCorSag, axiMM, corMM
 //     );
 //     gl.bindVertexArray(this.unusedVAO);
 // }
+
+const _drawAddUndoBitmap = Niivue.prototype.drawAddUndoBitmap;
+Niivue.prototype.drawAddUndoBitmap = function cloudMrDrawAddUndoBitmap(...args) {
+  if (this._cloudMrSkipNextUndoBitmap) {
+    this._cloudMrSkipNextUndoBitmap = false;
+    return;
+  }
+  return _drawAddUndoBitmap.apply(this, args);
+};
+
+const _mouseUpListener = Niivue.prototype.mouseUpListener;
+Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
+  let pendingDraft = null;
+  if (shouldDeferShapeCommit(this)) {
+    this._cloudMrSkipNextUndoBitmap = true;
+    pendingDraft = captureDeferredShapeDraft(this);
+  }
+  _mouseUpListener.call(this);
+  if (!pendingDraft?.baseBitmap) {
+    return;
+  }
+  if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
+    this.drawBitmap.set(pendingDraft.baseBitmap);
+    this.refreshDrawing(true, false);
+    this.drawScene();
+    return;
+  }
+  this._cloudMrSuppressDrawingChangedMouseUp = true;
+  if (typeof this.onShapeDraftReady === "function") {
+    this.onShapeDraftReady(pendingDraft);
+  }
+};
+
 export { Niivue };
