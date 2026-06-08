@@ -126,6 +126,8 @@ export default function CloudMrNiivueViewer(props) {
 
   const [drawShapeTool, setDrawShapeTool] = useState(null);
   const [shapeDraft, setShapeDraft] = useState(null);
+  const [penDrawMode, setPenDrawMode] = useState("freehand");
+  const [polylineVertexCount, setPolylineVertexCount] = useState(0);
   const shapeDraftRef = React.useRef(null);
   const drawShapeToolRef = React.useRef(null);
   drawShapeToolRef.current = drawShapeTool;
@@ -747,6 +749,37 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
+  function syncPenDrawMode(mode) {
+    setPenDrawMode(mode);
+    nv.opts.polylinePenMode = mode === "polyline";
+    nv.opts.isFilledPen = mode === "freehand";
+    if (mode === "freehand") {
+      nv.cloudMrCancelPolyline?.();
+    }
+  }
+
+  function cancelPolylineDraft() {
+    nv.cloudMrCancelPolyline?.();
+  }
+
+  function finishPolylineOpen() {
+    if (nv.cloudMrFinishPolyline(false)) {
+      setDrawingChanged(true);
+      resampleImage();
+    }
+  }
+
+  function finishPolylineClosed() {
+    if (nv.cloudMrFinishPolyline(true)) {
+      setDrawingChanged(true);
+      resampleImage();
+    }
+  }
+
+  nv.onPolylineChange = (count) => {
+    setPolylineVertexCount(count);
+  };
+
   function cancelShapeDraft() {
     const draft = shapeDraftRef.current;
     if (!draft) return;
@@ -787,19 +820,31 @@ export default function CloudMrNiivueViewer(props) {
   };
 
   React.useEffect(() => {
-    if (!shapeDraft) return undefined;
+    if (!shapeDraft && !(penDrawMode === "polyline" && polylineVertexCount >= 2)) {
+      return undefined;
+    }
     const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (shapeDraft) {
+          cancelShapeDraft();
+        } else if (polylineVertexCount >= 2) {
+          cancelPolylineDraft();
+        }
+        return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
-        applyShapeDraft();
-      } else if (event.key === "Escape") {
-        event.preventDefault();
-        cancelShapeDraft();
+        if (shapeDraft) {
+          applyShapeDraft();
+        } else if (penDrawMode === "polyline" && polylineVertexCount >= 2) {
+          finishPolylineOpen();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [shapeDraft]);
+  }, [shapeDraft, penDrawMode, polylineVertexCount]);
 
   function nvUpdateSelectionBoxColor(rgb01) {
     setSelectionBoxColor([...rgb01, 0.5])
@@ -1209,6 +1254,10 @@ export default function CloudMrNiivueViewer(props) {
         cancelShapeDraft();
         return;
       }
+      if (polylineVertexCount > 0) {
+        cancelPolylineDraft();
+        return;
+      }
       nv.drawUndo();
       resampleImage();
       if (nv.drawBitmap && nv.drawBitmap.every(v => v === 0)) {
@@ -1221,6 +1270,12 @@ export default function CloudMrNiivueViewer(props) {
     drawingOpacity,
     setDrawingOpacity: nvUpdateDrawingOpacity,
     setDrawingChanged,
+    penDrawMode,
+    onPenDrawModeChange: syncPenDrawMode,
+    polylineVertexCount,
+    onCancelPolyline: cancelPolylineDraft,
+    onFinishPolyline: finishPolylineOpen,
+    onCloseFillPolyline: finishPolylineClosed,
   };
   return (
     <Box sx={{

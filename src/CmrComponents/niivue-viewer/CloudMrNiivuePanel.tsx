@@ -11,7 +11,17 @@ import { MroDrawToolkit } from "./mro-draw-toolkit/MroDrawToolkit";
 import { ShapeDraftOverlay } from "./ShapeDraftOverlay";
 
 /** Props for {@link DrawToolkit} minus brush controls when using {@link MroDrawToolkit}. */
-export type CloudMrDrawToolkitProps = Omit<DrawToolkitProps, "brushSize" | "updateBrushSize">;
+export type CloudMrDrawToolkitProps = Omit<DrawToolkitProps, "brushSize" | "updateBrushSize"> & {
+  penDrawMode?: "freehand" | "polyline";
+  onPenDrawModeChange?: (mode: "freehand" | "polyline") => void;
+  polylineVertexCount?: number;
+  onCancelPolyline?: () => void;
+  onFinishPolyline?: () => void;
+  onCloseFillPolyline?: () => void;
+  shapeDraftActive?: boolean;
+  onApplyShapeDraft?: () => void;
+  onCancelShapeDraft?: () => void;
+};
 
 export interface CloudMrNiivuePanelProps {
   nv: any;
@@ -96,6 +106,9 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
   function applyDrawShapeTool(tool: "pen" | "rectangle" | "ellipse") {
     if (props.shapeDraft) {
       props.onCancelShapeDraft();
+    }
+    if (tool !== "pen") {
+      props.drawToolkitProps.onPenDrawModeChange?.("freehand");
     }
     props.setDrawShapeTool(tool);
     const { nv } = props;

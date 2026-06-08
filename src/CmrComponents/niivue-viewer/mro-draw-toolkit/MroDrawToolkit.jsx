@@ -221,6 +221,13 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "d"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  showPenModes
+                  penDrawMode={props.penDrawMode}
+                  onPenDrawModeChange={props.onPenDrawModeChange}
+                  polylineVertexCount={props.polylineVertexCount}
+                  onCancelPolyline={props.onCancelPolyline}
+                  onFinishPolyline={props.onFinishPolyline}
+                  onCloseFillPolyline={props.onCloseFillPolyline}
                 />
               </Box>
 

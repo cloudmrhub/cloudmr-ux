@@ -7,6 +7,15 @@ import {
   isDraftTooSmall,
   shouldDeferShapeCommit,
 } from "./shapeDraftUtils.js";
+import {
+  addPolylineVertex,
+  cancelPolyline,
+  finishPolyline,
+  isClickWithoutDrag,
+  isPolylinePenActive,
+  previewPolylineSegment,
+  resetPolylineState,
+} from "./polylinePenUtils.js";
 
 /*
  * bitmapOverlay — in-browser state only: remembers each voxel's label *before* Group
@@ -1414,14 +1423,63 @@ Niivue.prototype.drawAddUndoBitmap = function cloudMrDrawAddUndoBitmap(...args) 
   return _drawAddUndoBitmap.apply(this, args);
 };
 
+Niivue.prototype.cloudMrCancelPolyline = function cloudMrCancelPolyline() {
+  cancelPolyline(this);
+};
+
+Niivue.prototype.cloudMrFinishPolyline = function cloudMrFinishPolyline(fillClosed = false) {
+  return finishPolyline(this, { fillClosed });
+};
+
+Niivue.prototype.cloudMrResetPolyline = function cloudMrResetPolyline() {
+  resetPolylineState(this);
+};
+
+const _mouseClick = Niivue.prototype.mouseClick;
+Niivue.prototype.mouseClick = function cloudMrMouseClick(...args) {
+  if (isPolylinePenActive(this)) {
+    if (this._cloudMrPolylineVertices?.length > 0) {
+      previewPolylineSegment(this);
+    }
+    return false;
+  }
+  return _mouseClick.apply(this, args);
+};
+
+const _mouseMoveListener = Niivue.prototype.mouseMoveListener;
+Niivue.prototype.mouseMoveListener = function cloudMrMouseMoveListener(event) {
+  const result = _mouseMoveListener.call(this, event);
+  if (isPolylinePenActive(this) && this._cloudMrPolylineVertices?.length > 0) {
+    previewPolylineSegment(this);
+  }
+  return result;
+};
+
 const _mouseUpListener = Niivue.prototype.mouseUpListener;
 Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   let pendingDraft = null;
+  let polylineClick = false;
+
   if (shouldDeferShapeCommit(this)) {
     this._cloudMrSkipNextUndoBitmap = true;
     pendingDraft = captureDeferredShapeDraft(this);
   }
+
+  if (isPolylinePenActive(this) && isClickWithoutDrag(this.uiData)) {
+    this.drawPenLocation = [NaN, NaN, NaN];
+    this.drawPenFillPts = [];
+    this._cloudMrSkipNextUndoBitmap = true;
+    this._cloudMrSuppressDrawingChangedMouseUp = true;
+    polylineClick = true;
+  }
+
   _mouseUpListener.call(this);
+
+  if (polylineClick) {
+    addPolylineVertex(this);
+    return;
+  }
+
   if (!pendingDraft?.baseBitmap) {
     return;
   }
