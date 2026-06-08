@@ -63,9 +63,8 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="flex-end"
-          spacing={1.5}
-          sx={{ px: 1, py: 0.5, borderTop: "1px solid #555" }}
+          justifyContent="space-between"
+          sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
           <Tooltip title="Cancel shape (Esc)">
             <Button
