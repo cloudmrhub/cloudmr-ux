@@ -228,6 +228,8 @@ export function MroDrawToolkit(props) {
                   onCancelPolyline={props.onCancelPolyline}
                   onFinishPolyline={props.onFinishPolyline}
                   onCloseFillPolyline={props.onCloseFillPolyline}
+                  brushSize={props.brushSize}
+                  updateBrushSize={props.updateBrushSize}
                 />
               </Box>
 
@@ -277,6 +279,8 @@ export function MroDrawToolkit(props) {
                   expandEraseOptions={expandedOption === "e"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  brushSize={props.brushSize}
+                  updateBrushSize={props.updateBrushSize}
                 />
               </Box>
 

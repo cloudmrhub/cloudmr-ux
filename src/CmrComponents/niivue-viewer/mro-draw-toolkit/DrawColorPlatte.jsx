@@ -6,6 +6,7 @@ import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import { BrushSizeSlider } from "./BrushSizeSlider";
 
 const FILLED_COLORS = [
   { sx: { color: "red" } },
@@ -39,6 +40,8 @@ export default function DrawColorPlatte({
   onCancelPolyline,
   onFinishPolyline,
   onCloseFillPolyline,
+  brushSize = 1,
+  updateBrushSize,
   shapeDraftActive = false,
   onApplyShapeDraft,
   onCancelShapeDraft,
@@ -85,6 +88,14 @@ export default function DrawColorPlatte({
             Straight lines
           </Button>
         </Stack>
+      )}
+
+      {showPenModes && expanded && updateBrushSize && (
+        <BrushSizeSlider
+          label="Line thickness"
+          brushSize={brushSize}
+          updateBrushSize={updateBrushSize}
+        />
       )}
 
       <Stack direction="row">

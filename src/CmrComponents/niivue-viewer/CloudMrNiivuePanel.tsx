@@ -10,8 +10,11 @@ import type { DrawToolkitProps } from "../draw-toolkit/DrawToolkit";
 import { MroDrawToolkit } from "./mro-draw-toolkit/MroDrawToolkit";
 import { ShapeDraftOverlay } from "./ShapeDraftOverlay";
 
-/** Props for {@link DrawToolkit} minus brush controls when using {@link MroDrawToolkit}. */
-export type CloudMrDrawToolkitProps = Omit<DrawToolkitProps, "brushSize" | "updateBrushSize"> & {
+/** Props for {@link MroDrawToolkit} — extends draw toolkit with MRO pen/shape controls. */
+export type CloudMrDrawToolkitProps = Omit<
+  DrawToolkitProps,
+  "rois" | "selectedROI" | "setSelectedROI" | "saveROI" | "labelsVisible" | "toggleLabelsVisible"
+> & {
   penDrawMode?: "freehand" | "polyline";
   onPenDrawModeChange?: (mode: "freehand" | "polyline") => void;
   polylineVertexCount?: number;

@@ -54,6 +54,7 @@ export const nv = new Niivue({
 });
 
 nv.opts.penBounds = 0;
+nv.opts.penSize = 1;
 
 window.nv = nv;
 
@@ -128,6 +129,7 @@ export default function CloudMrNiivueViewer(props) {
   const [shapeDraft, setShapeDraft] = useState(null);
   const [penDrawMode, setPenDrawMode] = useState("freehand");
   const [polylineVertexCount, setPolylineVertexCount] = useState(0);
+  const [brushSize, setBrushSize] = useState(1);
   const shapeDraftRef = React.useRef(null);
   const drawShapeToolRef = React.useRef(null);
   drawShapeToolRef.current = drawShapeTool;
@@ -135,6 +137,7 @@ export default function CloudMrNiivueViewer(props) {
 
   React.useEffect(() => {
     nv.opts.penBounds = 0;
+    nv.opts.penSize = 1;
   }, []);
   const [gamma, setGamma] = React.useState(1.0);
   const [gammaKey, setGammaKey] = React.useState(0);
@@ -540,11 +543,16 @@ export default function CloudMrNiivueViewer(props) {
     nv.drawScene();
   }
 
+  function nvUpdateBrushSize(size) {
+    setBrushSize(size);
+    nv.opts.penBounds = (size - 1) / 2;
+    nv.opts.penSize = size;
+  }
+
   function nvUpdateDrawPen(a) {
     const raw = Number(a.target.value);
     setDrawPen(raw);
     let penValue = raw;
-    nv.opts.penBounds = 0;
     nv.setPenValue(penValue & 7, penValue > 0);
     if (penValue == 8) {
       nv.setPenValue(0, true);
@@ -1276,6 +1284,8 @@ export default function CloudMrNiivueViewer(props) {
     onCancelPolyline: cancelPolylineDraft,
     onFinishPolyline: finishPolylineOpen,
     onCloseFillPolyline: finishPolylineClosed,
+    brushSize,
+    updateBrushSize: nvUpdateBrushSize,
   };
   return (
     <Box sx={{
