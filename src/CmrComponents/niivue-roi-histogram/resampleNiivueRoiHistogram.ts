@@ -141,7 +141,7 @@ export function resampleNiivueRoiHistogram(options: {
       x: roi.sample,
       type: "histogram",
       name: roi.alias,
-      opacity: roi.visibility ? 0.5 : 0.1,
+      opacity: roi.visibility ? 0.5 : 0,
       marker: {
         color: roi.color,
       },

@@ -902,7 +902,7 @@ export default function NiiVueport(props: {
         x: roi.sample,
         type: "histogram" as const,
         name: roi.alias,
-        opacity: roi.visibility ? 0.5 : 0.1,
+        opacity: roi.visibility ? 0.5 : 0,
         marker: {
           color: roi.color,
         },
