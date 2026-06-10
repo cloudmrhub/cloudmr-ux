@@ -164,6 +164,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
     cursor: "pointer",
     zIndex: 3,
     touchAction: "none",
+    pointerEvents: "auto",
   };
 
   return (
@@ -172,7 +173,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
         position: "absolute",
         inset: 0,
         zIndex: 2,
-        pointerEvents: "auto",
+        pointerEvents: "none",
         overflow: "hidden",
       }}
       aria-label="Adjust ROI shape"

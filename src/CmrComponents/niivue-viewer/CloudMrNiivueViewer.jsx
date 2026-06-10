@@ -912,6 +912,39 @@ export default function CloudMrNiivueViewer(props) {
   }, [penDraft]);
 
   React.useEffect(() => {
+    nv._cloudMrShapeDraftActive = shapeDraft != null;
+  }, [shapeDraft]);
+
+  React.useEffect(() => {
+    if (!shapeDraft && !penDraft) {
+      return undefined;
+    }
+    const canvas = document.getElementById("niiCanvas");
+    if (!canvas) {
+      return undefined;
+    }
+
+    const applyOnRightClick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      nv.onApplyActiveDraft?.();
+    };
+
+    const onMouseDown = (event) => {
+      if (event.button === 2) {
+        applyOnRightClick(event);
+      }
+    };
+
+    canvas.addEventListener("mousedown", onMouseDown, true);
+    canvas.addEventListener("contextmenu", applyOnRightClick, true);
+    return () => {
+      canvas.removeEventListener("mousedown", onMouseDown, true);
+      canvas.removeEventListener("contextmenu", applyOnRightClick, true);
+    };
+  }, [shapeDraft, penDraft]);
+
+  React.useEffect(() => {
     if (!shapeDraft && !penDraft) {
       return undefined;
     }

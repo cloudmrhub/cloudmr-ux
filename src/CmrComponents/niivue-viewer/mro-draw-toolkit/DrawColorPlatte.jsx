@@ -164,7 +164,7 @@ export default function DrawColorPlatte({
                 </Button>
               </Tooltip>
             )}
-            <Tooltip title="Apply (Enter or right-click)">
+            <Tooltip title="Apply shape (enter or right-click)">
               <Button
                 size="small"
                 aria-label="apply pen draft"
@@ -213,7 +213,7 @@ export default function DrawColorPlatte({
               Cancel
             </Button>
           </Tooltip>
-          <Tooltip title="Apply shape (Enter or right-click)">
+          <Tooltip title="Apply shape (enter or right-click)">
             <Button
               size="small"
               aria-label="apply shape"
