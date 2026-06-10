@@ -12,6 +12,7 @@ import { NI_PEN_TYPE } from "./niivuePenType";
  * @property {[number, number, number][]} [vertices]
  * @property {[number, number, number][]} [strokeVoxels]
  * @property {{ x1: number, y1: number, x2: number, y2: number, z1: number, z2: number }} [bounds]
+ * @property {boolean} [filled]
  */
 
 export function isFreehandPenActive(nv) {
@@ -27,23 +28,18 @@ export function shouldDeferFreehandCommit(nv) {
   return !!nv.opts.deferFreehandCommit && isFreehandPenActive(nv);
 }
 
-/**
- * @typedef {Object} PenDraft
- * @property {PenDraftKind} kind
- * @property {Uint8Array} baseBitmap
- * @property {number} axCorSag
- * @property {number} penValue
- * @property {[number, number, number][]} [vertices]
- * @property {[number, number, number][]} [strokeVoxels]
- * @property {{ x1: number, y1: number, x2: number, y2: number, z1: number, z2: number }} [bounds]
- */
-
 export function redrawPolylineDraft(nv, draft) {
   if (!draft?.vertices?.length || !draft.baseBitmap) return;
   nv.drawBitmap.set(draft.baseBitmap);
   nv.drawPenAxCorSag = draft.axCorSag;
   for (let i = 1; i < draft.vertices.length; i++) {
     nv.drawPenLine(draft.vertices[i], draft.vertices[i - 1], draft.penValue);
+  }
+  if (draft.filled && draft.vertices.length >= 3) {
+    nv.drawPenAxCorSag = draft.axCorSag;
+    nv.drawPenFillPts = draft.vertices.map((v) => [...v]);
+    nv._cloudMrSkipNextUndoBitmap = true;
+    nv.drawPenFilled();
   }
   nv.refreshDrawing(false, false);
   nv.drawScene();
@@ -216,7 +212,7 @@ export function boundsToFreehandCorners(bounds, axCorSag) {
   ];
 }
 
-export function polylineDraftFromNv(nv) {
+export function polylineDraftFromNv(nv, { filled = false } = {}) {
   const vertices = nv._cloudMrPolylineVertices;
   const baseBitmap = nv._cloudMrPolylineSessionStartBitmap;
   if (!vertices?.length || vertices.length < 2 || !baseBitmap) return null;
@@ -226,18 +222,28 @@ export function polylineDraftFromNv(nv) {
     baseBitmap: new Uint8Array(baseBitmap),
     axCorSag: nv._cloudMrPolylineAxCorSag,
     penValue: nv.opts.penValue,
+    filled,
   };
 }
 
-export function applyPenDraft(nv, draft, { fillClosed = false } = {}) {
+/** Fill polyline interior without closing the outline or committing the draft. */
+export function fillPolylineDraft(nv, draft) {
+  if (!draft?.vertices || draft.vertices.length < 3) return draft;
+  redrawPolylineDraft(nv, { ...draft, filled: false });
+  nv.drawPenAxCorSag = draft.axCorSag;
+  nv.drawPenFillPts = draft.vertices.map((v) => [...v]);
+  nv._cloudMrSkipNextUndoBitmap = true;
+  nv.drawPenFilled();
+  nv.refreshDrawing(false, false);
+  nv.drawScene();
+  const next = { ...draft, filled: true };
+  syncPolylineDraftToNv(nv, next);
+  return next;
+}
+
+export function applyPenDraft(nv, draft) {
   if (draft.kind === "polyline") {
     redrawPolylineDraft(nv, draft);
-    if (fillClosed && draft.vertices.length >= 3) {
-      nv.drawPenAxCorSag = draft.axCorSag;
-      nv.drawPenLine(draft.vertices[0], draft.vertices[draft.vertices.length - 1], draft.penValue);
-      nv.drawPenFillPts = draft.vertices.map((v) => [...v]);
-      nv.drawPenFilled();
-    }
   } else {
     redrawFreehandDraft(nv, draft);
   }

@@ -1465,8 +1465,29 @@ Niivue.prototype.cloudMrResetPolyline = function cloudMrResetPolyline() {
   resetPolylineState(this);
 };
 
+const RIGHT_MOUSE_BUTTON = 2;
+
+function cloudMrHasApplyableDraft(nv) {
+  return !!(nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive);
+}
+
+function cloudMrTryApplyDraftOnRightClick(nv, event) {
+  if (!cloudMrHasApplyableDraft(nv)) {
+    return false;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  if (typeof nv.onApplyActiveDraft === "function") {
+    nv.onApplyActiveDraft();
+  }
+  return true;
+}
+
 const _mouseDownListener = Niivue.prototype.mouseDownListener;
 Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
+  if (e.button === RIGHT_MOUSE_BUTTON && cloudMrTryApplyDraftOnRightClick(this, e)) {
+    return;
+  }
   if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
     this._cloudMrFreehandAxCorSag = -1;
@@ -1478,6 +1499,15 @@ Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
       this._cloudMrFreehandAxCorSag = axCorSag;
     }
   }
+};
+
+const _mouseContextMenuListener = Niivue.prototype.mouseContextMenuListener;
+Niivue.prototype.mouseContextMenuListener = function cloudMrMouseContextMenuListener(e) {
+  if (cloudMrHasApplyableDraft(this)) {
+    e.preventDefault();
+    return;
+  }
+  return _mouseContextMenuListener.call(this, e);
 };
 
 const _mouseClick = Niivue.prototype.mouseClick;

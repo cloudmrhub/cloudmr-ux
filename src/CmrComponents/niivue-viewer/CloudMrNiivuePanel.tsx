@@ -22,7 +22,7 @@ export type CloudMrDrawToolkitProps = Omit<
   onCancelPolyline?: () => void;
   onApplyPenDraft?: () => void;
   onCancelPenDraft?: () => void;
-  onCloseFillPenDraft?: () => void;
+  onFillPenDraft?: () => void;
   penDraftActive?: boolean;
   shapeDraftActive?: boolean;
   onApplyShapeDraft?: () => void;
@@ -72,6 +72,7 @@ export interface CloudMrNiivuePanelProps {
     penValue: number;
     vertices?: [number, number, number][];
     strokeVoxels?: [number, number, number][];
+    filled?: boolean;
     bounds?: {
       x1: number;
       y1: number;

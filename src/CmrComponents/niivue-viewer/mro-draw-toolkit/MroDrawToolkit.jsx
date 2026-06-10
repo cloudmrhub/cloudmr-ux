@@ -230,7 +230,7 @@ export function MroDrawToolkit(props) {
                   penDraftActive={props.penDraftActive}
                   onApplyPenDraft={props.onApplyPenDraft}
                   onCancelPenDraft={props.onCancelPenDraft}
-                  onCloseFillPenDraft={props.onCloseFillPenDraft}
+                  onFillPenDraft={props.onFillPenDraft}
                   brushSize={props.brushSize}
                   updateBrushSize={props.updateBrushSize}
                 />

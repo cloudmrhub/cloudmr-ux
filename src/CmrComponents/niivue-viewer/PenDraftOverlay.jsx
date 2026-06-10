@@ -3,7 +3,6 @@ import {
   boundsToFreehandCorners,
   redrawFreehandDraft,
   redrawPolylineDraft,
-  resizeFreehandDraft,
   syncPolylineDraftToNv,
   translateFreehandDraft,
   translatePolylineVertices,
@@ -12,7 +11,6 @@ import {
 import {
   canvasDeltaToVoxDelta,
   clientToCanvasPos,
-  translatePt,
   voxToOverlayPos,
   voxUnderClient,
 } from "./shapeDraftUtils";
@@ -20,8 +18,16 @@ import {
 const HANDLE_SIZE = 10;
 const ACCENT = "#580f8b";
 
+function cloneFreehandDraft(draft) {
+  return {
+    ...draft,
+    strokeVoxels: draft.strokeVoxels.map((v) => [...v]),
+    bounds: draft.bounds ? { ...draft.bounds } : draft.bounds,
+  };
+}
+
 /**
- * Adjust handles for polyline (vertex drag) or freehand (bbox move/resize) drafts.
+ * Adjust handles for polyline (vertex drag) or freehand (move only) drafts.
  */
 export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   const dragRef = useRef(null);
@@ -54,11 +60,9 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   }, [draft, isPolyline, overlayKey]);
 
   const cornerCss = useMemo(() => {
-    if (isPolyline) return vertexCss;
-    return freehandCorners
-      .map((vox) => voxToOverlayPos(nv, vox, draft.axCorSag))
-      .filter(Boolean);
-  }, [draft?.axCorSag, freehandCorners, isPolyline, nv, overlayKey, vertexCss]);
+    if (!isPolyline) return [];
+    return vertexCss;
+  }, [isPolyline, vertexCss]);
 
   const centerCss = useMemo(() => {
     if (!draft) return null;
@@ -88,16 +92,19 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   }, [draft, isPolyline, nv, overlayKey]);
 
   const boxStyle = useMemo(() => {
-    if (cornerCss.length < 2) return null;
-    const xs = cornerCss.map((p) => p.x);
-    const ys = cornerCss.map((p) => p.y);
+    const points = isPolyline ? cornerCss : freehandCorners
+      .map((vox) => voxToOverlayPos(nv, vox, draft?.axCorSag))
+      .filter(Boolean);
+    if (points.length < 2) return null;
+    const xs = points.map((p) => p.x);
+    const ys = points.map((p) => p.y);
     const left = Math.min(...xs);
     const top = Math.min(...ys);
     const width = Math.max(...xs) - left;
     const height = Math.max(...ys) - top;
     if (width < 2 && height < 2) return null;
     return { left, top, width: Math.max(width, 2), height: Math.max(height, 2) };
-  }, [cornerCss]);
+  }, [cornerCss, draft?.axCorSag, freehandCorners, isPolyline, nv, overlayKey]);
 
   const applyDraft = useCallback(
     (nextDraft) => {
@@ -124,23 +131,23 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
 
   onPointerMoveRef.current = (event) => {
     const drag = dragRef.current;
-    const current = draftRef.current;
-    if (!drag || !current) return;
+    if (!drag) return;
     event.preventDefault();
 
+    const canvas = nv.canvas || document.getElementById("niiCanvas");
+    if (!canvas) return;
+    const startCanvas = clientToCanvasPos(canvas, drag.startClientX, drag.startClientY);
+    const endCanvas = clientToCanvasPos(canvas, event.clientX, event.clientY);
+    const delta = canvasDeltaToVoxDelta(nv, startCanvas, endCanvas);
+
     if (drag.mode === "move") {
-      const canvas = nv.canvas || document.getElementById("niiCanvas");
-      if (!canvas) return;
-      const startCanvas = clientToCanvasPos(canvas, drag.startClientX, drag.startClientY);
-      const endCanvas = clientToCanvasPos(canvas, event.clientX, event.clientY);
-      const delta = canvasDeltaToVoxDelta(nv, startCanvas, endCanvas);
-      if (current.kind === "polyline") {
+      if (drag.kind === "polyline") {
         applyDraft({
-          ...current,
+          ...drag.startDraft,
           vertices: translatePolylineVertices(drag.startVertices, delta),
         });
       } else {
-        applyDraft(translateFreehandDraft(current, delta));
+        applyDraft(translateFreehandDraft(drag.startFreehandDraft, delta));
       }
       return;
     }
@@ -148,31 +155,34 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
     const vox = voxUnderClient(nv, event.clientX, event.clientY);
     if (!vox) return;
 
-    if (current.kind === "polyline") {
-      applyDraft({
-        ...current,
-        vertices: updatePolylineVertex(drag.startVertices, drag.cornerIndex, vox),
-      });
-    } else {
-      applyDraft(resizeFreehandDraft(current, drag.cornerIndex, vox));
-    }
+    applyDraft({
+      ...drag.startDraft,
+      vertices: updatePolylineVertex(drag.startVertices, drag.cornerIndex, vox),
+    });
   };
 
   const startDrag = useCallback(
     (event, mode, cornerIndex = -1) => {
       event.preventDefault();
       event.stopPropagation();
+      const current = draftRef.current;
+      if (!current) return;
+
       dragRef.current = {
         mode,
         cornerIndex,
+        kind: current.kind,
         startClientX: event.clientX,
         startClientY: event.clientY,
-        startVertices: draft.vertices?.map((v) => [...v]) ?? [],
+        startDraft: current,
+        startVertices: current.vertices?.map((v) => [...v]) ?? [],
+        startFreehandDraft:
+          current.kind === "freehand" ? cloneFreehandDraft(current) : null,
       };
       window.addEventListener("pointermove", onPointerMoveRef.current);
       window.addEventListener("pointerup", finishDragRef.current);
     },
-    [draft.vertices],
+    [],
   );
 
   useEffect(
@@ -242,20 +252,21 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
           title="Move shape"
         />
       )}
-      {cornerCss.map((pos, i) => (
-        <div
-          key={`handle-${i}`}
-          role="presentation"
-          onPointerDown={(e) => startDrag(e, "corner", i)}
-          style={{
-            ...handleStyle,
-            left: pos.x,
-            top: pos.y,
-            cursor: isPolyline ? "grab" : "nwse-resize",
-          }}
-          title={isPolyline ? "Move vertex" : "Resize shape"}
-        />
-      ))}
+      {isPolyline &&
+        cornerCss.map((pos, i) => (
+          <div
+            key={`handle-${i}`}
+            role="presentation"
+            onPointerDown={(e) => startDrag(e, "corner", i)}
+            style={{
+              ...handleStyle,
+              left: pos.x,
+              top: pos.y,
+              cursor: "grab",
+            }}
+            title="Move vertex"
+          />
+        ))}
     </div>
   );
 }

@@ -39,7 +39,7 @@ export default function DrawColorPlatte({
   penDraftActive = false,
   onApplyPenDraft,
   onCancelPenDraft,
-  onCloseFillPenDraft,
+  onFillPenDraft,
   brushSize = 1,
   updateBrushSize,
   shapeDraftActive = false,
@@ -146,11 +146,11 @@ export default function DrawColorPlatte({
           </Tooltip>
           <Stack direction="row" alignItems="center" spacing={1}>
             {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
-              <Tooltip title="Connect last point to first and fill">
+              <Tooltip title="Fill interior (keeps outline editable until Apply)">
                 <Button
                   size="small"
-                  aria-label="close and fill polyline"
-                  onClick={() => onCloseFillPenDraft?.()}
+                  aria-label="fill polyline"
+                  onClick={() => onFillPenDraft?.()}
                   sx={{
                     color: "#c9a0e8",
                     fontSize: ACTION_FONT_SIZE,
@@ -160,11 +160,11 @@ export default function DrawColorPlatte({
                     px: 0.75,
                   }}
                 >
-                  Close &amp; fill
+                  Fill
                 </Button>
               </Tooltip>
             )}
-            <Tooltip title="Apply (Enter)">
+            <Tooltip title="Apply (Enter or right-click)">
               <Button
                 size="small"
                 aria-label="apply pen draft"
@@ -213,7 +213,7 @@ export default function DrawColorPlatte({
               Cancel
             </Button>
           </Tooltip>
-          <Tooltip title="Apply shape (Enter)">
+          <Tooltip title="Apply shape (Enter or right-click)">
             <Button
               size="small"
               aria-label="apply shape"

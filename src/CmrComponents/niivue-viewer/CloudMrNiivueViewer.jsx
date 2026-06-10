@@ -9,6 +9,7 @@ import { LayersPanel } from './LayersPanel';
 import {
   applyPenDraft,
   cancelPenDraft,
+  fillPolylineDraft,
   polylineDraftFromNv,
   syncPolylineDraftToNv,
 } from './penDraftUtils';
@@ -796,10 +797,10 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
-  function applyPenDraftHandler(fillClosed = false) {
+  function applyPenDraftHandler() {
     const draft = penDraftRef.current;
     if (!draft) return;
-    applyPenDraft(nv, draft, { fillClosed });
+    applyPenDraft(nv, draft);
     if (draft.kind === "polyline") {
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
@@ -812,6 +813,13 @@ export default function CloudMrNiivueViewer(props) {
       nvSetDrawingEnabled(true);
     }
     resampleImage();
+  }
+
+  function fillPolylineDraftHandler() {
+    const draft = penDraftRef.current;
+    if (!draft || draft.kind !== "polyline" || draft.vertices.length < 3) return;
+    const next = fillPolylineDraft(nv, draft);
+    onPenDraftChange(next);
   }
 
   function onPenDraftChange(draft) {
@@ -836,7 +844,12 @@ export default function CloudMrNiivueViewer(props) {
   nv.onPolylineChange = (count) => {
     setPolylineVertexCount(count);
     if (penDrawModeRef.current === "polyline" && count >= 2) {
-      const draft = polylineDraftFromNv(nv);
+      const prev = penDraftRef.current;
+      const preserveFill =
+        prev?.kind === "polyline" &&
+        prev.filled &&
+        prev.vertices?.length === count;
+      const draft = polylineDraftFromNv(nv, { filled: preserveFill });
       if (draft) {
         setPenDraft(draft);
         penDraftRef.current = draft;
@@ -886,6 +899,18 @@ export default function CloudMrNiivueViewer(props) {
     nvSetDrawingEnabled(false);
   };
 
+  nv.onApplyActiveDraft = () => {
+    if (shapeDraftRef.current) {
+      applyShapeDraft();
+    } else if (penDraftRef.current) {
+      applyPenDraftHandler();
+    }
+  };
+
+  React.useEffect(() => {
+    nv._cloudMrPenDraftActive = penDraft != null;
+  }, [penDraft]);
+
   React.useEffect(() => {
     if (!shapeDraft && !penDraft) {
       return undefined;
@@ -905,7 +930,7 @@ export default function CloudMrNiivueViewer(props) {
         if (shapeDraft) {
           applyShapeDraft();
         } else if (penDraft) {
-          applyPenDraftHandler(false);
+          applyPenDraftHandler();
         }
       }
     };
@@ -1341,9 +1366,9 @@ export default function CloudMrNiivueViewer(props) {
     onPenDrawModeChange: syncPenDrawMode,
     polylineVertexCount,
     onCancelPolyline: cancelPolylineDraft,
-    onApplyPenDraft: () => applyPenDraftHandler(false),
+    onApplyPenDraft: applyPenDraftHandler,
     onCancelPenDraft: cancelPenDraftHandler,
-    onCloseFillPenDraft: () => applyPenDraftHandler(true),
+    onFillPenDraft: fillPolylineDraftHandler,
     penDraftActive: penDraft != null,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
@@ -1719,7 +1744,7 @@ export default function CloudMrNiivueViewer(props) {
         onCancelShapeDraft={cancelShapeDraft}
         penDraft={penDraft}
         onPenDraftChange={onPenDraftChange}
-        onApplyPenDraft={() => applyPenDraftHandler(false)}
+        onApplyPenDraft={applyPenDraftHandler}
         onCancelPenDraft={cancelPenDraftHandler}
       />}
     </Box>
