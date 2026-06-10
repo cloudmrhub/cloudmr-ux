@@ -288,6 +288,67 @@ export function eraseClusterFromBitmap(bitmap, visited) {
   return next;
 }
 
+function sliceKey(axCorSag, x, y, z) {
+  if (axCorSag === 0) return `${x},${y}`;
+  if (axCorSag === 1) return `${x},${z}`;
+  return `${y},${z}`;
+}
+
+/** Guess rectangle vs ellipse from the filled voxel pattern, not the active tool. */
+export function inferShapePenTypeFromCluster(cluster, axCorSag) {
+  const { bounds, voxels } = cluster;
+  const { x1, y1, z1, x2, y2, z2 } = bounds;
+
+  const filled = new Set();
+  for (const [x, y, z] of voxels) {
+    filled.add(sliceKey(axCorSag, x, y, z));
+  }
+
+  let uMin;
+  let uMax;
+  let vMin;
+  let vMax;
+  if (axCorSag === 0) {
+    uMin = x1;
+    uMax = x2;
+    vMin = y1;
+    vMax = y2;
+  } else if (axCorSag === 1) {
+    uMin = x1;
+    uMax = x2;
+    vMin = z1;
+    vMax = z2;
+  } else {
+    uMin = y1;
+    uMax = y2;
+    vMin = z1;
+    vMax = z2;
+  }
+
+  if (uMax <= uMin || vMax <= vMin) {
+    return NI_PEN_TYPE.RECTANGLE;
+  }
+
+  const cu = (uMin + uMax) / 2;
+  const cv = (vMin + vMax) / 2;
+  const ru = Math.max(0.5, (uMax - uMin) / 2);
+  const rv = Math.max(0.5, (vMax - vMin) / 2);
+
+  let rectScore = 0;
+  let ellipseScore = 0;
+
+  for (let u = uMin; u <= uMax; u++) {
+    for (let v = vMin; v <= vMax; v++) {
+      const has = filled.has(`${u},${v}`);
+      const inEllipse = ((u - cu) / ru) ** 2 + ((v - cv) / rv) ** 2 <= 1.05;
+      if (has) rectScore++;
+      if (has === inEllipse) ellipseScore++;
+    }
+  }
+
+  return ellipseScore > rectScore ? NI_PEN_TYPE.ELLIPSE : NI_PEN_TYPE.RECTANGLE;
+}
+
 /**
  * When the user clicks on an existing filled ROI while the rectangle/ellipse tool
  * is active (but no draft is currently open), flood-fill the clicked cluster to
@@ -312,13 +373,14 @@ export function captureShapeDraftFromClick(nv) {
     z2,
     nv.drawPenAxCorSag >= 0 ? nv.drawPenAxCorSag : 0,
   );
+  const penType = inferShapePenTypeFromCluster(cluster, axCorSag);
 
   return {
     ptA: [x1, y1, z1],
     ptB: [x2, y2, z2],
     penValue: label,
     axCorSag,
-    penType: nv.opts.penType,
+    penType,
     baseBitmap,
   };
 }

@@ -852,14 +852,12 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
-  function syncActiveDraftRefs() {
+  function syncActiveShapeDraftRef() {
     nv._cloudMrActiveShapeDraft = shapeDraftRef.current;
-    nv._cloudMrActivePenDraft = penDraftRef.current;
   }
 
-  function clearActiveDraftRefs() {
+  function clearActiveShapeDraftRef() {
     nv._cloudMrActiveShapeDraft = null;
-    nv._cloudMrActivePenDraft = null;
   }
 
   function cancelPenDraftHandler() {
@@ -873,7 +871,6 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(null);
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
-    clearActiveDraftRefs();
     if (drawShapeToolRef.current === "pen") {
       nvSetDrawingEnabled(true);
     }
@@ -890,7 +887,6 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(null);
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
-    clearActiveDraftRefs();
     setDrawingChanged(true);
     if (drawShapeToolRef.current === "pen") {
       nvSetDrawingEnabled(true);
@@ -908,7 +904,6 @@ export default function CloudMrNiivueViewer(props) {
   function onPenDraftChange(draft) {
     setPenDraft(draft);
     penDraftRef.current = draft;
-    syncActiveDraftRefs();
     if (draft.kind === "polyline") {
       syncPolylineDraftToNv(nv, draft);
     }
@@ -922,7 +917,6 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(draft);
     penDraftRef.current = draft;
     nv._cloudMrPenDraftActive = true;
-    syncActiveDraftRefs();
     nvSetDrawingEnabled(false);
   };
 
@@ -938,12 +932,10 @@ export default function CloudMrNiivueViewer(props) {
       if (draft) {
         setPenDraft(draft);
         penDraftRef.current = draft;
-        syncActiveDraftRefs();
       }
     } else if (penDraftRef.current?.kind === "polyline") {
       setPenDraft(null);
       penDraftRef.current = null;
-      syncActiveDraftRefs();
     }
   };
 
@@ -956,7 +948,7 @@ export default function CloudMrNiivueViewer(props) {
     setShapeDraft(null);
     shapeDraftRef.current = null;
     nv._cloudMrShapeDraftActive = false;
-    clearActiveDraftRefs();
+    clearActiveShapeDraftRef();
     if (drawShapeToolRef.current) {
       nvSetDrawingEnabled(true);
     }
@@ -969,7 +961,7 @@ export default function CloudMrNiivueViewer(props) {
     setShapeDraft(null);
     shapeDraftRef.current = null;
     nv._cloudMrShapeDraftActive = false;
-    clearActiveDraftRefs();
+    clearActiveShapeDraftRef();
     if (drawShapeToolRef.current) {
       nvSetDrawingEnabled(true);
     }
@@ -979,14 +971,14 @@ export default function CloudMrNiivueViewer(props) {
   function onShapeDraftChange(draft) {
     setShapeDraft(draft);
     shapeDraftRef.current = draft;
-    syncActiveDraftRefs();
+    syncActiveShapeDraftRef();
   }
 
   nv.onShapeDraftReady = (draft) => {
     setShapeDraft(draft);
     shapeDraftRef.current = draft;
     nv._cloudMrShapeDraftActive = true;
-    syncActiveDraftRefs();
+    syncActiveShapeDraftRef();
     nvSetDrawingEnabled(false);
   };
 
