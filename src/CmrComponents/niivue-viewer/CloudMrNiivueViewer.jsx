@@ -6,6 +6,12 @@ import { SettingsPanel } from './SettingsPanel';
 import { NumberPicker } from './NumberPicker';
 import { ColorPicker } from './ColorPicker';
 import { LayersPanel } from './LayersPanel';
+import {
+  applyPenDraft,
+  cancelPenDraft,
+  polylineDraftFromNv,
+  syncPolylineDraftToNv,
+} from './penDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
 import { Niivue } from './NiivuePatcher';
 import NVSwitch from './Switch';
@@ -129,11 +135,16 @@ export default function CloudMrNiivueViewer(props) {
   const [shapeDraft, setShapeDraft] = useState(null);
   const [penDrawMode, setPenDrawMode] = useState("freehand");
   const [polylineVertexCount, setPolylineVertexCount] = useState(0);
+  const [penDraft, setPenDraft] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
   const shapeDraftRef = React.useRef(null);
+  const penDraftRef = React.useRef(null);
   const drawShapeToolRef = React.useRef(null);
+  const penDrawModeRef = React.useRef("freehand");
   drawShapeToolRef.current = drawShapeTool;
   shapeDraftRef.current = shapeDraft;
+  penDraftRef.current = penDraft;
+  penDrawModeRef.current = penDrawMode;
 
   React.useEffect(() => {
     nv.opts.penBounds = 0;
@@ -759,33 +770,81 @@ export default function CloudMrNiivueViewer(props) {
 
   function syncPenDrawMode(mode) {
     setPenDrawMode(mode);
+    penDrawModeRef.current = mode;
     nv.opts.polylinePenMode = mode === "polyline";
     nv.opts.isFilledPen = mode === "freehand";
+    nv.opts.deferFreehandCommit =
+      drawShapeToolRef.current === "pen" && mode === "freehand";
     if (mode === "freehand") {
       nv.cloudMrCancelPolyline?.();
     }
   }
 
+  function cancelPenDraftHandler() {
+    const draft = penDraftRef.current;
+    if (!draft) return;
+    cancelPenDraft(nv, draft);
+    if (draft.kind === "polyline") {
+      nv.cloudMrResetPolyline?.();
+      setPolylineVertexCount(0);
+    }
+    setPenDraft(null);
+    penDraftRef.current = null;
+    nv._cloudMrPenDraftActive = false;
+    if (drawShapeToolRef.current === "pen") {
+      nvSetDrawingEnabled(true);
+    }
+  }
+
+  function applyPenDraftHandler(fillClosed = false) {
+    const draft = penDraftRef.current;
+    if (!draft) return;
+    applyPenDraft(nv, draft, { fillClosed });
+    if (draft.kind === "polyline") {
+      nv.cloudMrResetPolyline?.();
+      setPolylineVertexCount(0);
+    }
+    setPenDraft(null);
+    penDraftRef.current = null;
+    nv._cloudMrPenDraftActive = false;
+    setDrawingChanged(true);
+    if (drawShapeToolRef.current === "pen") {
+      nvSetDrawingEnabled(true);
+    }
+    resampleImage();
+  }
+
+  function onPenDraftChange(draft) {
+    setPenDraft(draft);
+    penDraftRef.current = draft;
+    if (draft.kind === "polyline") {
+      syncPolylineDraftToNv(nv, draft);
+    }
+  }
+
   function cancelPolylineDraft() {
-    nv.cloudMrCancelPolyline?.();
+    cancelPenDraftHandler();
   }
 
-  function finishPolylineOpen() {
-    if (nv.cloudMrFinishPolyline(false)) {
-      setDrawingChanged(true);
-      resampleImage();
-    }
-  }
-
-  function finishPolylineClosed() {
-    if (nv.cloudMrFinishPolyline(true)) {
-      setDrawingChanged(true);
-      resampleImage();
-    }
-  }
+  nv.onPenDraftReady = (draft) => {
+    setPenDraft(draft);
+    penDraftRef.current = draft;
+    nv._cloudMrPenDraftActive = true;
+    nvSetDrawingEnabled(false);
+  };
 
   nv.onPolylineChange = (count) => {
     setPolylineVertexCount(count);
+    if (penDrawModeRef.current === "polyline" && count >= 2) {
+      const draft = polylineDraftFromNv(nv);
+      if (draft) {
+        setPenDraft(draft);
+        penDraftRef.current = draft;
+      }
+    } else if (penDraftRef.current?.kind === "polyline") {
+      setPenDraft(null);
+      penDraftRef.current = null;
+    }
   };
 
   function cancelShapeDraft() {
@@ -828,7 +887,7 @@ export default function CloudMrNiivueViewer(props) {
   };
 
   React.useEffect(() => {
-    if (!shapeDraft && !(penDrawMode === "polyline" && polylineVertexCount >= 2)) {
+    if (!shapeDraft && !penDraft) {
       return undefined;
     }
     const onKeyDown = (event) => {
@@ -836,8 +895,8 @@ export default function CloudMrNiivueViewer(props) {
         event.preventDefault();
         if (shapeDraft) {
           cancelShapeDraft();
-        } else if (polylineVertexCount >= 2) {
-          cancelPolylineDraft();
+        } else if (penDraft) {
+          cancelPenDraftHandler();
         }
         return;
       }
@@ -845,14 +904,14 @@ export default function CloudMrNiivueViewer(props) {
         event.preventDefault();
         if (shapeDraft) {
           applyShapeDraft();
-        } else if (penDrawMode === "polyline" && polylineVertexCount >= 2) {
-          finishPolylineOpen();
+        } else if (penDraft) {
+          applyPenDraftHandler(false);
         }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [shapeDraft, penDrawMode, polylineVertexCount]);
+  }, [shapeDraft, penDraft]);
 
   function nvUpdateSelectionBoxColor(rgb01) {
     setSelectionBoxColor([...rgb01, 0.5])
@@ -1262,8 +1321,8 @@ export default function CloudMrNiivueViewer(props) {
         cancelShapeDraft();
         return;
       }
-      if (polylineVertexCount > 0) {
-        cancelPolylineDraft();
+      if (penDraftRef.current) {
+        cancelPenDraftHandler();
         return;
       }
       nv.drawUndo();
@@ -1282,8 +1341,10 @@ export default function CloudMrNiivueViewer(props) {
     onPenDrawModeChange: syncPenDrawMode,
     polylineVertexCount,
     onCancelPolyline: cancelPolylineDraft,
-    onFinishPolyline: finishPolylineOpen,
-    onCloseFillPolyline: finishPolylineClosed,
+    onApplyPenDraft: () => applyPenDraftHandler(false),
+    onCancelPenDraft: cancelPenDraftHandler,
+    onCloseFillPenDraft: () => applyPenDraftHandler(true),
+    penDraftActive: penDraft != null,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
   };
@@ -1656,6 +1717,10 @@ export default function CloudMrNiivueViewer(props) {
         onShapeDraftChange={onShapeDraftChange}
         onApplyShapeDraft={applyShapeDraft}
         onCancelShapeDraft={cancelShapeDraft}
+        penDraft={penDraft}
+        onPenDraftChange={onPenDraftChange}
+        onApplyPenDraft={() => applyPenDraftHandler(false)}
+        onCancelPenDraft={cancelPenDraftHandler}
       />}
     </Box>
   )

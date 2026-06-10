@@ -1,6 +1,5 @@
 /**
- * Shared ROI label color row (NiiVue pen indices 1–6). Used by pen, rectangle, and ellipse tools.
- * Pen palette adds freehand vs straight-line mode; rectangle/ellipse show Apply/Cancel while adjusting.
+ * Pen palette adds freehand vs polyline mode; pen/shape drafts show Apply/Cancel while adjusting.
  */
 import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
@@ -37,9 +36,10 @@ export default function DrawColorPlatte({
   penDrawMode = "freehand",
   onPenDrawModeChange,
   polylineVertexCount = 0,
-  onCancelPolyline,
-  onFinishPolyline,
-  onCloseFillPolyline,
+  penDraftActive = false,
+  onApplyPenDraft,
+  onCancelPenDraft,
+  onCloseFillPenDraft,
   brushSize = 1,
   updateBrushSize,
   shapeDraftActive = false,
@@ -85,7 +85,7 @@ export default function DrawColorPlatte({
             onClick={() => onPenDrawModeChange?.("polyline")}
             sx={modeBtnSx(penDrawMode === "polyline")}
           >
-            Straight lines
+            Polyline
           </Button>
         </Stack>
       )}
@@ -114,22 +114,22 @@ export default function DrawColorPlatte({
 
       {showPenModes && penDrawMode === "polyline" && expanded && polylineVertexCount === 0 && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>
-          Click each corner to draw connected straight lines
+          Click each vertex to draw connected line segments
         </Typography>
       )}
 
-      {showPenModes && penDrawMode === "polyline" && expanded && polylineVertexCount >= 2 && (
+      {showPenModes && penDraftActive && expanded && (
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
-          <Tooltip title="Discard current outline">
+          <Tooltip title="Cancel (Esc)">
             <Button
               size="small"
-              aria-label="cancel polyline"
-              onClick={() => onCancelPolyline?.()}
+              aria-label="cancel pen draft"
+              onClick={() => onCancelPenDraft?.()}
               startIcon={<CloseIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
               sx={{
                 color: "#ccc",
@@ -145,12 +145,12 @@ export default function DrawColorPlatte({
             </Button>
           </Tooltip>
           <Stack direction="row" alignItems="center" spacing={1}>
-            {polylineVertexCount >= 3 && (
+            {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
               <Tooltip title="Connect last point to first and fill">
                 <Button
                   size="small"
                   aria-label="close and fill polyline"
-                  onClick={() => onCloseFillPolyline?.()}
+                  onClick={() => onCloseFillPenDraft?.()}
                   sx={{
                     color: "#c9a0e8",
                     fontSize: ACTION_FONT_SIZE,
@@ -164,11 +164,11 @@ export default function DrawColorPlatte({
                 </Button>
               </Tooltip>
             )}
-            <Tooltip title="Keep outline only (Enter)">
+            <Tooltip title="Apply (Enter)">
               <Button
                 size="small"
-                aria-label="finish polyline"
-                onClick={() => onFinishPolyline?.()}
+                aria-label="apply pen draft"
+                onClick={() => onApplyPenDraft?.()}
                 startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
                 sx={{
                   color: "#c9a0e8",
@@ -180,7 +180,7 @@ export default function DrawColorPlatte({
                   "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
                 }}
               >
-                Done
+                Apply
               </Button>
             </Tooltip>
           </Stack>

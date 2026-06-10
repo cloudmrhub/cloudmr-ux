@@ -9,6 +9,7 @@ import { NiivueRoiTable } from "../niivue-roi-table/NiivueRoiTable";
 import type { DrawToolkitProps } from "../draw-toolkit/DrawToolkit";
 import { MroDrawToolkit } from "./mro-draw-toolkit/MroDrawToolkit";
 import { ShapeDraftOverlay } from "./ShapeDraftOverlay";
+import { PenDraftOverlay } from "./PenDraftOverlay";
 
 /** Props for {@link MroDrawToolkit} — extends draw toolkit with MRO pen/shape controls. */
 export type CloudMrDrawToolkitProps = Omit<
@@ -19,8 +20,10 @@ export type CloudMrDrawToolkitProps = Omit<
   onPenDrawModeChange?: (mode: "freehand" | "polyline") => void;
   polylineVertexCount?: number;
   onCancelPolyline?: () => void;
-  onFinishPolyline?: () => void;
-  onCloseFillPolyline?: () => void;
+  onApplyPenDraft?: () => void;
+  onCancelPenDraft?: () => void;
+  onCloseFillPenDraft?: () => void;
+  penDraftActive?: boolean;
   shapeDraftActive?: boolean;
   onApplyShapeDraft?: () => void;
   onCancelShapeDraft?: () => void;
@@ -62,6 +65,25 @@ export interface CloudMrNiivuePanelProps {
   onShapeDraftChange: (draft: import("./shapeDraftUtils").ShapeDraft) => void;
   onApplyShapeDraft: () => void;
   onCancelShapeDraft: () => void;
+  penDraft: {
+    kind: "polyline" | "freehand";
+    baseBitmap: Uint8Array;
+    axCorSag: number;
+    penValue: number;
+    vertices?: [number, number, number][];
+    strokeVoxels?: [number, number, number][];
+    bounds?: {
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      z1: number;
+      z2: number;
+    };
+  } | null;
+  onPenDraftChange: (draft: NonNullable<CloudMrNiivuePanelProps["penDraft"]>) => void;
+  onApplyPenDraft: () => void;
+  onCancelPenDraft: () => void;
 }
 
 export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
@@ -110,12 +132,17 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     if (props.shapeDraft) {
       props.onCancelShapeDraft();
     }
+    if (props.penDraft) {
+      props.onCancelPenDraft();
+    }
     if (tool !== "pen") {
       props.drawToolkitProps.onPenDrawModeChange?.("freehand");
     }
     props.setDrawShapeTool(tool);
     const { nv } = props;
     nv.opts.deferShapeCommit = tool === "rectangle" || tool === "ellipse";
+    nv.opts.deferFreehandCommit =
+      tool === "pen" && props.drawToolkitProps.penDrawMode === "freehand";
     nv.opts.penType =
       tool === "rectangle"
         ? NI_PEN_TYPE.RECTANGLE
@@ -162,9 +189,13 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
             if (props.shapeDraft) {
               props.onCancelShapeDraft();
             }
+            if (props.penDraft) {
+              props.onCancelPenDraft();
+            }
             props.setDrawShapeTool(null);
           }}
           shapeDraftActive={props.shapeDraft != null}
+          penDraftActive={props.penDraft != null}
           onApplyShapeDraft={props.onApplyShapeDraft}
           onCancelShapeDraft={props.onCancelShapeDraft}
           style={{
@@ -221,6 +252,14 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
               nv={props.nv}
               draft={props.shapeDraft}
               onDraftChange={props.onShapeDraftChange}
+              overlayKey={props.mms}
+            />
+          )}
+          {props.penDraft && (
+            <PenDraftOverlay
+              nv={props.nv}
+              draft={props.penDraft}
+              onDraftChange={props.onPenDraftChange}
               overlayKey={props.mms}
             />
           )}

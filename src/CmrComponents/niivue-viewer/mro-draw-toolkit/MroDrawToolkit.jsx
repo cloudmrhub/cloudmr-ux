@@ -96,10 +96,11 @@ export function MroDrawToolkit(props) {
   const filled = props.drawPen > 7;
 
   useEffect(() => {
-    if (!props.shapeDraftActive) return;
+    if (!props.shapeDraftActive && !props.penDraftActive) return;
     if (drawShapeTool === "rectangle") setExpandedOption("r");
     else if (drawShapeTool === "ellipse") setExpandedOption("l");
-  }, [props.shapeDraftActive, drawShapeTool]);
+    else if (drawShapeTool === "pen") setExpandedOption("d");
+  }, [props.shapeDraftActive, props.penDraftActive, drawShapeTool]);
 
   const shapeSelectedSx = (shape) =>
     drawShapeTool === shape
@@ -174,7 +175,7 @@ export function MroDrawToolkit(props) {
     <ClickAwayListener
       onClickAway={(event) => {
         if (clickTargetIsNiivueCanvas(event.target)) return;
-        if (props.shapeDraftActive) return;
+        if (props.shapeDraftActive || props.penDraftActive) return;
         setExpandedOption("n");
         setExpandOpacityOptions(false);
         props.setDrawingEnabled(false);
@@ -226,8 +227,10 @@ export function MroDrawToolkit(props) {
                   onPenDrawModeChange={props.onPenDrawModeChange}
                   polylineVertexCount={props.polylineVertexCount}
                   onCancelPolyline={props.onCancelPolyline}
-                  onFinishPolyline={props.onFinishPolyline}
-                  onCloseFillPolyline={props.onCloseFillPolyline}
+                  penDraftActive={props.penDraftActive}
+                  onApplyPenDraft={props.onApplyPenDraft}
+                  onCancelPenDraft={props.onCancelPenDraft}
+                  onCloseFillPenDraft={props.onCloseFillPenDraft}
                   brushSize={props.brushSize}
                   updateBrushSize={props.updateBrushSize}
                 />

@@ -9,6 +9,7 @@ import {
 } from "./shapeDraftUtils.js";
 import {
   addPolylineVertex,
+  axCorSagFromMouse,
   cancelPolyline,
   finishPolyline,
   isClickWithoutDrag,
@@ -16,6 +17,10 @@ import {
   previewPolylineSegment,
   resetPolylineState,
 } from "./polylinePenUtils.js";
+import {
+  captureFreehandDraft,
+  shouldDeferFreehandCommit,
+} from "./penDraftUtils.js";
 
 /*
  * bitmapOverlay — in-browser state only: remembers each voxel's label *before* Group
@@ -496,6 +501,31 @@ Niivue.prototype.drawPenFilled = function () {
                 this.drawBitmap[index] = value;
             }
         })
+    if (shouldDeferFreehandCommit(this) && this._cloudMrFreehandSessionStartBitmap) {
+        this._cloudMrSkipNextUndoBitmap = true;
+        this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
+        for (let i = 0; i < this.drawBitmap.length; i++) {
+            let pen = this.drawBitmap[i];
+            if (!this.getLabelVisibility(pen)) {
+                this.hiddenBitmap[i] = this.drawBitmap[i];
+                this.drawBitmap[i] = 0;
+            }
+        }
+        this.refreshDrawing(false);
+        this.drawScene();
+        const axCorSag =
+            this.drawPenAxCorSag >= 0 ? this.drawPenAxCorSag : this._cloudMrFreehandAxCorSag;
+        const draft = captureFreehandDraft(
+            this,
+            this._cloudMrFreehandSessionStartBitmap,
+            axCorSag,
+        );
+        this._cloudMrFreehandSessionStartBitmap = null;
+        if (draft && typeof this.onPenDraftReady === "function") {
+            this.onPenDraftReady(draft);
+        }
+        return;
+    }
     this.drawAddUndoBitmap()
     // Post-processing to hide hidden voxels
     this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
@@ -1433,6 +1463,21 @@ Niivue.prototype.cloudMrFinishPolyline = function cloudMrFinishPolyline(fillClos
 
 Niivue.prototype.cloudMrResetPolyline = function cloudMrResetPolyline() {
   resetPolylineState(this);
+};
+
+const _mouseDownListener = Niivue.prototype.mouseDownListener;
+Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
+  if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
+    this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
+    this._cloudMrFreehandAxCorSag = -1;
+  }
+  _mouseDownListener.call(this, e);
+  if (shouldDeferFreehandCommit(this) && this._cloudMrFreehandSessionStartBitmap) {
+    const axCorSag = axCorSagFromMouse(this);
+    if (axCorSag >= 0) {
+      this._cloudMrFreehandAxCorSag = axCorSag;
+    }
+  }
 };
 
 const _mouseClick = Niivue.prototype.mouseClick;
