@@ -147,6 +147,7 @@ export function MroDrawToolkit(props) {
     if (expandedOption === "e") {
       setExpandedOption("n");
     } else {
+      props.onExitDrawMode?.();
       props.updateDrawPen({ target: { value: 8 } });
       setExpandedOption("e");
     }

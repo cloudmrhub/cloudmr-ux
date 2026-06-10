@@ -15,12 +15,21 @@ import { NI_PEN_TYPE } from "./niivuePenType";
  * @property {boolean} [filled]
  */
 
+export function isEraserActive(nv) {
+  return (
+    nv.opts.drawingEnabled &&
+    nv.opts.penType === NI_PEN_TYPE.PEN &&
+    nv.opts.penValue === 0
+  );
+}
+
 export function isFreehandPenActive(nv) {
   return (
     nv.opts.isFilledPen &&
     nv.opts.drawingEnabled &&
     nv.opts.penType === NI_PEN_TYPE.PEN &&
-    !nv.opts.polylinePenMode
+    !nv.opts.polylinePenMode &&
+    nv.opts.penValue > 0
   );
 }
 

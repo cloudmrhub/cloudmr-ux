@@ -564,10 +564,33 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateDrawPen(a) {
     const raw = Number(a.target.value);
     setDrawPen(raw);
-    let penValue = raw;
-    nv.setPenValue(penValue & 7, penValue > 0);
-    if (penValue == 8) {
+    const isEraser = raw === 0 || raw === 8;
+
+    if (raw === 8) {
       nv.setPenValue(0, true);
+    } else {
+      nv.setPenValue(raw & 7, raw > 0);
+    }
+
+    if (isEraser) {
+      nv.opts.deferFreehandCommit = false;
+      nv.opts.deferShapeCommit = false;
+      nv.opts.polylinePenMode = false;
+      nv.cloudMrResetPolyline?.();
+      if (penDraftRef.current) {
+        cancelPenDraft(nv, penDraftRef.current);
+        setPenDraft(null);
+        penDraftRef.current = null;
+        nv._cloudMrPenDraftActive = false;
+        setPolylineVertexCount(0);
+      }
+      if (shapeDraftRef.current) {
+        cancelShapeDraft();
+      }
+    } else if (drawShapeToolRef.current === "pen") {
+      nv.opts.deferFreehandCommit = penDrawModeRef.current === "freehand";
+      nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
+      nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
     }
   }
 

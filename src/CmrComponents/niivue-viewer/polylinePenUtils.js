@@ -6,7 +6,8 @@ export function isPolylinePenActive(nv) {
   return (
     nv.opts.polylinePenMode &&
     nv.opts.drawingEnabled &&
-    nv.opts.penType === NI_PEN_TYPE.PEN
+    nv.opts.penType === NI_PEN_TYPE.PEN &&
+    nv.opts.penValue > 0
   );
 }
 
