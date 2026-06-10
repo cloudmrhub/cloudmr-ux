@@ -4,9 +4,12 @@
 import { Niivue, NVImage, NVImageFromUrlOptions } from "@niivue/niivue";
 import {
   captureDeferredShapeDraft,
+  captureShapeDraftFromClick,
   isDraftTooSmall,
+  redrawDraftShape,
   shouldDeferShapeCommit,
 } from "./shapeDraftUtils.js";
+import { NI_PEN_TYPE } from "./niivuePenType.js";
 import {
   addPolylineVertex,
   axCorSagFromMouse,
@@ -1465,29 +1468,41 @@ Niivue.prototype.cloudMrResetPolyline = function cloudMrResetPolyline() {
   resetPolylineState(this);
 };
 
-const RIGHT_MOUSE_BUTTON = 2;
-
 function cloudMrHasApplyableDraft(nv) {
   return !!(nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive);
 }
 
-function cloudMrTryApplyDraftOnRightClick(nv, event) {
-  if (!cloudMrHasApplyableDraft(nv)) {
+/**
+ * When no draft is active and the user clicks an existing ROI voxel while the
+ * rectangle or ellipse tool is selected, reconstruct a ShapeDraft from the
+ * clicked cluster so the bounding-box overlay reappears for re-editing.
+ */
+function cloudMrTryReopenShapeDraftOnClick(nv) {
+  const penType = nv.opts.penType;
+  if (
+    !nv.opts.deferShapeCommit ||
+    !nv.opts.drawingEnabled ||
+    nv._cloudMrShapeDraftActive ||
+    nv._cloudMrPenDraftActive ||
+    !isClickWithoutDrag(nv.uiData) ||
+    (penType !== NI_PEN_TYPE.RECTANGLE && penType !== NI_PEN_TYPE.ELLIPSE)
+  ) {
     return false;
   }
-  event.preventDefault();
-  event.stopPropagation();
-  if (typeof nv.onApplyActiveDraft === "function") {
-    nv.onApplyActiveDraft();
+
+  const reopenDraft = captureShapeDraftFromClick(nv);
+  if (!reopenDraft) return false;
+
+  redrawDraftShape(nv, reopenDraft);
+  nv._cloudMrSuppressDrawingChangedMouseUp = true;
+  if (typeof nv.onShapeDraftReady === "function") {
+    nv.onShapeDraftReady(reopenDraft);
   }
   return true;
 }
 
 const _mouseDownListener = Niivue.prototype.mouseDownListener;
 Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
-  if (e.button === RIGHT_MOUSE_BUTTON && cloudMrTryApplyDraftOnRightClick(this, e)) {
-    return;
-  }
   if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
     this._cloudMrFreehandAxCorSag = -1;
@@ -1556,12 +1571,16 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
+    // No new draft drawn — check if user clicked an existing ROI to re-edit it
+    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
+    // Tiny drag treated as a click — also try to reopen an existing ROI
+    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;

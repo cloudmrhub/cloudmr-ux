@@ -1,10 +1,11 @@
 /**
- * Pen palette adds freehand vs polyline mode; pen/shape drafts show Apply/Cancel while adjusting.
+ * Pen palette adds freehand vs polyline mode; pen/shape drafts show Cancel while adjusting.
+ * Shapes are applied automatically on mouse release.
  */
 import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import FormatColorFillIcon from "@mui/icons-material/FormatColorFill";
 import { BrushSizeSlider } from "./BrushSizeSlider";
 
 const FILLED_COLORS = [
@@ -37,13 +38,11 @@ export default function DrawColorPlatte({
   onPenDrawModeChange,
   polylineVertexCount = 0,
   penDraftActive = false,
-  onApplyPenDraft,
   onCancelPenDraft,
   onFillPenDraft,
   brushSize = 1,
   updateBrushSize,
   shapeDraftActive = false,
-  onApplyShapeDraft,
   onCancelShapeDraft,
 }) {
   return (
@@ -144,32 +143,13 @@ export default function DrawColorPlatte({
               Cancel
             </Button>
           </Tooltip>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
-              <Tooltip title="Fill interior (keeps outline editable until Apply)">
-                <Button
-                  size="small"
-                  aria-label="fill polyline"
-                  onClick={() => onFillPenDraft?.()}
-                  sx={{
-                    color: "#c9a0e8",
-                    fontSize: ACTION_FONT_SIZE,
-                    textTransform: "none",
-                    minWidth: 0,
-                    py: 0.25,
-                    px: 0.75,
-                  }}
-                >
-                  Fill
-                </Button>
-              </Tooltip>
-            )}
-            <Tooltip title="Apply shape (enter or right-click)">
+          {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
+            <Tooltip title="Fill interior (keeps outline editable until release)">
               <Button
                 size="small"
-                aria-label="apply pen draft"
-                onClick={() => onApplyPenDraft?.()}
-                startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+                aria-label="fill polyline"
+                onClick={() => onFillPenDraft?.()}
+                startIcon={<FormatColorFillIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
                 sx={{
                   color: "#c9a0e8",
                   fontSize: ACTION_FONT_SIZE,
@@ -177,13 +157,14 @@ export default function DrawColorPlatte({
                   minWidth: 0,
                   py: 0.25,
                   px: 0.75,
+                  ml: "auto",
                   "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
                 }}
               >
-                Apply
+                Fill
               </Button>
             </Tooltip>
-          </Stack>
+          )}
         </Stack>
       )}
 
@@ -191,7 +172,6 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="space-between"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
           <Tooltip title="Cancel shape (Esc)">
@@ -211,25 +191,6 @@ export default function DrawColorPlatte({
               }}
             >
               Cancel
-            </Button>
-          </Tooltip>
-          <Tooltip title="Apply shape (enter or right-click)">
-            <Button
-              size="small"
-              aria-label="apply shape"
-              onClick={() => onApplyShapeDraft?.()}
-              startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
-              sx={{
-                color: "#c9a0e8",
-                fontSize: ACTION_FONT_SIZE,
-                textTransform: "none",
-                minWidth: 0,
-                py: 0.25,
-                px: 0.75,
-                "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
-              }}
-            >
-              Apply
             </Button>
           </Tooltip>
         </Stack>

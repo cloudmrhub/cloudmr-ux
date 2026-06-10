@@ -990,35 +990,6 @@ export default function CloudMrNiivueViewer(props) {
     if (!shapeDraft && !penDraft) {
       return undefined;
     }
-    const canvas = document.getElementById("niiCanvas");
-    if (!canvas) {
-      return undefined;
-    }
-
-    const applyOnRightClick = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      nv.onApplyActiveDraft?.();
-    };
-
-    const onMouseDown = (event) => {
-      if (event.button === 2) {
-        applyOnRightClick(event);
-      }
-    };
-
-    canvas.addEventListener("mousedown", onMouseDown, true);
-    canvas.addEventListener("contextmenu", applyOnRightClick, true);
-    return () => {
-      canvas.removeEventListener("mousedown", onMouseDown, true);
-      canvas.removeEventListener("contextmenu", applyOnRightClick, true);
-    };
-  }, [shapeDraft, penDraft]);
-
-  React.useEffect(() => {
-    if (!shapeDraft && !penDraft) {
-      return undefined;
-    }
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -1026,15 +997,6 @@ export default function CloudMrNiivueViewer(props) {
           cancelShapeDraft();
         } else if (penDraft) {
           cancelPenDraftHandler();
-        }
-        return;
-      }
-      if (event.key === "Enter") {
-        event.preventDefault();
-        if (shapeDraft) {
-          applyShapeDraft();
-        } else if (penDraft) {
-          applyPenDraftHandler();
         }
       }
     };

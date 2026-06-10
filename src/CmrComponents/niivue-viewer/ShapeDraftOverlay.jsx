@@ -16,9 +16,9 @@ const ACCENT = "#580f8b";
 
 /**
  * Overlay handles for adjusting a rectangle/ellipse draft before commit.
- * @param {{ nv: any, draft: import('./shapeDraftUtils').ShapeDraft, onDraftChange: (d: any) => void, overlayKey?: unknown }} props
+ * @param {{ nv: any, draft: import('./shapeDraftUtils').ShapeDraft, onDraftChange: (d: any) => void, onApplyDraft?: () => void, overlayKey?: unknown }} props
  */
-export function ShapeDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
+export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overlayKey }) {
   const dragRef = useRef(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -82,12 +82,17 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   );
 
   finishDragRef.current = () => {
+    const hadDrag = dragRef.current != null;
     dragRef.current = null;
     if (onPointerMoveRef.current) {
       window.removeEventListener("pointermove", onPointerMoveRef.current);
     }
     if (finishDragRef.current) {
       window.removeEventListener("pointerup", finishDragRef.current);
+    }
+    // Auto-apply as soon as the user releases the handle after a move/resize
+    if (hadDrag && onApplyDraft) {
+      onApplyDraft();
     }
   };
 

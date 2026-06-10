@@ -1,4 +1,5 @@
 import { NI_PEN_TYPE } from "./niivuePenType";
+import { voxFromMouse } from "./polylinePenUtils";
 
 /** @typedef {'rectangle' | 'ellipse'} ShapeDraftKind */
 
@@ -177,4 +178,96 @@ export function shouldDeferShapeCommit(nv) {
     (penType === NI_PEN_TYPE.RECTANGLE || penType === NI_PEN_TYPE.ELLIPSE) &&
     nv.drawShapePreviewBitmap
   );
+}
+
+function voxelIndex(x, y, z, dx, dy) {
+  return x + y * dx + z * dx * dy;
+}
+
+function decodeVoxelIndex(idx, dx, dy) {
+  const z = Math.floor(idx / (dx * dy));
+  const rem = idx - z * dx * dy;
+  const y = Math.floor(rem / dx);
+  const x = rem % dx;
+  return [x, y, z];
+}
+
+function inferAxCorSagFromBounds(x1, y1, z1, x2, y2, z2, fallback = 0) {
+  const spanX = x2 - x1;
+  const spanY = y2 - y1;
+  const spanZ = z2 - z1;
+  if (spanZ <= spanX && spanZ <= spanY) return 0; // axial — flat in Z
+  if (spanY <= spanX && spanY <= spanZ) return 1; // coronal — flat in Y
+  if (spanX <= spanY && spanX <= spanZ) return 2; // sagittal — flat in X
+  return fallback;
+}
+
+/**
+ * When the user clicks on an existing filled ROI while the rectangle/ellipse tool
+ * is active (but no draft is currently open), flood-fill the clicked cluster to
+ * reconstruct a ShapeDraft so the bounding-box overlay reappears for re-editing.
+ *
+ * Returns null if the click didn't land on a labeled voxel.
+ */
+export function captureShapeDraftFromClick(nv) {
+  const dims = nv.back?.dims;
+  if (!dims || !nv.drawBitmap) return null;
+
+  const seedVox = voxFromMouse(nv);
+  if (!seedVox) return null;
+
+  const dx = dims[1];
+  const dy = dims[2];
+  const dz = dims[3];
+
+  const seedIdx = voxelIndex(seedVox[0], seedVox[1], seedVox[2], dx, dy);
+  const label = nv.drawBitmap[seedIdx];
+  if (!label) return null;
+
+  // BFS flood-fill to find connected cluster of the same label
+  const visited = new Set();
+  const queue = [seedIdx];
+  visited.add(seedIdx);
+  let x1 = Infinity, y1 = Infinity, z1 = Infinity;
+  let x2 = -Infinity, y2 = -Infinity, z2 = -Infinity;
+
+  while (queue.length > 0) {
+    const idx = queue.shift();
+    const [x, y, z] = decodeVoxelIndex(idx, dx, dy);
+    x1 = Math.min(x1, x); y1 = Math.min(y1, y); z1 = Math.min(z1, z);
+    x2 = Math.max(x2, x); y2 = Math.max(y2, y); z2 = Math.max(z2, z);
+
+    const neighbors = [
+      [x + 1, y, z], [x - 1, y, z],
+      [x, y + 1, z], [x, y - 1, z],
+      [x, y, z + 1], [x, y, z - 1],
+    ];
+    for (const [nx, ny, nz] of neighbors) {
+      if (nx < 0 || ny < 0 || nz < 0 || nx >= dx || ny >= dy || nz >= dz) continue;
+      const nIdx = voxelIndex(nx, ny, nz, dx, dy);
+      if (visited.has(nIdx) || nv.drawBitmap[nIdx] !== label) continue;
+      visited.add(nIdx);
+      queue.push(nIdx);
+    }
+  }
+
+  if (!Number.isFinite(x1)) return null;
+
+  // baseBitmap is the bitmap with this cluster erased (so re-applying restores it)
+  const baseBitmap = new Uint8Array(nv.drawBitmap);
+  visited.forEach((idx) => { baseBitmap[idx] = 0; });
+
+  const axCorSag = inferAxCorSagFromBounds(
+    x1, y1, z1, x2, y2, z2,
+    nv.drawPenAxCorSag >= 0 ? nv.drawPenAxCorSag : 0,
+  );
+
+  return {
+    ptA: [x1, y1, z1],
+    ptB: [x2, y2, z2],
+    penValue: label,
+    axCorSag,
+    penType: nv.opts.penType,
+    baseBitmap,
+  };
 }
