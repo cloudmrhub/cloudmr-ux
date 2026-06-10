@@ -1481,6 +1481,23 @@ function isClickOnActiveShapeDraft(nv) {
   return isVoxelPartOfDraft(nv, draft, vox);
 }
 
+function isClickOnActivePenDraft(nv) {
+  const draft = nv._cloudMrActivePenDraft;
+  if (!draft || !nv._cloudMrPenDraftActive) return false;
+  const vox = voxFromMouse(nv);
+  if (!vox) return false;
+  return isVoxelPartOfDraft(nv, draft, vox);
+}
+
+function voxelLabelAt(nv, vox) {
+  const dims = nv.back?.dims;
+  if (!dims || !nv.drawBitmap || !vox) return 0;
+  const dx = dims[1];
+  const dy = dims[2];
+  const idx = vox[0] + vox[1] * dx + vox[2] * dx * dy;
+  return nv.drawBitmap[idx] || 0;
+}
+
 function canReopenShapeDraftOnClick(nv) {
   const penType = nv.opts.penType;
   return (
@@ -1506,18 +1523,25 @@ function cloudMrOpenShapeDraftFromClick(nv) {
 /**
  * Re-enter rectangle/ellipse edit mode when clicking an existing shape ROI.
  */
-function cloudMrTryReopenShapeDraftOnClick(nv) {
-  if (!isClickWithoutDrag(nv.uiData) || !canReopenShapeDraftOnClick(nv)) {
+function cloudMrTryOpenShapeDraftOnMouseDown(nv) {
+  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
+    return false;
+  }
+  if (!canReopenShapeDraftOnClick(nv)) {
+    return false;
+  }
+  const vox = voxFromMouse(nv);
+  if (!vox || !voxelLabelAt(nv, vox)) {
     return false;
   }
   return cloudMrOpenShapeDraftFromClick(nv);
 }
 
 /**
- * While editing one shape, mousedown on another shape applies the current
- * draft immediately and opens the clicked shape for editing.
+ * Click-away exits shape edit mode; clicking another shape selects it for editing.
+ * Disconnected same-color shapes are distinguished by flood-fill from the click point.
  */
-function cloudMrTrySwitchShapeDraftOnMouseDown(nv) {
+function cloudMrHandleShapeDraftClickOnMouseDown(nv) {
   if (!nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
     return false;
   }
@@ -1526,29 +1550,55 @@ function cloudMrTrySwitchShapeDraftOnMouseDown(nv) {
   }
 
   const vox = voxFromMouse(nv);
-  if (!vox || isClickOnActiveShapeDraft(nv)) {
+  if (!vox) {
     return false;
   }
-
-  const dims = nv.back?.dims;
-  if (!dims || !nv.drawBitmap) return false;
-  const dx = dims[1];
-  const dy = dims[2];
-  const idx = vox[0] + vox[1] * dx + vox[2] * dx * dy;
-  if (!nv.drawBitmap[idx]) {
+  if (isClickOnActiveShapeDraft(nv)) {
     return false;
   }
 
   if (typeof nv.onApplyActiveDraft === "function") {
     nv.onApplyActiveDraft();
   }
-  return cloudMrOpenShapeDraftFromClick(nv);
+
+  if (voxelLabelAt(nv, vox) > 0) {
+    cloudMrOpenShapeDraftFromClick(nv);
+  }
+  return true;
+}
+
+/** Click-away applies a pen draft without starting a new stroke. */
+function cloudMrHandlePenDraftClickOnMouseDown(nv) {
+  if (!nv._cloudMrPenDraftActive) {
+    return false;
+  }
+
+  const vox = voxFromMouse(nv);
+  if (!vox) {
+    return false;
+  }
+  if (isClickOnActivePenDraft(nv)) {
+    return false;
+  }
+
+  if (typeof nv.onApplyActiveDraft === "function") {
+    nv.onApplyActiveDraft();
+  }
+  return true;
 }
 
 const _mouseDownListener = Niivue.prototype.mouseDownListener;
 Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
-  if (e.button === 0 && cloudMrTrySwitchShapeDraftOnMouseDown(this)) {
-    return;
+  if (e.button === 0) {
+    if (cloudMrHandleShapeDraftClickOnMouseDown(this)) {
+      return;
+    }
+    if (cloudMrHandlePenDraftClickOnMouseDown(this)) {
+      return;
+    }
+    if (cloudMrTryOpenShapeDraftOnMouseDown(this)) {
+      return;
+    }
   }
   if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
@@ -1618,14 +1668,12 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
-    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
-    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;

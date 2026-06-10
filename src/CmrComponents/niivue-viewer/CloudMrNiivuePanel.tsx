@@ -249,7 +249,6 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
               nv={props.nv}
               draft={props.shapeDraft}
               onDraftChange={props.onShapeDraftChange}
-              onApplyDraft={props.onApplyShapeDraft}
               overlayKey={props.mms}
             />
           )}
@@ -258,7 +257,6 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
               nv={props.nv}
               draft={props.penDraft}
               onDraftChange={props.onPenDraftChange}
-              onApplyDraft={props.onApplyPenDraft}
               overlayKey={props.mms}
             />
           )}

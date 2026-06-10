@@ -28,9 +28,9 @@ function cloneFreehandDraft(draft) {
 
 /**
  * Adjust handles for polyline (vertex drag) or freehand (move only) drafts.
- * @param {{ nv: any, draft: any, onDraftChange: (d: any) => void, onApplyDraft?: () => void, overlayKey?: unknown }} props
+ * @param {{ nv: any, draft: any, onDraftChange: (d: any) => void, overlayKey?: unknown }} props
  */
-export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overlayKey }) {
+export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   const dragRef = useRef(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -121,17 +121,12 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overla
   );
 
   finishDragRef.current = () => {
-    const hadDrag = dragRef.current != null;
     dragRef.current = null;
     if (onPointerMoveRef.current) {
       window.removeEventListener("pointermove", onPointerMoveRef.current);
     }
     if (finishDragRef.current) {
       window.removeEventListener("pointerup", finishDragRef.current);
-    }
-    // Auto-apply as soon as the user releases the handle after a move/resize
-    if (hadDrag && onApplyDraft) {
-      onApplyDraft();
     }
   };
 

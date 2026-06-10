@@ -583,6 +583,7 @@ export default function CloudMrNiivueViewer(props) {
         setPenDraft(null);
         penDraftRef.current = null;
         nv._cloudMrPenDraftActive = false;
+        clearActivePenDraftRef();
         setPolylineVertexCount(0);
       }
       if (shapeDraftRef.current) {
@@ -606,6 +607,7 @@ export default function CloudMrNiivueViewer(props) {
       setPenDraft(null);
       penDraftRef.current = null;
       nv._cloudMrPenDraftActive = false;
+      clearActivePenDraftRef();
     }
     setDrawShapeTool(null);
     nv.opts.penType = NI_PEN_TYPE.PEN;
@@ -637,6 +639,7 @@ export default function CloudMrNiivueViewer(props) {
       setPenDraft(null);
       penDraftRef.current = null;
       nv._cloudMrPenDraftActive = false;
+      clearActivePenDraftRef();
     }
     nvUpdateDrawPen({ target: { value: 8 } });
     nvSetDrawingEnabled(true);
@@ -860,6 +863,14 @@ export default function CloudMrNiivueViewer(props) {
     nv._cloudMrActiveShapeDraft = null;
   }
 
+  function syncActivePenDraftRef() {
+    nv._cloudMrActivePenDraft = penDraftRef.current;
+  }
+
+  function clearActivePenDraftRef() {
+    nv._cloudMrActivePenDraft = null;
+  }
+
   function cancelPenDraftHandler() {
     const draft = penDraftRef.current;
     if (!draft) return;
@@ -871,6 +882,7 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(null);
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
+    clearActivePenDraftRef();
     if (drawShapeToolRef.current === "pen") {
       nvSetDrawingEnabled(true);
     }
@@ -887,6 +899,7 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(null);
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
+    clearActivePenDraftRef();
     setDrawingChanged(true);
     if (drawShapeToolRef.current === "pen") {
       nvSetDrawingEnabled(true);
@@ -904,6 +917,7 @@ export default function CloudMrNiivueViewer(props) {
   function onPenDraftChange(draft) {
     setPenDraft(draft);
     penDraftRef.current = draft;
+    syncActivePenDraftRef();
     if (draft.kind === "polyline") {
       syncPolylineDraftToNv(nv, draft);
     }
@@ -917,6 +931,7 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(draft);
     penDraftRef.current = draft;
     nv._cloudMrPenDraftActive = true;
+    syncActivePenDraftRef();
     nvSetDrawingEnabled(false);
   };
 
@@ -932,10 +947,12 @@ export default function CloudMrNiivueViewer(props) {
       if (draft) {
         setPenDraft(draft);
         penDraftRef.current = draft;
+        syncActivePenDraftRef();
       }
     } else if (penDraftRef.current?.kind === "polyline") {
       setPenDraft(null);
       penDraftRef.current = null;
+      clearActivePenDraftRef();
     }
   };
 
