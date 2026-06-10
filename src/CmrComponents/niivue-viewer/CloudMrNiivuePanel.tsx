@@ -24,6 +24,8 @@ export type CloudMrDrawToolkitProps = Omit<
   onCancelPenDraft?: () => void;
   onFillPenDraft?: () => void;
   penDraftActive?: boolean;
+  onActivateEraser?: () => void;
+  onDeactivateDrawTools?: () => void;
   shapeDraftActive?: boolean;
   onApplyShapeDraft?: () => void;
   onCancelShapeDraft?: () => void;
@@ -187,13 +189,7 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
           drawShapeTool={props.drawShapeTool}
           onDrawShapeToolChange={applyDrawShapeTool}
           onExitDrawMode={() => {
-            if (props.shapeDraft) {
-              props.onCancelShapeDraft();
-            }
-            if (props.penDraft) {
-              props.onCancelPenDraft();
-            }
-            props.setDrawShapeTool(null);
+            props.drawToolkitProps.onDeactivateDrawTools?.();
           }}
           shapeDraftActive={props.shapeDraft != null}
           penDraftActive={props.penDraft != null}

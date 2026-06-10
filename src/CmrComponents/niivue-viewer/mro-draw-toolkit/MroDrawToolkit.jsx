@@ -107,7 +107,18 @@ export function MroDrawToolkit(props) {
       ? { backgroundColor: "rgba(88, 15, 139, 0.12)", color: "#580f8b" }
       : {};
 
+  const eraserActive = expandedOption === "e";
+
+  function leaveEraserIfActive() {
+    if (!eraserActive && props.drawPen !== 0 && props.drawPen !== 8) {
+      return;
+    }
+    props.onDeactivateDrawTools?.();
+    setExpandedOption("n");
+  }
+
   function clickPen() {
+    leaveEraserIfActive();
     onDrawShapeToolChange?.("pen");
     if (expandedOption === "d") {
       setExpandedOption("n");
@@ -120,6 +131,7 @@ export function MroDrawToolkit(props) {
   }
 
   function clickRectangle() {
+    leaveEraserIfActive();
     onDrawShapeToolChange?.("rectangle");
     if (expandedOption === "r") {
       setExpandedOption("n");
@@ -132,6 +144,7 @@ export function MroDrawToolkit(props) {
   }
 
   function clickEllipse() {
+    leaveEraserIfActive();
     onDrawShapeToolChange?.("ellipse");
     if (expandedOption === "l") {
       setExpandedOption("n");
@@ -146,12 +159,12 @@ export function MroDrawToolkit(props) {
   function clickEraser() {
     if (expandedOption === "e") {
       setExpandedOption("n");
-    } else {
-      props.onExitDrawMode?.();
-      props.updateDrawPen({ target: { value: 8 } });
-      setExpandedOption("e");
+      props.onDeactivateDrawTools?.();
+      return;
     }
-    props.setDrawingEnabled(expandedOption !== "e");
+    leaveEraserIfActive();
+    props.onActivateEraser?.();
+    setExpandedOption("e");
   }
 
   function clickMask() {
@@ -179,8 +192,7 @@ export function MroDrawToolkit(props) {
         if (props.shapeDraftActive || props.penDraftActive) return;
         setExpandedOption("n");
         setExpandOpacityOptions(false);
-        props.setDrawingEnabled(false);
-        props.onExitDrawMode?.();
+        props.onDeactivateDrawTools?.();
       }}
     >
       <div style={{ width: "100%", position: "relative", zIndex: 1080, ...props.style }}>
@@ -271,8 +283,18 @@ export function MroDrawToolkit(props) {
 
               <Box sx={{ position: "relative", zIndex: expandedOption === "e" ? 1600 : "auto", display: "inline-flex", alignItems: "center" }}>
                 <Tooltip title="Eraser">
-                  <IconButton aria-label="erase" size="small" onClick={clickEraser} sx={toolBtnSx}>
-                    {filled || expandedOption !== "e" ? (
+                  <IconButton
+                    aria-label="erase"
+                    size="small"
+                    onClick={clickEraser}
+                    sx={{
+                      ...toolBtnSx,
+                      ...(eraserActive
+                        ? { backgroundColor: "rgba(88, 15, 139, 0.12)", color: "#580f8b" }
+                        : {}),
+                    }}
+                  >
+                    {filled || !eraserActive ? (
                       <EraserIcon />
                     ) : (
                       <AutoFixNormalOutlinedIcon sx={{ color: ICON_COLOR }} />

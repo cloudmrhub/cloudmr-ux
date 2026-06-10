@@ -573,6 +573,7 @@ export default function CloudMrNiivueViewer(props) {
     }
 
     if (isEraser) {
+      nv.opts.penType = NI_PEN_TYPE.PEN;
       nv.opts.deferFreehandCommit = false;
       nv.opts.deferShapeCommit = false;
       nv.opts.polylinePenMode = false;
@@ -592,6 +593,53 @@ export default function CloudMrNiivueViewer(props) {
       nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
       nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
     }
+  }
+
+  function deactivateDrawTools() {
+    if (shapeDraftRef.current) {
+      cancelShapeDraft();
+    }
+    if (penDraftRef.current) {
+      cancelPenDraft(nv, penDraftRef.current);
+      nv.cloudMrResetPolyline?.();
+      setPolylineVertexCount(0);
+      setPenDraft(null);
+      penDraftRef.current = null;
+      nv._cloudMrPenDraftActive = false;
+    }
+    setDrawShapeTool(null);
+    nv.opts.penType = NI_PEN_TYPE.PEN;
+    nv.opts.deferShapeCommit = false;
+    nv.opts.deferFreehandCommit = false;
+    nv.opts.polylinePenMode = false;
+    nv.cloudMrResetPolyline?.();
+    nvSetDrawingEnabled(false);
+    if (drawPen === 0 || drawPen === 8) {
+      setDrawPen(1);
+      nv.setPenValue(1, false);
+      nv.opts.isFilledPen = false;
+    }
+  }
+
+  function activateEraser() {
+    setDrawShapeTool(null);
+    nv.opts.penType = NI_PEN_TYPE.PEN;
+    nv.opts.deferShapeCommit = false;
+    nv.opts.deferFreehandCommit = false;
+    nv.opts.polylinePenMode = false;
+    if (shapeDraftRef.current) {
+      cancelShapeDraft();
+    }
+    if (penDraftRef.current) {
+      cancelPenDraft(nv, penDraftRef.current);
+      nv.cloudMrResetPolyline?.();
+      setPolylineVertexCount(0);
+      setPenDraft(null);
+      penDraftRef.current = null;
+      nv._cloudMrPenDraftActive = false;
+    }
+    nvUpdateDrawPen({ target: { value: 8 } });
+    nvSetDrawingEnabled(true);
   }
 
   function nvUpdateDrawOpacity(a) {
@@ -1428,6 +1476,8 @@ export default function CloudMrNiivueViewer(props) {
     penDraftActive: penDraft != null,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
+    onActivateEraser: activateEraser,
+    onDeactivateDrawTools: deactivateDrawTools,
   };
   return (
     <Box sx={{
