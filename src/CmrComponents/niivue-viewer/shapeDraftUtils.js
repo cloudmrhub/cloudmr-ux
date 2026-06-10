@@ -196,51 +196,56 @@ function inferAxCorSagFromBounds(x1, y1, z1, x2, y2, z2, fallback = 0) {
   const spanX = x2 - x1;
   const spanY = y2 - y1;
   const spanZ = z2 - z1;
-  if (spanZ <= spanX && spanZ <= spanY) return 0; // axial — flat in Z
-  if (spanY <= spanX && spanY <= spanZ) return 1; // coronal — flat in Y
-  if (spanX <= spanY && spanX <= spanZ) return 2; // sagittal — flat in X
+  if (spanZ <= spanX && spanZ <= spanY) return 0;
+  if (spanY <= spanX && spanY <= spanZ) return 1;
+  if (spanX <= spanY && spanX <= spanZ) return 2;
   return fallback;
 }
 
 /**
- * When the user clicks on an existing filled ROI while the rectangle/ellipse tool
- * is active (but no draft is currently open), flood-fill the clicked cluster to
- * reconstruct a ShapeDraft so the bounding-box overlay reappears for re-editing.
- *
- * Returns null if the click didn't land on a labeled voxel.
+ * Flood-fill a connected voxel cluster from a seed.
+ * @returns {{ label: number, visited: Set<number>, voxels: [number,number,number][], bounds: object } | null}
  */
-export function captureShapeDraftFromClick(nv) {
+export function floodFillClusterFromVox(nv, seedVox) {
   const dims = nv.back?.dims;
-  if (!dims || !nv.drawBitmap) return null;
-
-  const seedVox = voxFromMouse(nv);
-  if (!seedVox) return null;
+  if (!dims || !nv.drawBitmap || !seedVox) return null;
 
   const dx = dims[1];
   const dy = dims[2];
   const dz = dims[3];
-
   const seedIdx = voxelIndex(seedVox[0], seedVox[1], seedVox[2], dx, dy);
   const label = nv.drawBitmap[seedIdx];
   if (!label) return null;
 
-  // BFS flood-fill to find connected cluster of the same label
   const visited = new Set();
   const queue = [seedIdx];
   visited.add(seedIdx);
-  let x1 = Infinity, y1 = Infinity, z1 = Infinity;
-  let x2 = -Infinity, y2 = -Infinity, z2 = -Infinity;
+  const voxels = [];
+  let x1 = Infinity;
+  let y1 = Infinity;
+  let z1 = Infinity;
+  let x2 = -Infinity;
+  let y2 = -Infinity;
+  let z2 = -Infinity;
 
   while (queue.length > 0) {
     const idx = queue.shift();
     const [x, y, z] = decodeVoxelIndex(idx, dx, dy);
-    x1 = Math.min(x1, x); y1 = Math.min(y1, y); z1 = Math.min(z1, z);
-    x2 = Math.max(x2, x); y2 = Math.max(y2, y); z2 = Math.max(z2, z);
+    voxels.push([x, y, z]);
+    x1 = Math.min(x1, x);
+    y1 = Math.min(y1, y);
+    z1 = Math.min(z1, z);
+    x2 = Math.max(x2, x);
+    y2 = Math.max(y2, y);
+    z2 = Math.max(z2, z);
 
     const neighbors = [
-      [x + 1, y, z], [x - 1, y, z],
-      [x, y + 1, z], [x, y - 1, z],
-      [x, y, z + 1], [x, y, z - 1],
+      [x + 1, y, z],
+      [x - 1, y, z],
+      [x, y + 1, z],
+      [x, y - 1, z],
+      [x, y, z + 1],
+      [x, y, z - 1],
     ];
     for (const [nx, ny, nz] of neighbors) {
       if (nx < 0 || ny < 0 || nz < 0 || nx >= dx || ny >= dy || nz >= dz) continue;
@@ -253,12 +258,58 @@ export function captureShapeDraftFromClick(nv) {
 
   if (!Number.isFinite(x1)) return null;
 
-  // baseBitmap is the bitmap with this cluster erased (so re-applying restores it)
-  const baseBitmap = new Uint8Array(nv.drawBitmap);
-  visited.forEach((idx) => { baseBitmap[idx] = 0; });
+  return {
+    label,
+    visited,
+    voxels,
+    bounds: { x1, y1, z1, x2, y2, z2 },
+  };
+}
 
+/** True when a voxel belongs to the live draft overlay (drawn on top of baseBitmap). */
+export function isVoxelPartOfDraft(nv, draft, seedVox) {
+  if (!draft?.baseBitmap || !nv?.drawBitmap || !seedVox) return false;
+  const dims = nv.back?.dims;
+  if (!dims) return false;
+  const dx = dims[1];
+  const dy = dims[2];
+  const idx = voxelIndex(seedVox[0], seedVox[1], seedVox[2], dx, dy);
+  return (
+    nv.drawBitmap[idx] === draft.penValue &&
+    draft.baseBitmap[idx] !== draft.penValue
+  );
+}
+
+export function eraseClusterFromBitmap(bitmap, visited) {
+  const next = new Uint8Array(bitmap);
+  visited.forEach((idx) => {
+    next[idx] = 0;
+  });
+  return next;
+}
+
+/**
+ * When the user clicks on an existing filled ROI while the rectangle/ellipse tool
+ * is active (but no draft is currently open), flood-fill the clicked cluster to
+ * reconstruct a ShapeDraft so the bounding-box overlay reappears for re-editing.
+ *
+ * Returns null if the click didn't land on a labeled voxel.
+ */
+export function captureShapeDraftFromClick(nv) {
+  const seedVox = voxFromMouse(nv);
+  const cluster = floodFillClusterFromVox(nv, seedVox);
+  if (!cluster) return null;
+
+  const { label, visited, bounds } = cluster;
+  const { x1, y1, z1, x2, y2, z2 } = bounds;
+  const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, visited);
   const axCorSag = inferAxCorSagFromBounds(
-    x1, y1, z1, x2, y2, z2,
+    x1,
+    y1,
+    z1,
+    x2,
+    y2,
+    z2,
     nv.drawPenAxCorSag >= 0 ? nv.drawPenAxCorSag : 0,
   );
 

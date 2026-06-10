@@ -1,4 +1,9 @@
-import { translatePt } from "./shapeDraftUtils";
+import {
+  translatePt,
+  floodFillClusterFromVox,
+  eraseClusterFromBitmap,
+} from "./shapeDraftUtils";
+import { axCorSagFromMouse, voxFromMouse } from "./polylinePenUtils";
 import { NI_PEN_TYPE } from "./niivuePenType";
 
 /** @typedef {'polyline' | 'freehand'} PenDraftKind */
@@ -35,6 +40,40 @@ export function isFreehandPenActive(nv) {
 
 export function shouldDeferFreehandCommit(nv) {
   return !!nv.opts.deferFreehandCommit && isFreehandPenActive(nv);
+}
+
+export function isPenDrawToolActive(nv) {
+  return (
+    nv.opts.drawingEnabled &&
+    nv.opts.penType === NI_PEN_TYPE.PEN &&
+    nv.opts.penValue > 0 &&
+    (nv.opts.deferFreehandCommit || nv.opts.polylinePenMode)
+  );
+}
+
+/**
+ * Re-enter pen edit mode when clicking an existing freehand/polyline ROI.
+ * Reopens as a freehand draft (move via bounding box) since vertex data is
+ * not stored in the bitmap alone.
+ */
+export function capturePenDraftFromClick(nv) {
+  const seedVox = voxFromMouse(nv);
+  const cluster = floodFillClusterFromVox(nv, seedVox);
+  if (!cluster) return null;
+
+  const { label, visited, voxels, bounds } = cluster;
+  const { x1, y1, z1, x2, y2, z2 } = bounds;
+  const axCorSag =
+    nv.drawPenAxCorSag >= 0 ? nv.drawPenAxCorSag : axCorSagFromMouse(nv);
+
+  return {
+    kind: "freehand",
+    baseBitmap: eraseClusterFromBitmap(nv.drawBitmap, visited),
+    axCorSag,
+    penValue: label,
+    strokeVoxels: voxels,
+    bounds: { x1, y1, z1, x2, y2, z2 },
+  };
 }
 
 export function redrawPolylineDraft(nv, draft) {

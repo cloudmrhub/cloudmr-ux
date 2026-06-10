@@ -6,6 +6,7 @@ import {
   captureDeferredShapeDraft,
   captureShapeDraftFromClick,
   isDraftTooSmall,
+  isVoxelPartOfDraft,
   redrawDraftShape,
   shouldDeferShapeCommit,
 } from "./shapeDraftUtils.js";
@@ -22,6 +23,9 @@ import {
 } from "./polylinePenUtils.js";
 import {
   captureFreehandDraft,
+  capturePenDraftFromClick,
+  isPenDrawToolActive,
+  redrawFreehandDraft,
   shouldDeferFreehandCommit,
 } from "./penDraftUtils.js";
 
@@ -1472,31 +1476,83 @@ function cloudMrHasApplyableDraft(nv) {
   return !!(nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive);
 }
 
+function getActiveDraft(nv) {
+  if (nv._cloudMrPenDraftActive && nv._cloudMrActivePenDraft) {
+    return nv._cloudMrActivePenDraft;
+  }
+  if (nv._cloudMrShapeDraftActive && nv._cloudMrActiveShapeDraft) {
+    return nv._cloudMrActiveShapeDraft;
+  }
+  return null;
+}
+
+function isClickOnActiveDraft(nv) {
+  const draft = getActiveDraft(nv);
+  if (!draft) return false;
+  const vox = voxFromMouse(nv);
+  if (!vox) return false;
+  return isVoxelPartOfDraft(nv, draft, vox);
+}
+
+/** Commit the active draft when the user clicks outside the ROI being edited. */
+function cloudMrTryApplyDraftOnClickAway(nv) {
+  if (!cloudMrHasApplyableDraft(nv) || !isClickWithoutDrag(nv.uiData)) {
+    return false;
+  }
+  if (isClickOnActiveDraft(nv)) {
+    return false;
+  }
+  if (typeof nv.onApplyActiveDraft === "function") {
+    nv._cloudMrSuppressDrawingChangedMouseUp = true;
+    nv.onApplyActiveDraft();
+  }
+  return true;
+}
+
 /**
- * When no draft is active and the user clicks an existing ROI voxel while the
- * rectangle or ellipse tool is selected, reconstruct a ShapeDraft from the
- * clicked cluster so the bounding-box overlay reappears for re-editing.
+ * When no draft is active and the user clicks an existing ROI, reconstruct a
+ * shape or pen draft so the bounding-box overlay reappears for re-editing.
  */
-function cloudMrTryReopenShapeDraftOnClick(nv) {
-  const penType = nv.opts.penType;
+function cloudMrTryReopenDraftOnClick(nv) {
   if (
-    !nv.opts.deferShapeCommit ||
-    !nv.opts.drawingEnabled ||
     nv._cloudMrShapeDraftActive ||
     nv._cloudMrPenDraftActive ||
-    !isClickWithoutDrag(nv.uiData) ||
-    (penType !== NI_PEN_TYPE.RECTANGLE && penType !== NI_PEN_TYPE.ELLIPSE)
+    !isClickWithoutDrag(nv.uiData)
   ) {
     return false;
   }
 
-  const reopenDraft = captureShapeDraftFromClick(nv);
-  if (!reopenDraft) return false;
+  const penType = nv.opts.penType;
+  const isShapeTool =
+    nv.opts.deferShapeCommit &&
+    nv.opts.drawingEnabled &&
+    (penType === NI_PEN_TYPE.RECTANGLE || penType === NI_PEN_TYPE.ELLIPSE);
+  const isPenTool = isPenDrawToolActive(nv);
 
-  redrawDraftShape(nv, reopenDraft);
+  if (!isShapeTool && !isPenTool) {
+    return false;
+  }
+
+  if (isShapeTool) {
+    const reopenDraft = captureShapeDraftFromClick(nv);
+    if (!reopenDraft) return false;
+    redrawDraftShape(nv, reopenDraft);
+    nv._cloudMrSuppressDrawingChangedMouseUp = true;
+    if (typeof nv.onShapeDraftReady === "function") {
+      nv.onShapeDraftReady(reopenDraft);
+    }
+    return true;
+  }
+
+  const reopenDraft = capturePenDraftFromClick(nv);
+  if (!reopenDraft) return false;
+  redrawFreehandDraft(nv, reopenDraft);
   nv._cloudMrSuppressDrawingChangedMouseUp = true;
-  if (typeof nv.onShapeDraftReady === "function") {
-    nv.onShapeDraftReady(reopenDraft);
+  if (typeof nv.onPenDraftReady === "function") {
+    nv.onPenDraftReady(reopenDraft);
+  }
+  if (nv.opts.polylinePenMode) {
+    resetPolylineState(nv);
   }
   return true;
 }
@@ -1566,21 +1622,30 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   _mouseUpListener.call(this);
 
   if (polylineClick) {
+    if (cloudMrTryReopenDraftOnClick(this)) return;
     addPolylineVertex(this);
     return;
   }
 
+  if (cloudMrHasApplyableDraft(this) && isClickWithoutDrag(this.uiData)) {
+    if (cloudMrTryApplyDraftOnClickAway(this)) {
+      cloudMrTryReopenDraftOnClick(this);
+      return;
+    }
+    if (isClickOnActiveDraft(this)) {
+      return;
+    }
+  }
+
   if (!pendingDraft?.baseBitmap) {
-    // No new draft drawn — check if user clicked an existing ROI to re-edit it
-    cloudMrTryReopenShapeDraftOnClick(this);
+    cloudMrTryReopenDraftOnClick(this);
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
-    // Tiny drag treated as a click — also try to reopen an existing ROI
-    cloudMrTryReopenShapeDraftOnClick(this);
+    cloudMrTryReopenDraftOnClick(this);
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;
