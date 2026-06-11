@@ -247,7 +247,6 @@ export function MroDrawToolkit(props) {
                   onCancelPolyline={props.onCancelPolyline}
                   penDraftActive={props.penDraftActive}
                   onApplyPenDraft={props.onApplyPenDraft}
-                  onCancelPenDraft={props.onCancelPenDraft}
                   onFillPenDraft={props.onFillPenDraft}
                   brushSize={props.brushSize}
                   updateBrushSize={props.updateBrushSize}
@@ -266,7 +265,6 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "rectangle"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
-                  onCancelShapeDraft={props.onCancelShapeDraft}
                 />
               </Box>
 
@@ -282,7 +280,6 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "ellipse"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
-                  onCancelShapeDraft={props.onCancelShapeDraft}
                 />
               </Box>
 

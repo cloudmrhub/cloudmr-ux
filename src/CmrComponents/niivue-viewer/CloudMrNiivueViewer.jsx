@@ -1090,15 +1090,6 @@ export default function CloudMrNiivueViewer(props) {
       return undefined;
     }
     const onKeyDown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        if (shapeDraft) {
-          cancelShapeDraft();
-        } else if (penDraft) {
-          cancelPenDraftHandler();
-        }
-        return;
-      }
       if (event.key === "Enter") {
         event.preventDefault();
         if (shapeDraft) {
