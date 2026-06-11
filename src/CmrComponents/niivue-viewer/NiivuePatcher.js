@@ -4,13 +4,9 @@
 import { Niivue, NVImage, NVImageFromUrlOptions } from "@niivue/niivue";
 import {
   captureDeferredShapeDraft,
-  captureShapeDraftFromClick,
   isDraftTooSmall,
-  isVoxelPartOfDraft,
-  redrawDraftShape,
   shouldDeferShapeCommit,
 } from "./shapeDraftUtils.js";
-import { NI_PEN_TYPE } from "./niivuePenType.js";
 import {
   addPolylineVertex,
   axCorSagFromMouse,
@@ -1469,118 +1465,18 @@ Niivue.prototype.cloudMrResetPolyline = function cloudMrResetPolyline() {
   resetPolylineState(this);
 };
 
+const RIGHT_MOUSE_BUTTON = 2;
+
 function cloudMrHasApplyableDraft(nv) {
   return !!(nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive);
 }
 
-function isClickOnActiveShapeDraft(nv) {
-  const draft = nv._cloudMrActiveShapeDraft;
-  if (!draft || !nv._cloudMrShapeDraftActive) return false;
-  const vox = voxFromMouse(nv);
-  if (!vox) return false;
-  return isVoxelPartOfDraft(nv, draft, vox);
-}
-
-function isClickOnActivePenDraft(nv) {
-  const draft = nv._cloudMrActivePenDraft;
-  if (!draft || !nv._cloudMrPenDraftActive) return false;
-  const vox = voxFromMouse(nv);
-  if (!vox) return false;
-  return isVoxelPartOfDraft(nv, draft, vox);
-}
-
-function voxelLabelAt(nv, vox) {
-  const dims = nv.back?.dims;
-  if (!dims || !nv.drawBitmap || !vox) return 0;
-  const dx = dims[1];
-  const dy = dims[2];
-  const idx = vox[0] + vox[1] * dx + vox[2] * dx * dy;
-  return nv.drawBitmap[idx] || 0;
-}
-
-function canReopenShapeDraftOnClick(nv) {
-  const penType = nv.opts.penType;
-  return (
-    nv.opts.deferShapeCommit &&
-    nv.opts.drawingEnabled &&
-    !nv._cloudMrShapeDraftActive &&
-    !nv._cloudMrPenDraftActive &&
-    (penType === NI_PEN_TYPE.RECTANGLE || penType === NI_PEN_TYPE.ELLIPSE)
-  );
-}
-
-function cloudMrOpenShapeDraftFromClick(nv) {
-  const reopenDraft = captureShapeDraftFromClick(nv);
-  if (!reopenDraft) return false;
-  redrawDraftShape(nv, reopenDraft);
-  nv._cloudMrSuppressDrawingChangedMouseUp = true;
-  if (typeof nv.onShapeDraftReady === "function") {
-    nv.onShapeDraftReady(reopenDraft);
-  }
-  return true;
-}
-
-/**
- * Re-enter rectangle/ellipse edit mode when clicking an existing shape ROI.
- */
-function cloudMrTryOpenShapeDraftOnMouseDown(nv) {
-  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
+function cloudMrTryApplyDraftOnRightClick(nv, event) {
+  if (!cloudMrHasApplyableDraft(nv)) {
     return false;
   }
-  if (!canReopenShapeDraftOnClick(nv)) {
-    return false;
-  }
-  const vox = voxFromMouse(nv);
-  if (!vox || !voxelLabelAt(nv, vox)) {
-    return false;
-  }
-  return cloudMrOpenShapeDraftFromClick(nv);
-}
-
-/**
- * Click-away exits shape edit mode; clicking another shape selects it for editing.
- * Disconnected same-color shapes are distinguished by flood-fill from the click point.
- */
-function cloudMrHandleShapeDraftClickOnMouseDown(nv) {
-  if (!nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
-    return false;
-  }
-  if (!nv.opts.deferShapeCommit || !nv.opts.drawingEnabled) {
-    return false;
-  }
-
-  const vox = voxFromMouse(nv);
-  if (!vox) {
-    return false;
-  }
-  if (isClickOnActiveShapeDraft(nv)) {
-    return false;
-  }
-
-  if (typeof nv.onApplyActiveDraft === "function") {
-    nv.onApplyActiveDraft();
-  }
-
-  if (voxelLabelAt(nv, vox) > 0) {
-    cloudMrOpenShapeDraftFromClick(nv);
-  }
-  return true;
-}
-
-/** Click-away applies a pen draft without starting a new stroke. */
-function cloudMrHandlePenDraftClickOnMouseDown(nv) {
-  if (!nv._cloudMrPenDraftActive) {
-    return false;
-  }
-
-  const vox = voxFromMouse(nv);
-  if (!vox) {
-    return false;
-  }
-  if (isClickOnActivePenDraft(nv)) {
-    return false;
-  }
-
+  event.preventDefault();
+  event.stopPropagation();
   if (typeof nv.onApplyActiveDraft === "function") {
     nv.onApplyActiveDraft();
   }
@@ -1589,16 +1485,8 @@ function cloudMrHandlePenDraftClickOnMouseDown(nv) {
 
 const _mouseDownListener = Niivue.prototype.mouseDownListener;
 Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
-  if (e.button === 0) {
-    if (cloudMrHandleShapeDraftClickOnMouseDown(this)) {
-      return;
-    }
-    if (cloudMrHandlePenDraftClickOnMouseDown(this)) {
-      return;
-    }
-    if (cloudMrTryOpenShapeDraftOnMouseDown(this)) {
-      return;
-    }
+  if (e.button === RIGHT_MOUSE_BUTTON && cloudMrTryApplyDraftOnRightClick(this, e)) {
+    return;
   }
   if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();

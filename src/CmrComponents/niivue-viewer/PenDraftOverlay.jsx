@@ -28,7 +28,6 @@ function cloneFreehandDraft(draft) {
 
 /**
  * Adjust handles for polyline (vertex drag) or freehand (move only) drafts.
- * @param {{ nv: any, draft: any, onDraftChange: (d: any) => void, overlayKey?: unknown }} props
  */
 export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   const dragRef = useRef(null);
