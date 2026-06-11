@@ -4,9 +4,12 @@
 import { Niivue, NVImage, NVImageFromUrlOptions } from "@niivue/niivue";
 import {
   captureDeferredShapeDraft,
+  captureShapeDraftFromClick,
   isDraftTooSmall,
+  redrawDraftShape,
   shouldDeferShapeCommit,
 } from "./shapeDraftUtils.js";
+import { NI_PEN_TYPE } from "./niivuePenType.js";
 import {
   addPolylineVertex,
   axCorSagFromMouse,
@@ -1483,6 +1486,33 @@ function cloudMrTryApplyDraftOnRightClick(nv, event) {
   return true;
 }
 
+/**
+ * Re-enter rectangle/ellipse edit mode when clicking an existing applied ROI.
+ */
+function cloudMrTryReopenShapeDraftOnClick(nv) {
+  const penType = nv.opts.penType;
+  if (
+    !nv.opts.deferShapeCommit ||
+    !nv.opts.drawingEnabled ||
+    nv._cloudMrShapeDraftActive ||
+    nv._cloudMrPenDraftActive ||
+    !isClickWithoutDrag(nv.uiData) ||
+    (penType !== NI_PEN_TYPE.RECTANGLE && penType !== NI_PEN_TYPE.ELLIPSE)
+  ) {
+    return false;
+  }
+
+  const reopenDraft = captureShapeDraftFromClick(nv);
+  if (!reopenDraft) return false;
+
+  redrawDraftShape(nv, reopenDraft);
+  nv._cloudMrSuppressDrawingChangedMouseUp = true;
+  if (typeof nv.onShapeDraftReady === "function") {
+    nv.onShapeDraftReady(reopenDraft);
+  }
+  return true;
+}
+
 const _mouseDownListener = Niivue.prototype.mouseDownListener;
 Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
   if (e.button === RIGHT_MOUSE_BUTTON && cloudMrTryApplyDraftOnRightClick(this, e)) {
@@ -1556,12 +1586,14 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
+    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
+    cloudMrTryReopenShapeDraftOnClick(this);
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;
