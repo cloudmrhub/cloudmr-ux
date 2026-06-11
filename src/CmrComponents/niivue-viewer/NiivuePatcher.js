@@ -19,9 +19,12 @@ import {
   isPolylinePenActive,
   previewPolylineSegment,
   resetPolylineState,
+  voxFromMouse,
 } from "./polylinePenUtils.js";
 import {
   captureFreehandDraft,
+  capturePenDraftFromClick,
+  redrawFreehandDraft,
   shouldDeferFreehandCommit,
 } from "./penDraftUtils.js";
 
@@ -1486,18 +1489,30 @@ function cloudMrTryApplyDraftOnRightClick(nv, event) {
   return true;
 }
 
+/** Returns the tool-kind code stored for the voxel under the mouse (0=unknown,1=shape,2=pen freehand,3=pen polyline). */
+function clickedVoxelToolKind(nv) {
+  const bitmap = nv._cloudMrToolKindBitmap;
+  if (!bitmap || !nv.back?.dims) return 0;
+  const seedVox = voxFromMouse(nv);
+  if (!seedVox) return 0;
+  const dims = nv.back.dims;
+  const dx = dims[1];
+  const dy = dims[2];
+  const idx = seedVox[0] + seedVox[1] * dx + seedVox[2] * dx * dy;
+  return bitmap[idx] || 0;
+}
+
 /**
- * Re-enter rectangle/ellipse edit mode when clicking an existing applied ROI.
- * Works regardless of which tool is currently active (or whether any tool is active),
- * so clicking an ROI after apply always re-enters edit mode.
+ * Re-enter rectangle/ellipse edit mode when clicking an existing applied shape ROI.
+ * Skips voxels that were drawn with the pen tool (those are handled by pen reopen).
  */
 function cloudMrTryReopenShapeDraftOnClick(nv) {
-  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
-    return false;
-  }
-  if (!isClickWithoutDrag(nv.uiData)) {
-    return false;
-  }
+  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) return false;
+  if (!isClickWithoutDrag(nv.uiData)) return false;
+
+  // If we know this voxel was drawn with the pen, skip shape reopen
+  const kind = clickedVoxelToolKind(nv);
+  if (kind === 2 || kind === 3) return false;
 
   const reopenDraft = captureShapeDraftFromClick(nv);
   if (!reopenDraft) return false;
@@ -1506,6 +1521,33 @@ function cloudMrTryReopenShapeDraftOnClick(nv) {
   nv._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof nv.onShapeDraftReady === "function") {
     nv.onShapeDraftReady(reopenDraft);
+  }
+  return true;
+}
+
+/**
+ * Re-enter pen (freehand) edit mode when clicking an existing applied pen ROI.
+ * Skips voxels that were drawn with a shape tool.
+ */
+function cloudMrTryReopenPenDraftOnClick(nv) {
+  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) return false;
+  if (!isClickWithoutDrag(nv.uiData)) return false;
+
+  // Only handle pen voxels — skip if this was drawn with a shape tool
+  const kind = clickedVoxelToolKind(nv);
+  if (kind === 1) return false;
+
+  const draft = capturePenDraftFromClick(nv);
+  if (!draft) return false;
+
+  // Look up pen sub-mode (freehand=2 or polyline=3) from the kind bitmap
+  let penKind = kind; // 2 or 3; if 0 (unknown) default to freehand (2)
+  if (penKind !== 3) penKind = 2;
+
+  redrawFreehandDraft(nv, draft);
+  nv._cloudMrSuppressDrawingChangedMouseUp = true;
+  if (typeof nv.onPenDraftReopenReady === "function") {
+    nv.onPenDraftReopenReady(draft, penKind);
   }
   return true;
 }
@@ -1583,14 +1625,18 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
-    cloudMrTryReopenShapeDraftOnClick(this);
+    if (!cloudMrTryReopenShapeDraftOnClick(this)) {
+      cloudMrTryReopenPenDraftOnClick(this);
+    }
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
-    cloudMrTryReopenShapeDraftOnClick(this);
+    if (!cloudMrTryReopenShapeDraftOnClick(this)) {
+      cloudMrTryReopenPenDraftOnClick(this);
+    }
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;

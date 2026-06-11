@@ -1,5 +1,11 @@
-import { translatePt } from "./shapeDraftUtils";
+import {
+  translatePt,
+  floodFillClusterFromVox,
+  eraseClusterFromBitmap,
+  inferAxCorSagFromBounds,
+} from "./shapeDraftUtils";
 import { NI_PEN_TYPE } from "./niivuePenType";
+import { voxFromMouse } from "./polylinePenUtils";
 
 /** @typedef {'polyline' | 'freehand'} PenDraftKind */
 
@@ -260,6 +266,32 @@ export function applyPenDraft(nv, draft) {
   if (typeof nv.onDrawingChanged === "function") {
     nv.onDrawingChanged("draw");
   }
+}
+
+/**
+ * Flood-fill from the clicked voxel to reconstruct a freehand PenDraft for re-editing.
+ * Returns null if the click didn't land on a labeled voxel.
+ */
+export function capturePenDraftFromClick(nv) {
+  const seedVox = voxFromMouse(nv);
+  const cluster = floodFillClusterFromVox(nv, seedVox);
+  if (!cluster) return null;
+
+  const { label, visited, voxels, bounds } = cluster;
+  const { x1, y1, z1, x2, y2, z2 } = bounds;
+  const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, visited);
+  const axCorSag = inferAxCorSagFromBounds(
+    x1, y1, z1, x2, y2, z2,
+    nv.drawPenAxCorSag >= 0 ? nv.drawPenAxCorSag : 0,
+  );
+  return {
+    kind: "freehand",
+    baseBitmap,
+    axCorSag,
+    penValue: label,
+    strokeVoxels: voxels,
+    bounds,
+  };
 }
 
 export function cancelPenDraft(nv, draft) {

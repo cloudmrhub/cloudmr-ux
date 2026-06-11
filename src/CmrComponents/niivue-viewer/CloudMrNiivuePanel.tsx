@@ -66,6 +66,7 @@ export interface CloudMrNiivuePanelProps {
   shapeDraft: import("./shapeDraftUtils").ShapeDraft | null;
   onShapeDraftChange: (draft: import("./shapeDraftUtils").ShapeDraft) => void;
   onApplyShapeDraft: () => void;
+  onApplyShapeDraftKeepTool?: () => void;
   onCancelShapeDraft: () => void;
   penDraft: {
     kind: "polyline" | "freehand";
@@ -86,6 +87,7 @@ export interface CloudMrNiivuePanelProps {
   } | null;
   onPenDraftChange: (draft: NonNullable<CloudMrNiivuePanelProps["penDraft"]>) => void;
   onApplyPenDraft: () => void;
+  onApplyPenDraftKeepTool?: () => void;
   onCancelPenDraft: () => void;
 }
 
@@ -133,10 +135,11 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
 
   function applyDrawShapeTool(tool: "pen" | "rectangle" | "ellipse") {
     if (props.shapeDraft) {
-      props.onCancelShapeDraft();
+      // Apply (commit) the current draft rather than discarding it
+      props.onApplyShapeDraftKeepTool?.();
     }
     if (props.penDraft) {
-      props.onCancelPenDraft();
+      props.onApplyPenDraftKeepTool?.();
     }
     if (tool !== "pen") {
       props.drawToolkitProps.onPenDrawModeChange?.("freehand");

@@ -192,7 +192,7 @@ function decodeVoxelIndex(idx, dx, dy) {
   return [x, y, z];
 }
 
-function inferAxCorSagFromBounds(x1, y1, z1, x2, y2, z2, fallback = 0) {
+export function inferAxCorSagFromBounds(x1, y1, z1, x2, y2, z2, fallback = 0) {
   const spanX = x2 - x1;
   const spanY = y2 - y1;
   const spanZ = z2 - z1;
@@ -212,7 +212,7 @@ function sliceKey(axCorSag, x, y, z) {
  * Flood-fill a connected voxel cluster from a seed.
  * @returns {{ label: number, visited: Set<number>, voxels: [number,number,number][], bounds: object } | null}
  */
-function floodFillClusterFromVox(nv, seedVox) {
+export function floodFillClusterFromVox(nv, seedVox) {
   const dims = nv.back?.dims;
   if (!dims || !nv.drawBitmap || !seedVox) return null;
 
@@ -272,7 +272,7 @@ function floodFillClusterFromVox(nv, seedVox) {
   };
 }
 
-function eraseClusterFromBitmap(bitmap, visited) {
+export function eraseClusterFromBitmap(bitmap, visited) {
   const next = new Uint8Array(bitmap);
   visited.forEach((idx) => {
     next[idx] = 0;

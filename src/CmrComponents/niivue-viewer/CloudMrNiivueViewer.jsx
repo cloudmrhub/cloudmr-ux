@@ -868,10 +868,11 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
-  function applyPenDraftHandler() {
+  function applyPenDraftHandler({ keepTool = false } = {}) {
     const draft = penDraftRef.current;
     if (!draft) return;
     applyPenDraft(nv, draft);
+    markPenVoxelKind(draft, draft.kind === "polyline" ? 3 : 2);
     if (draft.kind === "polyline") {
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
@@ -880,8 +881,12 @@ export default function CloudMrNiivueViewer(props) {
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
     setDrawingChanged(true);
-    if (drawShapeToolRef.current === "pen") {
-      nvSetDrawingEnabled(true);
+    if (!keepTool) {
+      // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
+      setDrawShapeTool(null);
+      nv.opts.deferFreehandCommit = false;
+      nv.opts.polylinePenMode = false;
+      nvSetDrawingEnabled(false);
     }
     resampleImage();
   }
@@ -909,6 +914,22 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(draft);
     penDraftRef.current = draft;
     nv._cloudMrPenDraftActive = true;
+    nvSetDrawingEnabled(false);
+  };
+
+  // Called by NiivuePatcher when the user clicks an applied pen ROI to re-edit it.
+  // penKind: 2=freehand, 3=polyline
+  nv.onPenDraftReopenReady = (draft, penKind) => {
+    setPenDraft(draft);
+    penDraftRef.current = draft;
+    nv._cloudMrPenDraftActive = true;
+    // Auto-select pen tool so the palette opens
+    setDrawShapeTool("pen");
+    const mode = penKind === 3 ? "polyline" : "freehand";
+    setPenDrawMode(mode);
+    penDrawModeRef.current = mode;
+    nv.opts.deferFreehandCommit = false;
+    nv.opts.polylinePenMode = false;
     nvSetDrawingEnabled(false);
   };
 
@@ -945,18 +966,60 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
-  function applyShapeDraft() {
-    if (!shapeDraftRef.current) return;
+  function ensureToolKindBitmap() {
+    if (!nv.drawBitmap) return;
+    if (!nv._cloudMrToolKindBitmap || nv._cloudMrToolKindBitmap.length !== nv.drawBitmap.length) {
+      nv._cloudMrToolKindBitmap = new Uint8Array(nv.drawBitmap.length);
+    }
+  }
+
+  function markShapeVoxelKind(draft) {
+    if (!nv.drawBitmap || !draft?.baseBitmap) return;
+    ensureToolKindBitmap();
+    const tkb = nv._cloudMrToolKindBitmap;
+    for (let i = 0; i < nv.drawBitmap.length; i++) {
+      if (nv.drawBitmap[i] === draft.penValue && draft.baseBitmap[i] !== draft.penValue) {
+        tkb[i] = 1; // shape
+      }
+    }
+  }
+
+  function markPenVoxelKind(draft, kind) {
+    if (!nv.drawBitmap) return;
+    ensureToolKindBitmap();
+    const tkb = nv._cloudMrToolKindBitmap;
+    const dims = nv.back?.dims;
+    if (draft.kind === "freehand" && draft.strokeVoxels && dims) {
+      const dx = dims[1];
+      const dy = dims[2];
+      for (const [x, y, z] of draft.strokeVoxels) {
+        tkb[x + y * dx + z * dx * dy] = kind;
+      }
+    } else if (draft.baseBitmap) {
+      for (let i = 0; i < nv.drawBitmap.length; i++) {
+        if (nv.drawBitmap[i] === draft.penValue && draft.baseBitmap[i] !== draft.penValue) {
+          tkb[i] = kind;
+        }
+      }
+    }
+  }
+
+  function applyShapeDraft({ keepTool = false } = {}) {
+    const draft = shapeDraftRef.current;
+    if (!draft) return;
     nv.drawAddUndoBitmap(nv.drawFillOverwrites);
+    markShapeVoxelKind(draft);
     setDrawingChanged(true);
     setShapeDraft(null);
     shapeDraftRef.current = null;
     nv._cloudMrShapeDraftActive = false;
-    // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
-    setDrawShapeTool(null);
-    nv.opts.deferShapeCommit = false;
-    nv.opts.penType = NI_PEN_TYPE.PEN;
-    nvSetDrawingEnabled(false);
+    if (!keepTool) {
+      // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
+      setDrawShapeTool(null);
+      nv.opts.deferShapeCommit = false;
+      nv.opts.penType = NI_PEN_TYPE.PEN;
+      nvSetDrawingEnabled(false);
+    }
     resampleImage();
   }
 
@@ -1853,11 +1916,13 @@ export default function CloudMrNiivueViewer(props) {
 
         shapeDraft={shapeDraft}
         onShapeDraftChange={onShapeDraftChange}
-        onApplyShapeDraft={applyShapeDraft}
+        onApplyShapeDraft={() => applyShapeDraft()}
+        onApplyShapeDraftKeepTool={() => applyShapeDraft({ keepTool: true })}
         onCancelShapeDraft={cancelShapeDraft}
         penDraft={penDraft}
         onPenDraftChange={onPenDraftChange}
-        onApplyPenDraft={applyPenDraftHandler}
+        onApplyPenDraft={() => applyPenDraftHandler()}
+        onApplyPenDraftKeepTool={() => applyPenDraftHandler({ keepTool: true })}
         onCancelPenDraft={cancelPenDraftHandler}
       />}
     </Box>
