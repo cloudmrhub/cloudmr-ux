@@ -952,9 +952,11 @@ export default function CloudMrNiivueViewer(props) {
     setShapeDraft(null);
     shapeDraftRef.current = null;
     nv._cloudMrShapeDraftActive = false;
-    if (drawShapeToolRef.current) {
-      nvSetDrawingEnabled(true);
-    }
+    // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
+    setDrawShapeTool(null);
+    nv.opts.deferShapeCommit = false;
+    nv.opts.penType = NI_PEN_TYPE.PEN;
+    nvSetDrawingEnabled(false);
     resampleImage();
   }
 
@@ -967,6 +969,11 @@ export default function CloudMrNiivueViewer(props) {
     setShapeDraft(draft);
     shapeDraftRef.current = draft;
     nv._cloudMrShapeDraftActive = true;
+    // Auto-select the correct tool so the palette opens on re-entry via ROI click
+    const tool = draft.penType === NI_PEN_TYPE.ELLIPSE ? "ellipse" : "rectangle";
+    setDrawShapeTool(tool);
+    nv.opts.penType = draft.penType;
+    nv.opts.deferShapeCommit = true;
     nvSetDrawingEnabled(false);
   };
 

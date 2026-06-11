@@ -96,6 +96,11 @@ export function MroDrawToolkit(props) {
   const filled = props.drawPen > 7;
 
   useEffect(() => {
+    // Close palette when tool is deactivated programmatically (e.g. after Apply)
+    if (drawShapeTool === null && !props.shapeDraftActive && !props.penDraftActive) {
+      setExpandedOption("n");
+      return;
+    }
     if (!props.shapeDraftActive && !props.penDraftActive) return;
     if (drawShapeTool === "rectangle") setExpandedOption("r");
     else if (drawShapeTool === "ellipse") setExpandedOption("l");

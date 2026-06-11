@@ -1488,17 +1488,14 @@ function cloudMrTryApplyDraftOnRightClick(nv, event) {
 
 /**
  * Re-enter rectangle/ellipse edit mode when clicking an existing applied ROI.
+ * Works regardless of which tool is currently active (or whether any tool is active),
+ * so clicking an ROI after apply always re-enters edit mode.
  */
 function cloudMrTryReopenShapeDraftOnClick(nv) {
-  const penType = nv.opts.penType;
-  if (
-    !nv.opts.deferShapeCommit ||
-    !nv.opts.drawingEnabled ||
-    nv._cloudMrShapeDraftActive ||
-    nv._cloudMrPenDraftActive ||
-    !isClickWithoutDrag(nv.uiData) ||
-    (penType !== NI_PEN_TYPE.RECTANGLE && penType !== NI_PEN_TYPE.ELLIPSE)
-  ) {
+  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) {
+    return false;
+  }
+  if (!isClickWithoutDrag(nv.uiData)) {
     return false;
   }
 
