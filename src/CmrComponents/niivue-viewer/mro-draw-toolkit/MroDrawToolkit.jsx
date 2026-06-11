@@ -337,9 +337,9 @@ export function MroDrawToolkit(props) {
                   aria-label="delete"
                   size="small"
                   onClick={() => {
-                    props.nv.clearDrawing();
-                    props.resampleImage();
-                    props.setDrawingChanged(false);
+                    props.onClearDrawing?.();
+                    setExpandedOption("n");
+                    setExpandOpacityOptions(false);
                   }}
                   sx={toolBtnSx}
                 >

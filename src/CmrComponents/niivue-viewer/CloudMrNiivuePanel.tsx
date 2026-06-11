@@ -26,6 +26,7 @@ export type CloudMrDrawToolkitProps = Omit<
   penDraftActive?: boolean;
   onActivateEraser?: () => void;
   onDeactivateDrawTools?: () => void;
+  onClearDrawing?: () => void;
   shapeDraftActive?: boolean;
   onApplyShapeDraft?: () => void;
   onCancelShapeDraft?: () => void;

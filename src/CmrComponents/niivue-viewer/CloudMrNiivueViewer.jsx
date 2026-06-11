@@ -952,6 +952,48 @@ export default function CloudMrNiivueViewer(props) {
     }
   };
 
+  function discardShapeDraft() {
+    setShapeDraft(null);
+    shapeDraftRef.current = null;
+    nv._cloudMrShapeDraftActive = false;
+  }
+
+  function discardPenDraft() {
+    setPenDraft(null);
+    penDraftRef.current = null;
+    nv._cloudMrPenDraftActive = false;
+    nv.cloudMrResetPolyline?.();
+    setPolylineVertexCount(0);
+  }
+
+  function resetNiivueDrawSession() {
+    nv.drawShapeStartLocation = [NaN, NaN, NaN];
+    nv.drawShapePreviewBitmap = null;
+    nv._cloudMrFreehandSessionStartBitmap = null;
+    nv._cloudMrPolylineVertices = null;
+    nv._cloudMrPolylineBaseBitmap = null;
+    nv._cloudMrPolylineSessionStartBitmap = null;
+    nv._cloudMrToolKindBitmap = null;
+  }
+
+  function clearDrawingHandler() {
+    // Discard drafts without restoring baseBitmap — clearDrawing wipes the canvas anyway.
+    discardShapeDraft();
+    discardPenDraft();
+    resetNiivueDrawSession();
+    setDrawShapeTool(null);
+    nv.opts.penType = NI_PEN_TYPE.PEN;
+    nv.opts.deferShapeCommit = false;
+    nv.opts.deferFreehandCommit = false;
+    nv.opts.polylinePenMode = false;
+    nv.cloudMrResetPolyline?.();
+    nvSetDrawingEnabled(false);
+    nv.clearDrawing();
+    nv.drawScene();
+    resampleImage();
+    setDrawingChanged(false);
+  }
+
   function cancelShapeDraft() {
     const draft = shapeDraftRef.current;
     if (!draft) return;
@@ -1539,6 +1581,7 @@ export default function CloudMrNiivueViewer(props) {
     updateBrushSize: nvUpdateBrushSize,
     onActivateEraser: activateEraser,
     onDeactivateDrawTools: deactivateDrawTools,
+    onClearDrawing: clearDrawingHandler,
   };
   return (
     <Box sx={{
