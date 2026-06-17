@@ -28,13 +28,16 @@ function cloneFreehandDraft(draft) {
 
 /**
  * Adjust handles for polyline (vertex drag) or freehand (move only) drafts.
+ * @param {{ nv: any, draft: import('./penDraftUtils').PenDraft, onDraftChange: (d: any) => void, onApplyDraft?: () => void, overlayKey?: unknown }} props
  */
-export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
+export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overlayKey }) {
   const dragRef = useRef(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
   const onPointerMoveRef = useRef(null);
   const finishDragRef = useRef(null);
+  const onApplyDraftRef = useRef(onApplyDraft);
+  onApplyDraftRef.current = onApplyDraft;
   const [, setTick] = useState(0);
 
   const bump = useCallback(() => setTick((t) => t + 1), []);
@@ -120,6 +123,7 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
   );
 
   finishDragRef.current = () => {
+    const hadDrag = dragRef.current?.didMove;
     dragRef.current = null;
     if (onPointerMoveRef.current) {
       window.removeEventListener("pointermove", onPointerMoveRef.current);
@@ -127,11 +131,15 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
     if (finishDragRef.current) {
       window.removeEventListener("pointerup", finishDragRef.current);
     }
+    if (hadDrag) {
+      onApplyDraftRef.current?.();
+    }
   };
 
   onPointerMoveRef.current = (event) => {
     const drag = dragRef.current;
     if (!drag) return;
+    drag.didMove = true;
     event.preventDefault();
 
     const canvas = nv.canvas || document.getElementById("niiCanvas");
@@ -172,6 +180,7 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, overlayKey }) {
         mode,
         cornerIndex,
         kind: current.kind,
+        didMove: false,
         startClientX: event.clientX,
         startClientY: event.clientY,
         startDraft: current,
