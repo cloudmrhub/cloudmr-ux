@@ -123,12 +123,11 @@ export default function DrawColorPlatte({
           spacing={1}
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
-          {(penDrawMode === "polyline" && polylineVertexCount >= 3) ||
-          (penDrawMode === "freehand" && penDraftActive) ? (
+          {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
             <Tooltip title="Fill interior (keeps outline editable until Apply)">
               <Button
                 size="small"
-                aria-label="fill pen draft"
+                aria-label="fill polyline"
                 onClick={() => onFillPenDraft?.()}
                 sx={{
                   color: "#c9a0e8",
@@ -142,7 +141,7 @@ export default function DrawColorPlatte({
                 Fill
               </Button>
             </Tooltip>
-          ) : null}
+          )}
           <Tooltip title="Apply shape (enter or right-click)">
             <Button
               size="small"

@@ -1560,17 +1560,12 @@ Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
   if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
     this._cloudMrFreehandAxCorSag = -1;
-    this._cloudMrFreehandPath = [];
   }
   _mouseDownListener.call(this, e);
   if (shouldDeferFreehandCommit(this) && this._cloudMrFreehandSessionStartBitmap) {
     const axCorSag = axCorSagFromMouse(this);
     if (axCorSag >= 0) {
       this._cloudMrFreehandAxCorSag = axCorSag;
-    }
-    const vox = voxFromMouse(this);
-    if (vox && this._cloudMrFreehandPath) {
-      this._cloudMrFreehandPath.push([vox[0], vox[1], vox[2]]);
     }
   }
 };
@@ -1598,19 +1593,6 @@ Niivue.prototype.mouseClick = function cloudMrMouseClick(...args) {
 const _mouseMoveListener = Niivue.prototype.mouseMoveListener;
 Niivue.prototype.mouseMoveListener = function cloudMrMouseMoveListener(event) {
   const result = _mouseMoveListener.call(this, event);
-  if (shouldDeferFreehandCommit(this) && this.uiData?.isDragging) {
-    const vox = voxFromMouse(this);
-    if (vox) {
-      if (!this._cloudMrFreehandPath) {
-        this._cloudMrFreehandPath = [];
-      }
-      const path = this._cloudMrFreehandPath;
-      const last = path[path.length - 1];
-      if (!last || last[0] !== vox[0] || last[1] !== vox[1] || last[2] !== vox[2]) {
-        path.push([vox[0], vox[1], vox[2]]);
-      }
-    }
-  }
   if (isPolylinePenActive(this) && this._cloudMrPolylineVertices?.length > 0) {
     previewPolylineSegment(this);
   }

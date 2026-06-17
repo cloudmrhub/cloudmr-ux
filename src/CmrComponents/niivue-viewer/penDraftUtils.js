@@ -17,7 +17,6 @@ import { voxFromMouse } from "./polylinePenUtils";
  * @property {number} penValue
  * @property {[number, number, number][]} [vertices]
  * @property {[number, number, number][]} [strokeVoxels]
- * @property {[number, number, number][]} [pathVertices]
  * @property {{ x1: number, y1: number, x2: number, y2: number, z1: number, z2: number }} [bounds]
  * @property {boolean} [filled]
  */
@@ -32,6 +31,7 @@ export function isEraserActive(nv) {
 
 export function isFreehandPenActive(nv) {
   return (
+    nv.opts.isFilledPen &&
     nv.opts.drawingEnabled &&
     nv.opts.penType === NI_PEN_TYPE.PEN &&
     !nv.opts.polylinePenMode &&
@@ -111,78 +111,21 @@ export function captureFreehandDraft(nv, sessionStartBitmap, axCorSag) {
     z2 = Math.max(z2, z);
   }
 
-  const pathVertices = nv._cloudMrFreehandPath?.length
-    ? nv._cloudMrFreehandPath.map((v) => [...v])
-    : undefined;
-  nv._cloudMrFreehandPath = [];
-
   return {
     kind: "freehand",
     baseBitmap: new Uint8Array(sessionStartBitmap),
     axCorSag,
     penValue,
     strokeVoxels,
-    pathVertices,
     bounds: { x1, y1, z1, x2, y2, z2 },
   };
 }
 
-function collectStrokeVoxelsFromBitmap(nv, draft) {
-  const dims = nv.back?.dims;
-  if (!dims || !nv.drawBitmap || !draft?.baseBitmap) return draft.strokeVoxels || [];
-  const strokeVoxels = [];
-  for (let i = 0; i < nv.drawBitmap.length; i++) {
-    if (nv.drawBitmap[i] === draft.penValue && draft.baseBitmap[i] !== draft.penValue) {
-      const z = Math.floor(i / (dims[1] * dims[2]));
-      const rem = i - z * dims[1] * dims[2];
-      const y = Math.floor(rem / dims[1]);
-      const x = rem % dims[1];
-      strokeVoxels.push([x, y, z]);
-    }
-  }
-  return strokeVoxels;
-}
-
-function boundsFromVoxels(voxels) {
-  let x1 = Infinity;
-  let y1 = Infinity;
-  let z1 = Infinity;
-  let x2 = -Infinity;
-  let y2 = -Infinity;
-  let z2 = -Infinity;
-  for (const [x, y, z] of voxels) {
-    x1 = Math.min(x1, x);
-    y1 = Math.min(y1, y);
-    z1 = Math.min(z1, z);
-    x2 = Math.max(x2, x);
-    y2 = Math.max(y2, y);
-    z2 = Math.max(z2, z);
-  }
-  return { x1, y1, z1, x2, y2, z2 };
-}
-
 export function redrawFreehandDraft(nv, draft) {
-  if (!draft?.baseBitmap) return;
+  if (!draft?.strokeVoxels?.length || !draft.baseBitmap) return;
   nv.drawBitmap.set(draft.baseBitmap);
-  nv.drawPenAxCorSag = draft.axCorSag;
-  if (!draft.filled) {
-    if (!draft.strokeVoxels?.length) return;
-    for (const [x, y, z] of draft.strokeVoxels) {
-      nv.drawPt(x, y, z, draft.penValue);
-    }
-  } else if (draft.pathVertices?.length >= 3) {
-    for (const [x, y, z] of draft.strokeVoxels || []) {
-      nv.drawPt(x, y, z, draft.penValue);
-    }
-    nv.drawPenFillPts = draft.pathVertices.map((v) => [...v]);
-    nv._cloudMrSkipNextUndoBitmap = true;
-    nv.drawPenFilled();
-  } else if (draft.strokeVoxels?.length) {
-    for (const [x, y, z] of draft.strokeVoxels) {
-      nv.drawPt(x, y, z, draft.penValue);
-    }
-  } else {
-    return;
+  for (const [x, y, z] of draft.strokeVoxels) {
+    nv.drawPt(x, y, z, draft.penValue);
   }
   nv.refreshDrawing(false, false);
   nv.drawScene();
@@ -295,26 +238,6 @@ export function polylineDraftFromNv(nv, { filled = false } = {}) {
     axCorSag: nv._cloudMrPolylineAxCorSag,
     penValue: nv.opts.penValue,
     filled,
-  };
-}
-
-/** Fill freehand interior from the traced stroke path (outline stays editable until Apply). */
-export function fillFreehandDraft(nv, draft) {
-  const path = draft.pathVertices;
-  if (!path || path.length < 3) return draft;
-  redrawFreehandDraft(nv, { ...draft, filled: false });
-  nv.drawPenAxCorSag = draft.axCorSag;
-  nv.drawPenFillPts = path.map((v) => [...v]);
-  nv._cloudMrSkipNextUndoBitmap = true;
-  nv.drawPenFilled();
-  nv.refreshDrawing(false, false);
-  nv.drawScene();
-  const strokeVoxels = collectStrokeVoxelsFromBitmap(nv, draft);
-  return {
-    ...draft,
-    filled: true,
-    strokeVoxels,
-    bounds: boundsFromVoxels(strokeVoxels),
   };
 }
 
