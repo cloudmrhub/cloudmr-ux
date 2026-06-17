@@ -152,7 +152,7 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     if (tool === "pen") {
       nv.opts.polylinePenMode = penMode === "polyline";
       nv.opts.isFilledPen = penMode === "freehand";
-      nv.opts.deferFreehandCommit = penMode === "freehand";
+      nv.opts.deferFreehandCommit = false;
     } else {
       nv.opts.polylinePenMode = false;
       nv.opts.deferFreehandCommit = false;

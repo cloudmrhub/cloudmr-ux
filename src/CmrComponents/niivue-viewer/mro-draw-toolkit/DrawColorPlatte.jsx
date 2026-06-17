@@ -36,6 +36,7 @@ export default function DrawColorPlatte({
   onPenDrawModeChange,
   polylineVertexCount = 0,
   penDraftActive = false,
+  penDraftKind,
   penDraftFilled = false,
   onApplyPenDraft,
   onFillPenDraft,
@@ -116,7 +117,10 @@ export default function DrawColorPlatte({
         </Typography>
       )}
 
-      {showPenModes && penDraftActive && expanded && (
+      {showPenModes &&
+        penDraftActive &&
+        (penDrawMode === "polyline" || penDraftKind === "freehand") &&
+        expanded && (
         <Stack
           direction="row"
           alignItems="center"

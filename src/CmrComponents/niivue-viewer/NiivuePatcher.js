@@ -25,6 +25,7 @@ import {
   captureFreehandDraft,
   capturePenDraftFromClick,
   capturePolylineDraftFromClick,
+  isFreehandPenActive,
   isRegisteredPolylineClick,
   redrawFreehandDraft,
   redrawPolylineDraft,
@@ -537,6 +538,19 @@ Niivue.prototype.drawPenFilled = function () {
         return;
     }
     this.drawAddUndoBitmap()
+    if (this._cloudMrFreehandSessionStartBitmap && isFreehandPenActive(this)) {
+        const axCorSag =
+            this.drawPenAxCorSag >= 0 ? this.drawPenAxCorSag : this._cloudMrFreehandAxCorSag;
+        const draft = captureFreehandDraft(
+            this,
+            this._cloudMrFreehandSessionStartBitmap,
+            axCorSag,
+        );
+        this._cloudMrFreehandSessionStartBitmap = null;
+        if (draft && typeof this.onFreehandCommitted === "function") {
+            this.onFreehandCommitted(draft);
+        }
+    }
     // Post-processing to hide hidden voxels
     this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
     for (let i = 0; i < this.drawBitmap.length; i++) {
@@ -1507,6 +1521,28 @@ function clickedVoxelToolKind(nv) {
 }
 
 /**
+ * Re-open an applied ROI for editing based on stored (or inferred) tool kind.
+ * Unmarked pen strokes (kind 0) must try pen reopen before shape inference —
+ * otherwise freehand blobs get misclassified as ellipse/rectangle shapes.
+ */
+function cloudMrTryReopenDraftOnClick(nv) {
+  if (nv._cloudMrShapeDraftActive || nv._cloudMrPenDraftActive) return;
+  if (!isClickWithoutDrag(nv.uiData)) return;
+
+  const kind = clickedVoxelToolKind(nv);
+  if (kind === 1) {
+    cloudMrTryReopenShapeDraftOnClick(nv);
+    return;
+  }
+  if (kind === 2 || kind === 3) {
+    cloudMrTryReopenPenDraftOnClick(nv);
+    return;
+  }
+  if (cloudMrTryReopenPenDraftOnClick(nv)) return;
+  cloudMrTryReopenShapeDraftOnClick(nv);
+}
+
+/**
  * Re-enter rectangle/ellipse edit mode when clicking an existing applied shape ROI.
  * Skips voxels that were drawn with the pen tool (those are handled by pen reopen).
  */
@@ -1569,12 +1605,12 @@ Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
   if (e.button === RIGHT_MOUSE_BUTTON && cloudMrTryApplyDraftOnRightClick(this, e)) {
     return;
   }
-  if (shouldDeferFreehandCommit(this) && this.drawBitmap) {
+  if (isFreehandPenActive(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
     this._cloudMrFreehandAxCorSag = -1;
   }
   _mouseDownListener.call(this, e);
-  if (shouldDeferFreehandCommit(this) && this._cloudMrFreehandSessionStartBitmap) {
+  if (isFreehandPenActive(this) && this._cloudMrFreehandSessionStartBitmap) {
     const axCorSag = axCorSagFromMouse(this);
     if (axCorSag >= 0) {
       this._cloudMrFreehandAxCorSag = axCorSag;
@@ -1637,22 +1673,20 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
-    if (!cloudMrTryReopenShapeDraftOnClick(this)) {
-      cloudMrTryReopenPenDraftOnClick(this);
-    }
+    cloudMrTryReopenDraftOnClick(this);
     return;
   }
   if (isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB)) {
     this.drawBitmap.set(pendingDraft.baseBitmap);
     this.refreshDrawing(true, false);
     this.drawScene();
-    if (!cloudMrTryReopenShapeDraftOnClick(this)) {
-      cloudMrTryReopenPenDraftOnClick(this);
-    }
+    cloudMrTryReopenDraftOnClick(this);
     return;
   }
   this._cloudMrSuppressDrawingChangedMouseUp = true;
-  if (typeof this.onShapeDraftReady === "function") {
+  if (typeof this.onShapeCommitted === "function") {
+    this.onShapeCommitted(pendingDraft);
+  } else if (typeof this.onShapeDraftReady === "function") {
     this.onShapeDraftReady(pendingDraft);
   }
 };

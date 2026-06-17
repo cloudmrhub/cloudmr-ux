@@ -9,6 +9,7 @@ import { LayersPanel } from './LayersPanel';
 import {
   applyPenDraft,
   cancelPenDraft,
+  captureFreehandDraft,
   fillPolylineDraft,
   unfillPolylineDraft,
   polylineDraftFromNv,
@@ -593,7 +594,7 @@ export default function CloudMrNiivueViewer(props) {
         cancelShapeDraft();
       }
     } else if (drawShapeToolRef.current === "pen") {
-      nv.opts.deferFreehandCommit = penDrawModeRef.current === "freehand";
+      nv.opts.deferFreehandCommit = false;
       nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
       nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
     }
@@ -845,15 +846,47 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function syncPenDrawMode(mode) {
+    const prevMode = penDrawModeRef.current;
+
+    // Commit an in-progress freehand before switching to polyline so it stays
+    // marked as pen (kind 2) and is not misidentified as a shape on click.
+    if (prevMode === "freehand" && mode === "polyline") {
+      const draft = penDraftRef.current;
+      if (draft?.kind === "freehand") {
+        applyPenDraft(nv, draft);
+        markPenVoxelKind(draft, 2);
+        setPenDraft(null);
+        penDraftRef.current = null;
+        nv._cloudMrPenDraftActive = false;
+      } else if (nv._cloudMrFreehandSessionStartBitmap) {
+        const axCorSag =
+          nv._cloudMrFreehandAxCorSag >= 0 ? nv._cloudMrFreehandAxCorSag : nv.drawPenAxCorSag;
+        const captured = captureFreehandDraft(
+          nv,
+          nv._cloudMrFreehandSessionStartBitmap,
+          axCorSag,
+        );
+        nv._cloudMrFreehandSessionStartBitmap = null;
+        if (captured) markPenVoxelKind(captured, 2);
+      }
+    }
+
+    if (mode === "freehand") {
+      nv.cloudMrCancelPolyline?.();
+      if (penDraftRef.current?.kind === "polyline") {
+        cancelPenDraft(nv, penDraftRef.current);
+        setPenDraft(null);
+        penDraftRef.current = null;
+        nv._cloudMrPenDraftActive = false;
+        setPolylineVertexCount(0);
+      }
+    }
+
     setPenDrawMode(mode);
     penDrawModeRef.current = mode;
     nv.opts.polylinePenMode = mode === "polyline";
     nv.opts.isFilledPen = mode === "freehand";
-    nv.opts.deferFreehandCommit =
-      drawShapeToolRef.current === "pen" && mode === "freehand";
-    if (mode === "freehand") {
-      nv.cloudMrCancelPolyline?.();
-    }
+    nv.opts.deferFreehandCommit = false;
   }
 
   function cancelPenDraftHandler() {
@@ -908,7 +941,7 @@ export default function CloudMrNiivueViewer(props) {
       const mode = penDrawModeRef.current;
       nv.opts.polylinePenMode = mode === "polyline";
       nv.opts.isFilledPen = mode === "freehand";
-      nv.opts.deferFreehandCommit = mode === "freehand";
+      nv.opts.deferFreehandCommit = false;
       nvSetDrawingEnabled(true);
     } else {
       // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
@@ -940,6 +973,19 @@ export default function CloudMrNiivueViewer(props) {
   function cancelPolylineDraft() {
     cancelPenDraftHandler();
   }
+
+  nv.onShapeCommitted = (draft) => {
+    nv.drawAddUndoBitmap(nv.drawFillOverwrites);
+    markShapeVoxelKind(draft);
+    setDrawingChanged(true);
+    resampleImage();
+  };
+
+  nv.onFreehandCommitted = (draft) => {
+    markPenVoxelKind(draft, 2);
+    setDrawingChanged(true);
+    resampleImage();
+  };
 
   nv.onPenDraftReady = (draft) => {
     setPenDraft(draft);
@@ -1617,6 +1663,7 @@ export default function CloudMrNiivueViewer(props) {
     onCancelPenDraft: cancelPenDraftHandler,
     onFillPenDraft: fillPolylineDraftHandler,
     penDraftActive: penDraft != null,
+    penDraftKind: penDraft?.kind,
     penDraftFilled: penDraft?.filled === true,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
