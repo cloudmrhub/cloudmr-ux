@@ -208,11 +208,34 @@ function sliceKey(axCorSag, x, y, z) {
   return `${y},${z}`;
 }
 
+const NEIGHBORS_6 = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 1, 0],
+  [0, -1, 0],
+  [0, 0, 1],
+  [0, 0, -1],
+];
+
+const NEIGHBORS_26 = (() => {
+  const out = [];
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        if (dx === 0 && dy === 0 && dz === 0) continue;
+        out.push([dx, dy, dz]);
+      }
+    }
+  }
+  return out;
+})();
+
 /**
  * Flood-fill a connected voxel cluster from a seed.
+ * @param {{ connectivity?: 6 | 26 }} [options]
  * @returns {{ label: number, visited: Set<number>, voxels: [number,number,number][], bounds: object } | null}
  */
-export function floodFillClusterFromVox(nv, seedVox) {
+export function floodFillClusterFromVox(nv, seedVox, { connectivity = 6 } = {}) {
   const dims = nv.back?.dims;
   if (!dims || !nv.drawBitmap || !seedVox) return null;
 
@@ -223,6 +246,7 @@ export function floodFillClusterFromVox(nv, seedVox) {
   const label = nv.drawBitmap[seedIdx];
   if (!label) return null;
 
+  const neighborOffsets = connectivity === 26 ? NEIGHBORS_26 : NEIGHBORS_6;
   const visited = new Set();
   const queue = [seedIdx];
   visited.add(seedIdx);
@@ -245,15 +269,10 @@ export function floodFillClusterFromVox(nv, seedVox) {
     y2 = Math.max(y2, y);
     z2 = Math.max(z2, z);
 
-    const neighbors = [
-      [x + 1, y, z],
-      [x - 1, y, z],
-      [x, y + 1, z],
-      [x, y - 1, z],
-      [x, y, z + 1],
-      [x, y, z - 1],
-    ];
-    for (const [nx, ny, nz] of neighbors) {
+    for (const [ox, oy, oz] of neighborOffsets) {
+      const nx = x + ox;
+      const ny = y + oy;
+      const nz = z + oz;
       if (nx < 0 || ny < 0 || nz < 0 || nx >= dx || ny >= dy || nz >= dz) continue;
       const nIdx = voxelIndex(nx, ny, nz, dx, dy);
       if (visited.has(nIdx) || nv.drawBitmap[nIdx] !== label) continue;

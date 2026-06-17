@@ -147,9 +147,16 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     }
     props.setDrawShapeTool(tool);
     const { nv } = props;
+    const penMode = props.drawToolkitProps.penDrawMode ?? "freehand";
     nv.opts.deferShapeCommit = tool === "rectangle" || tool === "ellipse";
-    nv.opts.deferFreehandCommit =
-      tool === "pen" && props.drawToolkitProps.penDrawMode === "freehand";
+    if (tool === "pen") {
+      nv.opts.polylinePenMode = penMode === "polyline";
+      nv.opts.isFilledPen = penMode === "freehand";
+      nv.opts.deferFreehandCommit = penMode === "freehand";
+    } else {
+      nv.opts.polylinePenMode = false;
+      nv.opts.deferFreehandCommit = false;
+    }
     nv.opts.penType =
       tool === "rectangle"
         ? NI_PEN_TYPE.RECTANGLE

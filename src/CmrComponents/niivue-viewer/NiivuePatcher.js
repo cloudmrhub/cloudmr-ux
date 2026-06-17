@@ -24,8 +24,12 @@ import {
 import {
   captureFreehandDraft,
   capturePenDraftFromClick,
+  capturePolylineDraftFromClick,
+  isRegisteredPolylineClick,
   redrawFreehandDraft,
+  redrawPolylineDraft,
   shouldDeferFreehandCommit,
+  syncPolylineDraftToNv,
 } from "./penDraftUtils.js";
 
 /*
@@ -1513,6 +1517,7 @@ function cloudMrTryReopenShapeDraftOnClick(nv) {
   // If we know this voxel was drawn with the pen, skip shape reopen
   const kind = clickedVoxelToolKind(nv);
   if (kind === 2 || kind === 3) return false;
+  if (isRegisteredPolylineClick(nv)) return false;
 
   const reopenDraft = captureShapeDraftFromClick(nv);
   if (!reopenDraft) return false;
@@ -1537,14 +1542,21 @@ function cloudMrTryReopenPenDraftOnClick(nv) {
   const kind = clickedVoxelToolKind(nv);
   if (kind === 1) return false;
 
-  const draft = capturePenDraftFromClick(nv);
-  if (!draft) return false;
+  let draft = capturePolylineDraftFromClick(nv);
+  let penKind = draft ? 3 : kind === 3 ? 3 : 2;
 
-  // Look up pen sub-mode (freehand=2 or polyline=3) from the kind bitmap
-  let penKind = kind; // 2 or 3; if 0 (unknown) default to freehand (2)
-  if (penKind !== 3) penKind = 2;
+  if (!draft) {
+    draft = capturePenDraftFromClick(nv);
+    if (!draft) return false;
+    if (kind !== 3) penKind = 2;
+  }
 
-  redrawFreehandDraft(nv, draft);
+  if (draft.kind === "polyline") {
+    redrawPolylineDraft(nv, draft);
+    syncPolylineDraftToNv(nv, draft);
+  } else {
+    redrawFreehandDraft(nv, draft);
+  }
   nv._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof nv.onPenDraftReopenReady === "function") {
     nv.onPenDraftReopenReady(draft, penKind);

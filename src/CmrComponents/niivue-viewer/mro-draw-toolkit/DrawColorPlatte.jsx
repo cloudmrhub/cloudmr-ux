@@ -36,6 +36,7 @@ export default function DrawColorPlatte({
   onPenDrawModeChange,
   polylineVertexCount = 0,
   penDraftActive = false,
+  penDraftFilled = false,
   onApplyPenDraft,
   onFillPenDraft,
   brushSize = 1,
@@ -124,13 +125,19 @@ export default function DrawColorPlatte({
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
           {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
-            <Tooltip title="Fill interior (keeps outline editable until Apply)">
+            <Tooltip
+              title={
+                penDraftFilled
+                  ? "Remove fill (keeps outline editable)"
+                  : "Fill interior (keeps outline editable until Apply)"
+              }
+            >
               <Button
                 size="small"
-                aria-label="fill polyline"
+                aria-label={penDraftFilled ? "undo fill polyline" : "fill polyline"}
                 onClick={() => onFillPenDraft?.()}
                 sx={{
-                  color: "#c9a0e8",
+                  color: penDraftFilled ? "#ffb74d" : "#c9a0e8",
                   fontSize: ACTION_FONT_SIZE,
                   textTransform: "none",
                   minWidth: 0,
@@ -138,7 +145,7 @@ export default function DrawColorPlatte({
                   px: 0.75,
                 }}
               >
-                Fill
+                {penDraftFilled ? "Undo Fill" : "Fill"}
               </Button>
             </Tooltip>
           )}

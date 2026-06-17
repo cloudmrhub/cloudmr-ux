@@ -19,7 +19,133 @@ import { voxFromMouse } from "./polylinePenUtils";
  * @property {[number, number, number][]} [strokeVoxels]
  * @property {{ x1: number, y1: number, x2: number, y2: number, z1: number, z2: number }} [bounds]
  * @property {boolean} [filled]
+ * @property {number} [_registryId]
  */
+
+function voxelIndexFromVox(vox, dx, dy) {
+  return vox[0] + vox[1] * dx + vox[2] * dx * dy;
+}
+
+/** Voxel indices added by a pen draft relative to its base bitmap. */
+export function collectPenDraftVoxelIndices(nv, draft) {
+  const indices = new Set();
+  if (!nv.drawBitmap || !draft?.baseBitmap) return indices;
+  const penValue = draft.penValue;
+  for (let i = 0; i < nv.drawBitmap.length; i++) {
+    if (nv.drawBitmap[i] === penValue && draft.baseBitmap[i] !== penValue) {
+      indices.add(i);
+    }
+  }
+  return indices;
+}
+
+/** Collect applied polyline voxels using session baseline and vertex redraw fallbacks. */
+export function collectPolylineAppliedVoxelIndices(nv, draft) {
+  let indices = collectPenDraftVoxelIndices(nv, draft);
+  if (indices.size) return indices;
+
+  const session = nv._cloudMrPolylineSessionStartBitmap;
+  if (session && nv.drawBitmap && draft?.penValue != null) {
+    indices = new Set();
+    const penValue = draft.penValue;
+    for (let i = 0; i < nv.drawBitmap.length; i++) {
+      if (nv.drawBitmap[i] === penValue && session[i] !== penValue) {
+        indices.add(i);
+      }
+    }
+    if (indices.size) return indices;
+  }
+
+  if (draft?.vertices?.length >= 2 && session) {
+    const baseBitmap = new Uint8Array(session);
+    redrawPolylineDraft(nv, {
+      ...draft,
+      baseBitmap,
+      filled: !!draft.filled,
+    });
+    indices = collectPenDraftVoxelIndices(nv, { ...draft, baseBitmap });
+  }
+  return indices;
+}
+
+export function isRegisteredPolylineClick(nv, seedVox = voxFromMouse(nv)) {
+  return !!findPolylineRegistryEntry(nv, seedVox);
+}
+
+function findPolylineRegistryEntryById(nv, registryId) {
+  return nv._cloudMrPolylineRegistry?.find((entry) => entry.id === registryId) ?? null;
+}
+
+function findPolylineRegistryEntry(nv, seedVox) {
+  const registry = nv._cloudMrPolylineRegistry;
+  if (!registry?.length || !seedVox || !nv.back?.dims) return null;
+
+  const dx = nv.back.dims[1];
+  const dy = nv.back.dims[2];
+  const seedIdx = voxelIndexFromVox(seedVox, dx, dy);
+
+  const direct = registry.find((entry) => entry.voxelIndices.has(seedIdx));
+  if (direct) return direct;
+
+  const cluster = floodFillClusterFromVox(nv, seedVox, { connectivity: 26 });
+  if (!cluster) return null;
+
+  let best = null;
+  let bestOverlap = 0;
+  for (const entry of registry) {
+    let overlap = 0;
+    for (const idx of cluster.visited) {
+      if (entry.voxelIndices.has(idx)) overlap++;
+    }
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap;
+      best = entry;
+    }
+  }
+  return bestOverlap > 0 ? best : null;
+}
+
+/** Persist applied polyline vertices so reopen can restore the full line. */
+export function registerAppliedPolyline(nv, draft, existingId) {
+  const voxelIndices = collectPolylineAppliedVoxelIndices(nv, draft);
+  if (!voxelIndices.size || !draft.vertices?.length) return null;
+
+  nv._cloudMrPolylineRegistry = nv._cloudMrPolylineRegistry || [];
+  const nextId =
+    existingId ??
+    ((nv._cloudMrPolylineNextId = (nv._cloudMrPolylineNextId || 0) + 1));
+
+  const entry = {
+    id: nextId,
+    vertices: draft.vertices.map((v) => [...v]),
+    axCorSag: draft.axCorSag,
+    penValue: draft.penValue,
+    filled: !!draft.filled,
+    voxelIndices,
+  };
+
+  const existingIndex = nv._cloudMrPolylineRegistry.findIndex((e) => e.id === nextId);
+  if (existingIndex >= 0) {
+    nv._cloudMrPolylineRegistry[existingIndex] = entry;
+  } else {
+    nv._cloudMrPolylineRegistry.push(entry);
+  }
+  return nextId;
+}
+
+export function restoreCommittedPolyline(nv, registryId) {
+  const entry = findPolylineRegistryEntryById(nv, registryId);
+  if (!entry || !nv.drawBitmap) return;
+  const draft = {
+    kind: "polyline",
+    vertices: entry.vertices.map((v) => [...v]),
+    baseBitmap: nv.drawBitmap.slice(),
+    axCorSag: entry.axCorSag,
+    penValue: entry.penValue,
+    filled: entry.filled,
+  };
+  redrawPolylineDraft(nv, draft);
+}
 
 export function isEraserActive(nv) {
   return (
@@ -124,9 +250,15 @@ export function captureFreehandDraft(nv, sessionStartBitmap, axCorSag) {
 export function redrawFreehandDraft(nv, draft) {
   if (!draft?.strokeVoxels?.length || !draft.baseBitmap) return;
   nv.drawBitmap.set(draft.baseBitmap);
+  // strokeVoxels already contains every expanded/thickened voxel of the original
+  // stroke. Replaying them with penBounds=0 stamps each voxel directly without
+  // re-expanding, preventing thickness from accumulating across edits.
+  const savedPenBounds = nv.opts.penBounds;
+  nv.opts.penBounds = 0;
   for (const [x, y, z] of draft.strokeVoxels) {
     nv.drawPt(x, y, z, draft.penValue);
   }
+  nv.opts.penBounds = savedPenBounds;
   nv.refreshDrawing(false, false);
   nv.drawScene();
 }
@@ -256,9 +388,32 @@ export function fillPolylineDraft(nv, draft) {
   return next;
 }
 
+/** Undo a previous fill — revert to outline-only without committing the draft. */
+export function unfillPolylineDraft(nv, draft) {
+  if (!draft?.vertices) return draft;
+  const next = { ...draft, filled: false };
+  redrawPolylineDraft(nv, next);
+  nv.refreshDrawing(false, false);
+  nv.drawScene();
+  syncPolylineDraftToNv(nv, next);
+  return next;
+}
+
 export function applyPenDraft(nv, draft) {
   if (draft.kind === "polyline") {
-    redrawPolylineDraft(nv, draft);
+    // Prefer live vertex state; draft snapshots can lag behind the canvas.
+    if (nv._cloudMrPolylineVertices?.length >= 2) {
+      const fresh = polylineDraftFromNv(nv, { filled: !!draft.filled });
+      if (fresh) draft = fresh;
+    }
+    // Commit the incrementally drawn bitmap (drops rubber-band preview to cursor).
+    if (nv._cloudMrPolylineBaseBitmap) {
+      nv.drawBitmap.set(nv._cloudMrPolylineBaseBitmap);
+      nv.refreshDrawing(false, false);
+      nv.drawScene();
+    } else {
+      redrawPolylineDraft(nv, draft);
+    }
   } else {
     redrawFreehandDraft(nv, draft);
   }
@@ -266,6 +421,28 @@ export function applyPenDraft(nv, draft) {
   if (typeof nv.onDrawingChanged === "function") {
     nv.onDrawingChanged("draw");
   }
+  return draft;
+}
+
+/**
+ * Reconstruct a polyline PenDraft from stored vertices (not flood-fill).
+ * Returns null if the click didn't land on a registered polyline.
+ */
+export function capturePolylineDraftFromClick(nv) {
+  const seedVox = voxFromMouse(nv);
+  const entry = findPolylineRegistryEntry(nv, seedVox);
+  if (!entry) return null;
+
+  const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, entry.voxelIndices);
+  return {
+    kind: "polyline",
+    baseBitmap,
+    axCorSag: entry.axCorSag,
+    penValue: entry.penValue,
+    vertices: entry.vertices.map((v) => [...v]),
+    filled: entry.filled,
+    _registryId: entry.id,
+  };
 }
 
 /**
@@ -274,7 +451,7 @@ export function applyPenDraft(nv, draft) {
  */
 export function capturePenDraftFromClick(nv) {
   const seedVox = voxFromMouse(nv);
-  const cluster = floodFillClusterFromVox(nv, seedVox);
+  const cluster = floodFillClusterFromVox(nv, seedVox, { connectivity: 26 });
   if (!cluster) return null;
 
   const { label, visited, voxels, bounds } = cluster;

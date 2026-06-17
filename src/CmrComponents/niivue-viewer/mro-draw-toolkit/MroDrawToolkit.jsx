@@ -246,6 +246,7 @@ export function MroDrawToolkit(props) {
                   polylineVertexCount={props.polylineVertexCount}
                   onCancelPolyline={props.onCancelPolyline}
                   penDraftActive={props.penDraftActive}
+                  penDraftFilled={props.penDraftFilled}
                   onApplyPenDraft={props.onApplyPenDraft}
                   onFillPenDraft={props.onFillPenDraft}
                   brushSize={props.brushSize}

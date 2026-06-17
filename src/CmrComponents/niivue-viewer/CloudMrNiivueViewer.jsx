@@ -10,8 +10,12 @@ import {
   applyPenDraft,
   cancelPenDraft,
   fillPolylineDraft,
+  unfillPolylineDraft,
   polylineDraftFromNv,
   syncPolylineDraftToNv,
+  registerAppliedPolyline,
+  restoreCommittedPolyline,
+  collectPolylineAppliedVoxelIndices,
 } from './penDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
 import { Niivue } from './NiivuePatcher';
@@ -855,7 +859,11 @@ export default function CloudMrNiivueViewer(props) {
   function cancelPenDraftHandler() {
     const draft = penDraftRef.current;
     if (!draft) return;
+    const registryId = draft._registryId;
     cancelPenDraft(nv, draft);
+    if (registryId && draft.kind === "polyline") {
+      restoreCommittedPolyline(nv, registryId);
+    }
     if (draft.kind === "polyline") {
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
@@ -869,11 +877,26 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function applyPenDraftHandler({ keepTool = false } = {}) {
-    const draft = penDraftRef.current;
+    let draft = penDraftRef.current;
     if (!draft) return;
-    applyPenDraft(nv, draft);
+    if (draft.kind === "polyline" && nv._cloudMrPolylineVertices?.length >= 2) {
+      const fresh = polylineDraftFromNv(nv, { filled: !!draft.filled });
+      if (fresh) {
+        draft = fresh;
+        penDraftRef.current = draft;
+      }
+    }
+    draft = applyPenDraft(nv, draft) ?? draft;
+    if (draft.kind === "polyline" && nv._cloudMrPolylineSessionStartBitmap) {
+      draft = {
+        ...draft,
+        baseBitmap: new Uint8Array(nv._cloudMrPolylineSessionStartBitmap),
+      };
+    }
+    penDraftRef.current = draft;
     markPenVoxelKind(draft, draft.kind === "polyline" ? 3 : 2);
     if (draft.kind === "polyline") {
+      registerAppliedPolyline(nv, draft, draft._registryId);
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
     }
@@ -881,7 +904,13 @@ export default function CloudMrNiivueViewer(props) {
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
     setDrawingChanged(true);
-    if (!keepTool) {
+    if (keepTool) {
+      const mode = penDrawModeRef.current;
+      nv.opts.polylinePenMode = mode === "polyline";
+      nv.opts.isFilledPen = mode === "freehand";
+      nv.opts.deferFreehandCommit = mode === "freehand";
+      nvSetDrawingEnabled(true);
+    } else {
       // Deactivate tool entirely — palette closes, user re-enters edit by clicking the ROI
       setDrawShapeTool(null);
       nv.opts.deferFreehandCommit = false;
@@ -894,7 +923,9 @@ export default function CloudMrNiivueViewer(props) {
   function fillPolylineDraftHandler() {
     const draft = penDraftRef.current;
     if (!draft || draft.kind !== "polyline" || draft.vertices.length < 3) return;
-    const next = fillPolylineDraft(nv, draft);
+    const next = draft.filled
+      ? unfillPolylineDraft(nv, draft)
+      : fillPolylineDraft(nv, draft);
     onPenDraftChange(next);
   }
 
@@ -925,9 +956,12 @@ export default function CloudMrNiivueViewer(props) {
     nv._cloudMrPenDraftActive = true;
     // Auto-select pen tool so the palette opens
     setDrawShapeTool("pen");
-    const mode = penKind === 3 ? "polyline" : "freehand";
+    const mode = draft.kind === "polyline" ? "polyline" : "freehand";
     setPenDrawMode(mode);
     penDrawModeRef.current = mode;
+    if (draft.kind === "polyline") {
+      setPolylineVertexCount(draft.vertices?.length ?? 0);
+    }
     nv.opts.deferFreehandCommit = false;
     nv.opts.polylinePenMode = false;
     nvSetDrawingEnabled(false);
@@ -1031,6 +1065,12 @@ export default function CloudMrNiivueViewer(props) {
     ensureToolKindBitmap();
     const tkb = nv._cloudMrToolKindBitmap;
     const dims = nv.back?.dims;
+    if (draft.kind === "polyline") {
+      for (const idx of collectPolylineAppliedVoxelIndices(nv, draft)) {
+        tkb[idx] = kind;
+      }
+      return;
+    }
     if (draft.kind === "freehand" && draft.strokeVoxels && dims) {
       const dx = dims[1];
       const dy = dims[2];
@@ -1577,6 +1617,7 @@ export default function CloudMrNiivueViewer(props) {
     onCancelPenDraft: cancelPenDraftHandler,
     onFillPenDraft: fillPolylineDraftHandler,
     penDraftActive: penDraft != null,
+    penDraftFilled: penDraft?.filled === true,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
     onActivateEraser: activateEraser,
