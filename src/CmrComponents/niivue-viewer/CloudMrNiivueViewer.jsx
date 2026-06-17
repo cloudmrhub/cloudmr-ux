@@ -10,6 +10,7 @@ import {
   applyPenDraft,
   cancelPenDraft,
   fillPolylineDraft,
+  fillFreehandDraft,
   polylineDraftFromNv,
   syncPolylineDraftToNv,
 } from './penDraftUtils';
@@ -55,7 +56,7 @@ export const nv = new Niivue({
   crosshairColor: [1, 1, 0],
   fontColor: [0.00, 0.94, 0.37, 1],
   isNearestInterpolation: true,
-  isFilledPen: true,
+  isFilledPen: false,
   penValue: 1,
   penType: NI_PEN_TYPE.PEN
 });
@@ -590,8 +591,8 @@ export default function CloudMrNiivueViewer(props) {
       }
     } else if (drawShapeToolRef.current === "pen") {
       nv.opts.deferFreehandCommit = penDrawModeRef.current === "freehand";
-      nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
-      nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
+    nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
+    nv.opts.isFilledPen = false;
     }
   }
 
@@ -844,7 +845,7 @@ export default function CloudMrNiivueViewer(props) {
     setPenDrawMode(mode);
     penDrawModeRef.current = mode;
     nv.opts.polylinePenMode = mode === "polyline";
-    nv.opts.isFilledPen = mode === "freehand";
+    nv.opts.isFilledPen = false;
     nv.opts.deferFreehandCommit =
       drawShapeToolRef.current === "pen" && mode === "freehand";
     if (mode === "freehand") {
@@ -891,11 +892,16 @@ export default function CloudMrNiivueViewer(props) {
     resampleImage();
   }
 
-  function fillPolylineDraftHandler() {
+  function fillPenDraftHandler() {
     const draft = penDraftRef.current;
-    if (!draft || draft.kind !== "polyline" || draft.vertices.length < 3) return;
-    const next = fillPolylineDraft(nv, draft);
-    onPenDraftChange(next);
+    if (!draft) return;
+    if (draft.kind === "polyline") {
+      if (draft.vertices.length < 3) return;
+      onPenDraftChange(fillPolylineDraft(nv, draft));
+    } else if (draft.kind === "freehand") {
+      if (!draft.pathVertices || draft.pathVertices.length < 3) return;
+      onPenDraftChange(fillFreehandDraft(nv, draft));
+    }
   }
 
   function onPenDraftChange(draft) {
@@ -973,6 +979,7 @@ export default function CloudMrNiivueViewer(props) {
     nv._cloudMrPolylineVertices = null;
     nv._cloudMrPolylineBaseBitmap = null;
     nv._cloudMrPolylineSessionStartBitmap = null;
+    nv._cloudMrFreehandPath = null;
     nv._cloudMrToolKindBitmap = null;
   }
 
@@ -1575,7 +1582,7 @@ export default function CloudMrNiivueViewer(props) {
     onCancelPolyline: cancelPolylineDraft,
     onApplyPenDraft: applyPenDraftHandler,
     onCancelPenDraft: cancelPenDraftHandler,
-    onFillPenDraft: fillPolylineDraftHandler,
+    onFillPenDraft: fillPenDraftHandler,
     penDraftActive: penDraft != null,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
