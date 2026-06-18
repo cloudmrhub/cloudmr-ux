@@ -249,6 +249,7 @@ export function MroDrawToolkit(props) {
                   penDraftKind={props.penDraftKind}
                   penDraftFilled={props.penDraftFilled}
                   onApplyPenDraft={props.onApplyPenDraft}
+                  onDeletePenDraft={props.onDeletePenDraft}
                   onFillPenDraft={props.onFillPenDraft}
                   brushSize={props.brushSize}
                   updateBrushSize={props.updateBrushSize}
@@ -267,6 +268,7 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "rectangle"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
+                  onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
               </Box>
 
@@ -282,6 +284,7 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "ellipse"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
+                  onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
               </Box>
 

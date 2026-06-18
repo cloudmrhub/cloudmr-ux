@@ -4,6 +4,7 @@
 import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import CheckIcon from "@mui/icons-material/Check";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { BrushSizeSlider } from "./BrushSizeSlider";
 
 const FILLED_COLORS = [
@@ -39,11 +40,13 @@ export default function DrawColorPlatte({
   penDraftKind,
   penDraftFilled = false,
   onApplyPenDraft,
+  onDeletePenDraft,
   onFillPenDraft,
   brushSize = 1,
   updateBrushSize,
   shapeDraftActive = false,
   onApplyShapeDraft,
+  onDeleteShapeDraft,
 }) {
   return (
     <Stack
@@ -124,43 +127,18 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="flex-end"
-          spacing={1}
+          justifyContent="space-between"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
-          {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
-            <Tooltip
-              title={
-                penDraftFilled
-                  ? "Remove fill (keeps outline editable)"
-                  : "Fill interior (keeps outline editable until Apply)"
-              }
-            >
-              <Button
-                size="small"
-                aria-label={penDraftFilled ? "undo fill polyline" : "fill polyline"}
-                onClick={() => onFillPenDraft?.()}
-                sx={{
-                  color: penDraftFilled ? "#ffb74d" : "#c9a0e8",
-                  fontSize: ACTION_FONT_SIZE,
-                  textTransform: "none",
-                  minWidth: 0,
-                  py: 0.25,
-                  px: 0.75,
-                }}
-              >
-                {penDraftFilled ? "Undo Fill" : "Fill"}
-              </Button>
-            </Tooltip>
-          )}
-          <Tooltip title="Apply shape (enter or right-click)">
+          {/* Delete button — left side */}
+          <Tooltip title="Delete this ROI drawing">
             <Button
               size="small"
-              aria-label="apply pen draft"
-              onClick={() => onApplyPenDraft?.()}
-              startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+              aria-label="delete pen draft"
+              onClick={() => onDeletePenDraft?.()}
+              startIcon={<DeleteOutlineIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
               sx={{
-                color: "#c9a0e8",
+                color: "#f44336",
                 fontSize: ACTION_FONT_SIZE,
                 textTransform: "none",
                 minWidth: 0,
@@ -169,9 +147,59 @@ export default function DrawColorPlatte({
                 "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
               }}
             >
-              Apply
+              Delete
             </Button>
           </Tooltip>
+
+          {/* Right-side actions */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
+              <Tooltip
+                title={
+                  penDraftFilled
+                    ? "Remove fill (keeps outline editable)"
+                    : "Fill interior (keeps outline editable until Apply)"
+                }
+              >
+                <Button
+                  size="small"
+                  aria-label={penDraftFilled ? "undo fill polyline" : "fill polyline"}
+                  onClick={() => onFillPenDraft?.()}
+                  sx={{
+                    color: penDraftFilled ? "#ffb74d" : "#c9a0e8",
+                    fontSize: ACTION_FONT_SIZE,
+                    textTransform: "none",
+                    minWidth: 0,
+                    py: 0.25,
+                    px: 0.75,
+                  }}
+                >
+                  {penDraftFilled ? "Undo Fill" : "Fill"}
+                </Button>
+              </Tooltip>
+            )}
+            {penDrawMode === "polyline" && (
+              <Tooltip title="Apply polyline (Enter or right-click)">
+                <Button
+                  size="small"
+                  aria-label="apply pen draft"
+                  onClick={() => onApplyPenDraft?.()}
+                  startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+                  sx={{
+                    color: "#c9a0e8",
+                    fontSize: ACTION_FONT_SIZE,
+                    textTransform: "none",
+                    minWidth: 0,
+                    py: 0.25,
+                    px: 0.75,
+                    "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
+                  }}
+                >
+                  Apply
+                </Button>
+              </Tooltip>
+            )}
+          </Stack>
         </Stack>
       )}
 
@@ -179,17 +207,17 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="flex-end"
+          justifyContent="flex-start"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
-          <Tooltip title="Apply shape (enter or right-click)">
+          <Tooltip title="Delete this ROI drawing">
             <Button
               size="small"
-              aria-label="apply shape"
-              onClick={() => onApplyShapeDraft?.()}
-              startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
+              aria-label="delete shape draft"
+              onClick={() => onDeleteShapeDraft?.()}
+              startIcon={<DeleteOutlineIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
               sx={{
-                color: "#c9a0e8",
+                color: "#f44336",
                 fontSize: ACTION_FONT_SIZE,
                 textTransform: "none",
                 minWidth: 0,
@@ -198,7 +226,7 @@ export default function DrawColorPlatte({
                 "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
               }}
             >
-              Apply
+              Delete
             </Button>
           </Tooltip>
         </Stack>

@@ -1088,6 +1088,68 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
+  function deleteShapeDraftHandler() {
+    const draft = shapeDraftRef.current;
+    if (!draft?.baseBitmap) return;
+    // Clear tool-kind tags for voxels this shape occupied
+    if (nv._cloudMrToolKindBitmap) {
+      for (let i = 0; i < nv.drawBitmap.length; i++) {
+        if (nv.drawBitmap[i] === draft.penValue && draft.baseBitmap[i] !== draft.penValue) {
+          nv._cloudMrToolKindBitmap[i] = 0;
+        }
+      }
+    }
+    nv.drawBitmap.set(draft.baseBitmap);
+    nv.refreshDrawing(true, false);
+    nv.drawScene();
+    nv.drawAddUndoBitmap(nv.drawFillOverwrites);
+    setShapeDraft(null);
+    shapeDraftRef.current = null;
+    nv._cloudMrShapeDraftActive = false;
+    setDrawingChanged(true);
+    setDrawShapeTool(null);
+    nv.opts.deferShapeCommit = false;
+    nv.opts.penType = NI_PEN_TYPE.PEN;
+    nvSetDrawingEnabled(false);
+    resampleImage();
+  }
+
+  function deletePenDraftHandler() {
+    const draft = penDraftRef.current;
+    if (!draft?.baseBitmap) return;
+    // Clear tool-kind tags for voxels this ROI occupied
+    if (nv._cloudMrToolKindBitmap) {
+      for (let i = 0; i < nv.drawBitmap.length; i++) {
+        if (nv.drawBitmap[i] === draft.penValue && draft.baseBitmap[i] !== draft.penValue) {
+          nv._cloudMrToolKindBitmap[i] = 0;
+        }
+      }
+    }
+    nv.drawBitmap.set(draft.baseBitmap);
+    nv.refreshDrawing(true, false);
+    nv.drawScene();
+    nv.drawAddUndoBitmap(nv.drawFillOverwrites);
+    // Remove from polyline registry if this was a registered polyline
+    if (draft._registryId != null && nv._cloudMrPolylineRegistry) {
+      nv._cloudMrPolylineRegistry = nv._cloudMrPolylineRegistry.filter(
+        (e) => e.id !== draft._registryId,
+      );
+    }
+    if (draft.kind === "polyline") {
+      nv.cloudMrResetPolyline?.();
+      setPolylineVertexCount(0);
+    }
+    setPenDraft(null);
+    penDraftRef.current = null;
+    nv._cloudMrPenDraftActive = false;
+    setDrawingChanged(true);
+    setDrawShapeTool(null);
+    nv.opts.deferFreehandCommit = false;
+    nv.opts.polylinePenMode = false;
+    nvSetDrawingEnabled(false);
+    resampleImage();
+  }
+
   function ensureToolKindBitmap() {
     if (!nv.drawBitmap) return;
     if (!nv._cloudMrToolKindBitmap || nv._cloudMrToolKindBitmap.length !== nv.drawBitmap.length) {
@@ -1661,6 +1723,8 @@ export default function CloudMrNiivueViewer(props) {
     onCancelPolyline: cancelPolylineDraft,
     onApplyPenDraft: applyPenDraftHandler,
     onCancelPenDraft: cancelPenDraftHandler,
+    onDeletePenDraft: deletePenDraftHandler,
+    onDeleteShapeDraft: deleteShapeDraftHandler,
     onFillPenDraft: fillPolylineDraftHandler,
     penDraftActive: penDraft != null,
     penDraftKind: penDraft?.kind,
