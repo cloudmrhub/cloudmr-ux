@@ -28,6 +28,7 @@ export default function NVSwitch(props){
         <Switch
           checked={props.checked}
           onChange={handleChange}
+          color="primary"
         >
         </Switch>
     </Box>

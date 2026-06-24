@@ -14,6 +14,7 @@ import KeyboardDoubleArrowUpIcon from '@mui/icons-material/KeyboardDoubleArrowUp
 import { NumberPicker } from './NumberPicker'
 import React from 'react'
 import { display } from "@mui/system";
+import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 function makeColorGradients(colorMapValues) {
   let gradients = ''
@@ -30,6 +31,7 @@ function makeColorGradients(colorMapValues) {
 }
 
 export default function Layer(props) {
+  const theme = useNiivueViewerTheme();
   const allowedColorMaps = [
     "bone",
     "gray",
@@ -157,7 +159,7 @@ export default function Layer(props) {
               width: '100%',
               alignSelf: 'center',
               margin: '8px 0 16px 0',
-              accentColor: '#580f8b',           // <-- your purple
+              accentColor: theme.accentColor,
             }}
           />
         </Box>

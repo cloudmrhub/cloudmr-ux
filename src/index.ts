@@ -47,6 +47,16 @@ export type { NiivueRoiTableProps } from "./CmrComponents/niivue-roi-table/Niivu
 
 export { default as CloudMrNiivueViewer, nv } from "./CmrComponents/niivue-viewer/CloudMrNiivueViewer.js";
 export { CloudMrNiivuePanel } from "./CmrComponents/niivue-viewer/CloudMrNiivuePanel";
+export {
+  NiivueViewerThemeProvider,
+  useNiivueViewerTheme,
+} from "./CmrComponents/niivue-viewer/NiivueViewerThemeContext";
+export {
+  CLOUDMR_NIIVUE_DEFAULT_ACCENT,
+  buildNiivueViewerTheme,
+  resolveViewerAccentColor,
+} from "./CmrComponents/niivue-viewer/niivueViewerTheme";
+export type { NiivueViewerThemeTokens } from "./CmrComponents/niivue-viewer/niivueViewerTheme";
 export type {
   CloudMrNiivuePanelProps,
   CloudMrDrawToolkitProps,

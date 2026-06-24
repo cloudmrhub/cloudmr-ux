@@ -18,6 +18,7 @@ import CmrTable from "../../CmrTable/CmrTable";
 import CMRUpload from "../upload/Upload";
 import { getEndpoints } from "../../core/config/AppConfig";
 import { AuthenticatedHttpClient } from "../../core/common/utilities/AuthenticatedRequests";
+import { useNiivueViewerTheme } from "../niivue-viewer/NiivueViewerThemeContext";
 
 /** Default merged ROI label in Niivue patcher `groupLabelsInto` / `groupLabelsFromSelection`. */
 export const DEFAULT_ROI_GROUP_TARGET_LABEL = 7;
@@ -65,6 +66,7 @@ export function NiivueRoiTable(props: NiivueRoiTableProps) {
   } = props;
 
   const [uploadKey, setUploadKey] = useState(1);
+  const theme = useNiivueViewerTheme();
   const endpoints = getEndpoints();
   const [selectedData, setSelectedData] = useState<GridRowSelectionModel>([]);
 
@@ -179,6 +181,10 @@ export function NiivueRoiTable(props: NiivueRoiTableProps) {
         dataSource={props.rois}
         columns={roiColumns}
         columnHeaderHeight={40}
+        headerBgColor={theme.headerBgColor}
+        headerIconColor={theme.headerIconColor}
+        checkboxCheckedColor={theme.checkboxCheckedColor}
+        checkboxUncheckedColor={theme.checkboxUncheckedColor}
         rowSelectionModel={selectedData}
         onRowSelectionModelChange={(rowSelectionModel) => {
           setSelectedData(rowSelectionModel);

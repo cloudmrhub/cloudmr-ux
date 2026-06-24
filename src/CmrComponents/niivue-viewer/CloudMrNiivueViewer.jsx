@@ -31,6 +31,7 @@ import axios from "axios";
 import JSZip from "jszip";
 import { getMax, getMin } from "../../core/common/utilities";
 import { AuthenticatedHttpClient, getEndpoints } from "../../core";
+import { NiivueViewerThemeProvider } from './NiivueViewerThemeContext';
 
 /**
  * @typedef {Object} CloudMrNiivueViewerProps
@@ -46,6 +47,7 @@ import { AuthenticatedHttpClient, getEndpoints } from "../../core";
  * @property {string} roiDeleteUrl — full URL for `ROI_DELETE` (app resolves from env)
  * @property {() => Promise<void>} refreshPipelineRois — e.g. dispatch getPipelineROI
  * @property {() => any[]} getPipelineRois — returns current ROI list for pipeline (e.g. from Redux)
+ * @property {string} [accentColor] — override viewer accent; else host MUI primary if set, else `#580f8b`
  */
 
 export const nv = new Niivue({
@@ -1736,6 +1738,7 @@ export default function CloudMrNiivueViewer(props) {
     onClearDrawing: clearDrawingHandler,
   };
   return (
+    <NiivueViewerThemeProvider accentColor={props.accentColor}>
     <Box sx={{
       display: 'flex',
       flexDirection: 'column',
@@ -2112,6 +2115,7 @@ export default function CloudMrNiivueViewer(props) {
         onCancelPenDraft={cancelPenDraftHandler}
       />}
     </Box>
+    </NiivueViewerThemeProvider>
   )
 }
 

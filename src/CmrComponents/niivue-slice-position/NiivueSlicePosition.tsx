@@ -1,6 +1,10 @@
 import React from "react";
 import { Card, CardContent } from "@mui/material";
 import CmrLabel from "../label/Label";
+import {
+  resolveNiivueAccentColor,
+  useNiivueViewerTheme,
+} from "../niivue-viewer/NiivueViewerThemeContext";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -88,10 +92,13 @@ export function NiivueSlicePosition({
   maxs,
   mms,
   title = "Slice Position",
-  accentColor = "#580f8b",
+  accentColor: accentColorProp,
   style,
   className,
 }: NiivueSlicePositionProps) {
+  const theme = useNiivueViewerTheme();
+  const accentColor = resolveNiivueAccentColor(accentColorProp, theme);
+
   // ── Derive voxel grid from the loaded volume ─────────────────────────────
   const vol = nv?.volumes?.[0];
   const meta = vol?.getImageMetadata?.();

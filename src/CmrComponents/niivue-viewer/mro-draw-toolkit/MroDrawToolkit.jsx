@@ -32,6 +32,7 @@ import ClickAwayListener from "@mui/material/ClickAwayListener";
 import DrawColorPlatte from "./DrawColorPlatte";
 import EraserPlatte from "./EraserPlatte";
 import MaskPlatte from "./MaskPlatte";
+import { useNiivueViewerTheme } from "../NiivueViewerThemeContext";
 
 /** True if the event target is the main NiiVue canvas (drawing surface). Clicks there must not exit draw mode. */
 function clickTargetIsNiivueCanvas(target) {
@@ -75,6 +76,7 @@ function OpacityPlatte({ drawingOpacity, setDrawingOpacity, expanded }) {
           Opacity: {drawingOpacity}
         </Typography>
         <Slider
+          color="primary"
           sx={{ width: "80%" }}
           value={drawingOpacity}
           step={0.01}
@@ -88,6 +90,7 @@ function OpacityPlatte({ drawingOpacity, setDrawingOpacity, expanded }) {
 }
 
 export function MroDrawToolkit(props) {
+  const theme = useNiivueViewerTheme();
   const { drawShapeTool, onDrawShapeToolChange } = props;
   const [expandedOption, setExpandedOption] = useState("n");
   const [expandOpacityOptions, setExpandOpacityOptions] = useState(false);
@@ -108,9 +111,7 @@ export function MroDrawToolkit(props) {
   }, [props.shapeDraftActive, props.penDraftActive, drawShapeTool]);
 
   const shapeSelectedSx = (shape) =>
-    drawShapeTool === shape
-      ? { backgroundColor: "rgba(88, 15, 139, 0.12)", color: "#580f8b" }
-      : {};
+    drawShapeTool === shape ? theme.selectedToolSx : {};
 
   const eraserActive = expandedOption === "e";
 
@@ -296,9 +297,7 @@ export function MroDrawToolkit(props) {
                     onClick={clickEraser}
                     sx={{
                       ...toolBtnSx,
-                      ...(eraserActive
-                        ? { backgroundColor: "rgba(88, 15, 139, 0.12)", color: "#580f8b" }
-                        : {}),
+                      ...(eraserActive ? theme.selectedToolSx : {}),
                     }}
                   >
                     {filled || !eraserActive ? (

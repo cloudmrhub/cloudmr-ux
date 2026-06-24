@@ -10,6 +10,7 @@ import type { DrawToolkitProps } from "../draw-toolkit/DrawToolkit";
 import { MroDrawToolkit } from "./mro-draw-toolkit/MroDrawToolkit";
 import { ShapeDraftOverlay } from "./ShapeDraftOverlay";
 import { PenDraftOverlay } from "./PenDraftOverlay";
+import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 /** Props for {@link MroDrawToolkit} — extends draw toolkit with MRO pen/shape controls. */
 export type CloudMrDrawToolkitProps = Omit<
@@ -93,6 +94,7 @@ export interface CloudMrNiivuePanelProps {
 }
 
 export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
+  const theme = useNiivueViewerTheme();
   const canvas = React.useRef(null);
   const histogram = React.useRef<HTMLElement>(null);
   const { mins, maxs, mms } = props;
@@ -180,6 +182,7 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
         },
         flexWrap: "nowrap",
       }}
+      style={theme.cssVars}
     >
       <Box
         sx={{

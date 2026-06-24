@@ -2,6 +2,10 @@ import React from "react";
 import { Card, CardContent, Box } from "@mui/material";
 import TKDualRange from "../tk-dualrange/TKDualRange";
 import CmrLabel from "../label/Label";
+import {
+  resolveNiivueAccentColor,
+  useNiivueViewerTheme,
+} from "../niivue-viewer/NiivueViewerThemeContext";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -118,10 +122,12 @@ export function NiivueContrastAdjustments({
   setGamma,
   layerList = [],
   title = "Contrast Adjustments",
-  accentColor = "#580f8b",
+  accentColor: accentColorProp,
   style,
   className,
 }: NiivueContrastAdjustmentsProps) {
+  const theme = useNiivueViewerTheme();
+  const accentColor = resolveNiivueAccentColor(accentColorProp, theme);
   const { a, b } = transformFactors;
 
   return (

@@ -14,9 +14,9 @@ import {
   voxToOverlayPos,
   voxUnderClient,
 } from "./shapeDraftUtils";
+import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 const HANDLE_SIZE = 10;
-const ACCENT = "#580f8b";
 
 function cloneFreehandDraft(draft) {
   return {
@@ -31,6 +31,7 @@ function cloneFreehandDraft(draft) {
  * @param {{ nv: any, draft: import('./penDraftUtils').PenDraft, onDraftChange: (d: any) => void, onApplyDraft?: () => void, overlayKey?: unknown }} props
  */
 export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overlayKey }) {
+  const theme = useNiivueViewerTheme();
   const dragRef = useRef(null);
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -211,7 +212,7 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overla
     marginTop: -HANDLE_SIZE / 2,
     borderRadius: "50%",
     background: "#fff",
-    border: `2px solid ${ACCENT}`,
+    border: `2px solid ${theme.accentColor}`,
     boxSizing: "border-box",
     cursor: "pointer",
     zIndex: 3,
@@ -237,8 +238,8 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overla
           top: boxStyle.top,
           width: boxStyle.width,
           height: boxStyle.height,
-          border: `2px dashed ${ACCENT}`,
-          background: "rgba(88, 15, 139, 0.08)",
+          border: `2px dashed ${theme.accentColor}`,
+          background: theme.accentMutedBgLight,
           boxSizing: "border-box",
           pointerEvents: "none",
         }}

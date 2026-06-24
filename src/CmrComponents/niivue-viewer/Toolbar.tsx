@@ -361,6 +361,7 @@ export default function Toolbar(props: ToolbarProps) {
               defaultChecked={false}
               checked={!props.radiological}
               onChange={props.toggleRadiological}
+              color="primary"
             />
           </Box>
           <Box
@@ -381,6 +382,7 @@ export default function Toolbar(props: ToolbarProps) {
               defaultChecked={true}
               checked={props.showCrosshair}
               onChange={props.toggleShowCrosshair}
+              color="primary"
             />
           </Box>
 
@@ -401,6 +403,7 @@ export default function Toolbar(props: ToolbarProps) {
             <Switch
               checked={props.showColorBar}
               onChange={props.toggleColorBar}
+              color="primary"
             />
           </Box>
 
@@ -423,6 +426,7 @@ export default function Toolbar(props: ToolbarProps) {
 
               checked={props.labelsVisible}
               onChange={props.toggleLabelsVisible}
+              color="primary"
             />
           </Box>
 
