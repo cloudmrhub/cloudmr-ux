@@ -2,8 +2,10 @@ import { Box} from "@mui/material"
 import { Typography } from "@mui/material"
 import { Switch } from "@mui/material"
 import React from "react"
+import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 export default function NVSwitch(props){
+  const viewerTheme = useNiivueViewerTheme();
 
   function handleChange(){
     props.onChange()
@@ -28,7 +30,7 @@ export default function NVSwitch(props){
         <Switch
           checked={props.checked}
           onChange={handleChange}
-          color="primary"
+          sx={viewerTheme.muiSwitchSx}
         >
         </Switch>
     </Box>

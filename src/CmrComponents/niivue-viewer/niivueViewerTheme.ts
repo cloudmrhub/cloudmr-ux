@@ -1,6 +1,9 @@
 import type { CSSProperties } from "react";
 import { createTheme } from "@mui/material/styles";
 
+/** Host apps may set this on a root wrapper so linked cloudmr-ux reads the brand color without a shared MUI context. */
+export const CMR_APP_PRIMARY_CSS_VAR = "--cmr-app-primary";
+
 /** Default MROptimum / package purple accent for the Niivue viewer. */
 export const CLOUDMR_NIIVUE_DEFAULT_ACCENT = "#580f8b";
 
@@ -18,12 +21,23 @@ function normalizeHex(color: string): string {
   return color.trim().toLowerCase();
 }
 
+/** Read brand primary exposed by the host shell (see {@link CMR_APP_PRIMARY_CSS_VAR}). */
+export function readHostPrimaryFromCss(): string | undefined {
+  if (typeof document === "undefined") {
+    return undefined;
+  }
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue(CMR_APP_PRIMARY_CSS_VAR)
+    .trim();
+  return val || undefined;
+}
+
 /**
  * Resolve Niivue viewer accent color:
  * 1. Explicit `accentColor` prop on {@link CloudMrNiivueViewer}
- * 2. Host MUI `palette.primary.main` when it differs from stock MUI primary
- *    (e.g. CAMRIE `#1578A1`, MROptimum `#580f8b`)
- * 3. Package default purple {@link CLOUDMR_NIIVUE_DEFAULT_ACCENT}
+ * 2. Host CSS var {@link CMR_APP_PRIMARY_CSS_VAR} (works with npm link / duplicate MUI)
+ * 3. Host MUI `palette.primary.main` when it differs from stock MUI primary
+ * 4. Package default purple {@link CLOUDMR_NIIVUE_DEFAULT_ACCENT}
  */
 export function resolveViewerAccentColor(
   accentColorProp?: string,
@@ -31,6 +45,10 @@ export function resolveViewerAccentColor(
 ): string {
   if (accentColorProp) {
     return accentColorProp;
+  }
+  const cssPrimary = readHostPrimaryFromCss();
+  if (cssPrimary) {
+    return cssPrimary;
   }
   const primary = muiPrimaryMain?.trim();
   if (

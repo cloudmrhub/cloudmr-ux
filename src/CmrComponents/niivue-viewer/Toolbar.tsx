@@ -13,6 +13,7 @@ import Brightness6Icon from '@mui/icons-material/Brightness6';
 import DeleteIcon from "@mui/icons-material/Delete";
 import CmrConfirmation from "../dialogue/Confirmation";
 import axios from "axios";
+import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 interface ToolbarProps {
   nv: any;
@@ -62,6 +63,7 @@ interface ToolbarProps {
 
 export default function Toolbar(props: ToolbarProps) {
   const { saving, setSaving } = props;
+  const viewerTheme = useNiivueViewerTheme();
   function handleSliceTypeChange(e: { target: { value: any } }) {
     let newSliceType = e.target.value
     let nvUpdateSliceType = props.nvUpdateSliceType
@@ -361,7 +363,7 @@ export default function Toolbar(props: ToolbarProps) {
               defaultChecked={false}
               checked={!props.radiological}
               onChange={props.toggleRadiological}
-              color="primary"
+              sx={viewerTheme.muiSwitchSx}
             />
           </Box>
           <Box
@@ -382,7 +384,7 @@ export default function Toolbar(props: ToolbarProps) {
               defaultChecked={true}
               checked={props.showCrosshair}
               onChange={props.toggleShowCrosshair}
-              color="primary"
+              sx={viewerTheme.muiSwitchSx}
             />
           </Box>
 
@@ -403,7 +405,7 @@ export default function Toolbar(props: ToolbarProps) {
             <Switch
               checked={props.showColorBar}
               onChange={props.toggleColorBar}
-              color="primary"
+              sx={viewerTheme.muiSwitchSx}
             />
           </Box>
 
@@ -426,7 +428,7 @@ export default function Toolbar(props: ToolbarProps) {
 
               checked={props.labelsVisible}
               onChange={props.toggleLabelsVisible}
-              color="primary"
+              sx={viewerTheme.muiSwitchSx}
             />
           </Box>
 

@@ -53,8 +53,10 @@ export {
 } from "./CmrComponents/niivue-viewer/NiivueViewerThemeContext";
 export {
   CLOUDMR_NIIVUE_DEFAULT_ACCENT,
+  CMR_APP_PRIMARY_CSS_VAR,
   buildNiivueViewerTheme,
   resolveViewerAccentColor,
+  readHostPrimaryFromCss,
 } from "./CmrComponents/niivue-viewer/niivueViewerTheme";
 export type { NiivueViewerThemeTokens } from "./CmrComponents/niivue-viewer/niivueViewerTheme";
 export type {
