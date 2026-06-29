@@ -279,6 +279,9 @@ const Upload = () => {
                   ".npy",
                   ".pkl",
                   ".mat",
+                  ".zip",
+                  ".seq",
+                  ".mtrk",
                 ]}
                 color={"primary"}
                 key={uploadKey}
@@ -292,7 +295,7 @@ const Upload = () => {
                   dispatch,
                   uploadData,
                 )}
-                maxCount={1}
+                maxCount={100}
               ></CMRUpload>
             </div>
           </div>
