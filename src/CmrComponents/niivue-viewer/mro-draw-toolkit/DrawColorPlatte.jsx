@@ -126,7 +126,9 @@ export default function DrawColorPlatte({
 
       {isPolylineTool && expanded && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>
-          Click to add vertices · Right-click to fill
+          {polylineVertexCount >= 3
+            ? "Double-click to close & fill · Right-click to cancel"
+            : "Click to add vertices"}
         </Typography>
       )}
 

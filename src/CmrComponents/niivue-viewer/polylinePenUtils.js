@@ -43,6 +43,7 @@ export function resetPolylineState(nv) {
   nv._cloudMrPolylineBaseBitmap = null;
   nv._cloudMrPolylineSessionStartBitmap = null;
   nv._cloudMrPolylineAxCorSag = -1;
+  nv._cloudMrLastPolylineClickMs = null;
   notifyPolylineChange(nv, 0);
 }
 
@@ -67,12 +68,34 @@ export function previewPolylineSegment(nv) {
   nv.drawScene();
 }
 
+/** Max ms between two clicks to be considered a double-click. */
+const DOUBLE_CLICK_MS = 400;
+
+/**
+ * Sentinel returned by addPolylineVertex when a double-click is detected with
+ * ≥3 existing vertices.  The caller should close the polygon and auto-commit.
+ */
+export const POLYLINE_CLOSE = Symbol("POLYLINE_CLOSE");
+
 export function addPolylineVertex(nv) {
   const pt = voxFromMouse(nv);
   if (!pt) return false;
 
   const penValue = nv.opts.penValue;
   const verts = nv._cloudMrPolylineVertices || (nv._cloudMrPolylineVertices = []);
+
+  // Double-click detection: two clicks within DOUBLE_CLICK_MS on ≥3 vertices.
+  const now = Date.now();
+  const isDoubleClick =
+    verts.length >= 3 &&
+    nv._cloudMrLastPolylineClickMs != null &&
+    now - nv._cloudMrLastPolylineClickMs <= DOUBLE_CLICK_MS;
+  nv._cloudMrLastPolylineClickMs = now;
+
+  if (isDoubleClick) {
+    // Don't add this click as a vertex — signal close instead.
+    return POLYLINE_CLOSE;
+  }
 
   if (verts.length === 0) {
     nv._cloudMrPolylineSessionStartBitmap = nv.drawBitmap.slice();

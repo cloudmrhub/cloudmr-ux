@@ -1353,9 +1353,6 @@ export default function CloudMrNiivueViewer(props) {
       return undefined;
     }
     const canvas = document.getElementById("niiCanvas");
-    if (!canvas) {
-      return undefined;
-    }
 
     const applyOnRightClick = (event) => {
       event.preventDefault();
@@ -1363,17 +1360,30 @@ export default function CloudMrNiivueViewer(props) {
       nv.onApplyActiveDraft?.();
     };
 
-    const onMouseDown = (event) => {
-      if (event.button === 2) {
-        applyOnRightClick(event);
-      }
+    // Right-click on canvas: apply via Niivue's own handler.
+    if (canvas) {
+      canvas.addEventListener("contextmenu", applyOnRightClick, true);
+    }
+
+    // Any mousedown outside the canvas exits editing mode.
+    // Clicks on the canvas are handled by Niivue's own mouseUpListener,
+    // so we skip them here to avoid a double-apply race.
+    const onDocMouseDown = (event) => {
+      const target = event.target;
+      const onCanvas =
+        target === canvas || (canvas && canvas.contains(target));
+      if (onCanvas) return;
+      // Left or right click anywhere outside the canvas → apply draft.
+      nv.onApplyActiveDraft?.();
     };
 
-    canvas.addEventListener("mousedown", onMouseDown, true);
-    canvas.addEventListener("contextmenu", applyOnRightClick, true);
+    document.addEventListener("mousedown", onDocMouseDown, true);
+
     return () => {
-      canvas.removeEventListener("mousedown", onMouseDown, true);
-      canvas.removeEventListener("contextmenu", applyOnRightClick, true);
+      if (canvas) {
+        canvas.removeEventListener("contextmenu", applyOnRightClick, true);
+      }
+      document.removeEventListener("mousedown", onDocMouseDown, true);
     };
   }, [shapeDraft, penDraft]);
 

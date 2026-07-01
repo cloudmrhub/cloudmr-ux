@@ -12,6 +12,7 @@ import {
 import { NI_PEN_TYPE } from "./niivuePenType.js";
 import {
   addPolylineVertex,
+  POLYLINE_CLOSE,
   axCorSagFromMouse,
   cancelPolyline,
   finishPolyline,
@@ -1664,7 +1665,11 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   _mouseUpListener.call(this);
 
   if (polylineClick) {
-    addPolylineVertex(this);
+    const result = addPolylineVertex(this);
+    if (result === POLYLINE_CLOSE && typeof this.onApplyActiveDraft === "function") {
+      // Double-click detected — connect last vertex back to first, fill, and commit.
+      this.onApplyActiveDraft();
+    }
     return;
   }
 
