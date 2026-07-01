@@ -40,8 +40,8 @@ export interface CloudMrNiivuePanelProps {
   locationData: any[];
   decimalPrecision: number;
   drawToolkitProps: CloudMrDrawToolkitProps;
-  drawShapeTool: "pen" | "rectangle" | "ellipse" | null;
-  setDrawShapeTool: (t: "pen" | "rectangle" | "ellipse" | null) => void;
+  drawShapeTool: "pen" | "polyline" | "rectangle" | "ellipse" | null;
+  setDrawShapeTool: (t: "pen" | "polyline" | "rectangle" | "ellipse" | null) => void;
   resampleImage: () => void;
   layerList: React.ComponentProps<any>[];
   mins: number[];
@@ -136,24 +136,23 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     props.resampleImage();
   }, [histogram]);
 
-  function applyDrawShapeTool(tool: "pen" | "rectangle" | "ellipse") {
+  function applyDrawShapeTool(tool: "pen" | "polyline" | "rectangle" | "ellipse") {
     if (props.shapeDraft) {
-      // Apply (commit) the current draft rather than discarding it
       props.onApplyShapeDraftKeepTool?.();
     }
     if (props.penDraft) {
       props.onApplyPenDraftKeepTool?.();
     }
-    if (tool !== "pen") {
-      props.drawToolkitProps.onPenDrawModeChange?.("freehand");
-    }
     props.setDrawShapeTool(tool);
     const { nv } = props;
-    const penMode = props.drawToolkitProps.penDrawMode ?? "freehand";
     nv.opts.deferShapeCommit = tool === "rectangle" || tool === "ellipse";
     if (tool === "pen") {
-      nv.opts.polylinePenMode = penMode === "polyline";
-      nv.opts.isFilledPen = penMode === "freehand";
+      nv.opts.polylinePenMode = false;
+      nv.opts.isFilledPen = true;
+      nv.opts.deferFreehandCommit = false;
+    } else if (tool === "polyline") {
+      nv.opts.polylinePenMode = true;
+      nv.opts.isFilledPen = false;
       nv.opts.deferFreehandCommit = false;
     } else {
       nv.opts.polylinePenMode = false;
@@ -168,13 +167,16 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     if (tool === "rectangle" || tool === "ellipse") {
       nv.opts.penBounds = 0;
       nv.opts.penSize = 1;
-    } else if (tool === "pen") {
+    } else if (tool === "pen" || tool === "polyline") {
       const penBrush = props.drawToolkitProps.brushSize ?? 1;
       nv.opts.penBounds = (penBrush - 1) / 2;
       nv.opts.penSize = penBrush;
     }
     nv.drawScene();
-    if ((tool === "rectangle" || tool === "ellipse") && !props.drawToolkitProps.drawingEnabled) {
+    if (
+      (tool === "rectangle" || tool === "ellipse" || tool === "pen" || tool === "polyline") &&
+      !props.drawToolkitProps.drawingEnabled
+    ) {
       props.drawToolkitProps.setDrawingEnabled(true);
     }
   }

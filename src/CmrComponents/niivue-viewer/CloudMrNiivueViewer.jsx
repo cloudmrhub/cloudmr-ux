@@ -586,7 +586,8 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateBrushSize(size) {
     setBrushSize(size);
     brushSizeRef.current = size;
-    if (drawShapeToolRef.current === "pen" && drawPen !== 0 && drawPen !== 8) {
+    const tool = drawShapeToolRef.current;
+    if ((tool === "pen" || tool === "polyline") && drawPen !== 0 && drawPen !== 8) {
       applyNvBrushSize(size);
     }
   }
@@ -619,8 +620,13 @@ export default function CloudMrNiivueViewer(props) {
       applyActiveDraftIfAny();
     } else if (drawShapeToolRef.current === "pen") {
       nv.opts.deferFreehandCommit = false;
-      nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
-      nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
+      nv.opts.polylinePenMode = false;
+      nv.opts.isFilledPen = true;
+      applyNvBrushSize(brushSizeRef.current);
+    } else if (drawShapeToolRef.current === "polyline") {
+      nv.opts.deferFreehandCommit = false;
+      nv.opts.polylinePenMode = true;
+      nv.opts.isFilledPen = false;
       applyNvBrushSize(brushSizeRef.current);
     }
   }
@@ -921,7 +927,8 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(null);
     penDraftRef.current = null;
     nv._cloudMrPenDraftActive = false;
-    if (drawShapeToolRef.current === "pen") {
+    const tool = drawShapeToolRef.current;
+    if (tool === "pen" || tool === "polyline") {
       nvSetDrawingEnabled(true);
     }
   }
@@ -955,9 +962,9 @@ export default function CloudMrNiivueViewer(props) {
     nv._cloudMrPenDraftActive = false;
     setDrawingChanged(true);
     if (keepTool) {
-      const mode = penDrawModeRef.current;
-      nv.opts.polylinePenMode = mode === "polyline";
-      nv.opts.isFilledPen = mode === "freehand";
+      const tool = drawShapeToolRef.current;
+      nv.opts.polylinePenMode = tool === "polyline";
+      nv.opts.isFilledPen = tool === "pen";
       nv.opts.deferFreehandCommit = false;
       nvSetDrawingEnabled(true);
     } else {
@@ -1018,11 +1025,10 @@ export default function CloudMrNiivueViewer(props) {
     setPenDraft(draft);
     penDraftRef.current = draft;
     nv._cloudMrPenDraftActive = true;
-    // Auto-select pen tool so the palette opens
-    setDrawShapeTool("pen");
-    const mode = draft.kind === "polyline" ? "polyline" : "freehand";
-    setPenDrawMode(mode);
-    penDrawModeRef.current = mode;
+    // Auto-select the correct pen tool so the right palette opens
+    const tool = draft.kind === "polyline" ? "polyline" : "pen";
+    setDrawShapeTool(tool);
+    penDrawModeRef.current = draft.kind === "polyline" ? "polyline" : "freehand";
     if (draft.kind === "polyline") {
       setPolylineVertexCount(draft.vertices?.length ?? 0);
     }
@@ -1033,7 +1039,7 @@ export default function CloudMrNiivueViewer(props) {
 
   nv.onPolylineChange = (count) => {
     setPolylineVertexCount(count);
-    if (penDrawModeRef.current === "polyline" && count >= 2) {
+    if (drawShapeToolRef.current === "polyline" && count >= 2) {
       const prev = penDraftRef.current;
       const preserveFill =
         prev?.kind === "polyline" &&

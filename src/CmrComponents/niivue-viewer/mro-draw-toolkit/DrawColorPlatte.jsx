@@ -1,5 +1,6 @@
 /**
- * Pen palette adds freehand vs polyline mode; pen/shape drafts show Apply while adjusting.
+ * Color palette for pen/shape ROI tools. Freehand and polyline each use their own
+ * toolbar button and pass `penToolKind` to show the matching options.
  */
 import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
@@ -19,22 +20,12 @@ const FILLED_COLORS = [
 const ACTION_FONT_SIZE = "0.75rem";
 const ACTION_ICON_SIZE = "0.875rem";
 
-const modeBtnSx = (active) => ({
-  color: active ? "#c9a0e8" : "#bbb",
-  fontSize: ACTION_FONT_SIZE,
-  textTransform: "none",
-  minWidth: 0,
-  py: 0.25,
-  px: 0.75,
-});
-
 export default function DrawColorPlatte({
   expanded,
   updateDrawPen,
   setDrawingEnabled,
-  showPenModes = false,
-  penDrawMode = "freehand",
-  onPenDrawModeChange,
+  /** @type {"freehand" | "polyline" | null} */
+  penToolKind = null,
   polylineVertexCount = 0,
   penDraftActive = false,
   penDraftKind,
@@ -48,6 +39,9 @@ export default function DrawColorPlatte({
   onApplyShapeDraft,
   onDeleteShapeDraft,
 }) {
+  const isFreehandTool = penToolKind === "freehand";
+  const isPolylineTool = penToolKind === "polyline";
+
   return (
     <Stack
       style={{
@@ -68,31 +62,7 @@ export default function DrawColorPlatte({
       spacing={0.5}
       sx={{ py: expanded ? 0.5 : 0 }}
     >
-      {showPenModes && expanded && (
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={0.5}
-          sx={{ px: 0.75, pt: 0.25 }}
-        >
-          <Button
-            size="small"
-            onClick={() => onPenDrawModeChange?.("freehand")}
-            sx={modeBtnSx(penDrawMode === "freehand")}
-          >
-            Freehand
-          </Button>
-          <Button
-            size="small"
-            onClick={() => onPenDrawModeChange?.("polyline")}
-            sx={modeBtnSx(penDrawMode === "polyline")}
-          >
-            Polyline
-          </Button>
-        </Stack>
-      )}
-
-      {showPenModes && expanded && updateBrushSize && (
+      {(isFreehandTool || isPolylineTool) && expanded && updateBrushSize && (
         <BrushSizeSlider
           label="Line thickness"
           brushSize={brushSize}
@@ -114,23 +84,22 @@ export default function DrawColorPlatte({
         ))}
       </Stack>
 
-      {showPenModes && penDrawMode === "polyline" && expanded && polylineVertexCount === 0 && (
+      {isPolylineTool && expanded && polylineVertexCount === 0 && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>
           Click each vertex to draw connected line segments
         </Typography>
       )}
 
-      {showPenModes &&
-        penDraftActive &&
-        (penDrawMode === "polyline" || penDraftKind === "freehand") &&
-        expanded && (
+      {penDraftActive &&
+        expanded &&
+        ((isFreehandTool && penDraftKind === "freehand") ||
+          (isPolylineTool && penDraftKind === "polyline")) && (
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
-          {/* Delete button — left side */}
           <Tooltip title="Delete this ROI drawing">
             <Button
               size="small"
@@ -151,34 +120,33 @@ export default function DrawColorPlatte({
             </Button>
           </Tooltip>
 
-          {/* Right-side actions */}
-          <Stack direction="row" spacing={1} alignItems="center">
-            {penDrawMode === "polyline" && polylineVertexCount >= 3 && (
-              <Tooltip
-                title={
-                  penDraftFilled
-                    ? "Remove fill (keeps outline editable)"
-                    : "Fill interior (keeps outline editable until Apply)"
-                }
-              >
-                <Button
-                  size="small"
-                  aria-label={penDraftFilled ? "undo fill polyline" : "fill polyline"}
-                  onClick={() => onFillPenDraft?.()}
-                  sx={{
-                    color: penDraftFilled ? "#ffb74d" : "#c9a0e8",
-                    fontSize: ACTION_FONT_SIZE,
-                    textTransform: "none",
-                    minWidth: 0,
-                    py: 0.25,
-                    px: 0.75,
-                  }}
+          {isPolylineTool && (
+            <Stack direction="row" spacing={1} alignItems="center">
+              {polylineVertexCount >= 3 && (
+                <Tooltip
+                  title={
+                    penDraftFilled
+                      ? "Remove fill (keeps outline editable)"
+                      : "Fill interior (keeps outline editable until Apply)"
+                  }
                 >
-                  {penDraftFilled ? "Undo Fill" : "Fill"}
-                </Button>
-              </Tooltip>
-            )}
-            {penDrawMode === "polyline" && (
+                  <Button
+                    size="small"
+                    aria-label={penDraftFilled ? "undo fill polyline" : "fill polyline"}
+                    onClick={() => onFillPenDraft?.()}
+                    sx={{
+                      color: penDraftFilled ? "#ffb74d" : "#c9a0e8",
+                      fontSize: ACTION_FONT_SIZE,
+                      textTransform: "none",
+                      minWidth: 0,
+                      py: 0.25,
+                      px: 0.75,
+                    }}
+                  >
+                    {penDraftFilled ? "Undo Fill" : "Fill"}
+                  </Button>
+                </Tooltip>
+              )}
               <Tooltip title="Apply polyline (Enter or right-click)">
                 <Button
                   size="small"
@@ -198,8 +166,8 @@ export default function DrawColorPlatte({
                   Apply
                 </Button>
               </Tooltip>
-            )}
-          </Stack>
+            </Stack>
+          )}
         </Stack>
       )}
 

@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import DrawIcon from "@mui/icons-material/Draw";
+import TimelineIcon from "@mui/icons-material/Timeline";
 import CropSquareOutlinedIcon from "@mui/icons-material/CropSquareOutlined";
 import CircleOutlinedIcon from "@mui/icons-material/CircleOutlined";
 import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
@@ -38,6 +39,13 @@ import { useNiivueViewerTheme } from "../NiivueViewerThemeContext";
 function clickTargetIsNiivueCanvas(target) {
   if (typeof document === "undefined" || !(target instanceof Element)) return false;
   return !!target.closest("#niiCanvas");
+}
+
+/** Click-away scoped to one tool button + its dropdown palette. */
+function ToolClickAway({ active, onClickAway, sx, children }) {
+  const box = <Box sx={sx}>{children}</Box>;
+  if (!active) return box;
+  return <ClickAwayListener onClickAway={onClickAway}>{box}</ClickAwayListener>;
 }
 
 /** Same icon tone as typical MUI on-paper controls (matches slice panel body). */
@@ -99,19 +107,25 @@ export function MroDrawToolkit(props) {
   const filled = props.drawPen > 7;
 
   useEffect(() => {
-    // Close palette when tool is deactivated programmatically (e.g. after Apply)
+    const eraserSelected = props.drawPen === 0 || props.drawPen === 8;
+    // Close palette when tool is deactivated programmatically (e.g. after Apply).
+    // Keep eraser palette open when switching from shape/pen edit → eraser in one click.
     if (drawShapeTool === null && !props.shapeDraftActive && !props.penDraftActive) {
-      setExpandedOption("n");
+      setExpandedOption(eraserSelected ? "e" : "n");
       return;
     }
     if (!props.shapeDraftActive && !props.penDraftActive) return;
     if (drawShapeTool === "rectangle") setExpandedOption("r");
     else if (drawShapeTool === "ellipse") setExpandedOption("l");
     else if (drawShapeTool === "pen") setExpandedOption("d");
-  }, [props.shapeDraftActive, props.penDraftActive, drawShapeTool]);
+    else if (drawShapeTool === "polyline") setExpandedOption("p");
+  }, [props.shapeDraftActive, props.penDraftActive, drawShapeTool, props.drawPen]);
 
-  const shapeSelectedSx = (shape) =>
-    drawShapeTool === shape ? theme.selectedToolSx : {};
+  const shapeSelectedSx = (shape) => {
+    if (shape === "pen") return (drawShapeTool === "pen") ? theme.selectedToolSx : {};
+    if (shape === "polyline") return (drawShapeTool === "polyline") ? theme.selectedToolSx : {};
+    return drawShapeTool === shape ? theme.selectedToolSx : {};
+  };
 
   const eraserActive = expandedOption === "e";
 
@@ -131,6 +145,19 @@ export function MroDrawToolkit(props) {
       props.setDrawingEnabled(false);
     } else {
       setExpandedOption("d");
+      setExpandOpacityOptions(false);
+      props.setDrawingEnabled(true);
+    }
+  }
+
+  function clickPolyline() {
+    leaveEraserIfActive();
+    onDrawShapeToolChange?.("polyline");
+    if (expandedOption === "p") {
+      setExpandedOption("n");
+      props.setDrawingEnabled(false);
+    } else {
+      setExpandedOption("p");
       setExpandOpacityOptions(false);
       props.setDrawingEnabled(true);
     }
@@ -191,16 +218,23 @@ export function MroDrawToolkit(props) {
     "&.Mui-disabled": { color: "rgba(0,0,0,0.26)" },
   };
 
+  function shouldIgnoreToolClickAway(event) {
+    if (clickTargetIsNiivueCanvas(event.target)) return true;
+    if (props.shapeDraftActive || props.penDraftActive) return true;
+    return false;
+  }
+
+  function handleDrawToolClickAway(event) {
+    if (shouldIgnoreToolClickAway(event)) return;
+    if (expandedOption === "n" || expandedOption === "m") return;
+    setExpandedOption("n");
+    setExpandOpacityOptions(false);
+    props.onDeactivateDrawTools?.();
+  }
+
+  const toolGroupSx = { position: "relative", display: "inline-flex", alignItems: "center" };
+
   return (
-    <ClickAwayListener
-      onClickAway={(event) => {
-        if (clickTargetIsNiivueCanvas(event.target)) return;
-        if (props.shapeDraftActive || props.penDraftActive) return;
-        setExpandedOption("n");
-        setExpandOpacityOptions(false);
-        props.onDeactivateDrawTools?.();
-      }}
-    >
       <div style={{ width: "100%", position: "relative", zIndex: 1080, ...props.style }}>
         <div className="title" style={{ width: "100%" }}>
           ROI Tools
@@ -231,9 +265,13 @@ export function MroDrawToolkit(props) {
                   overflow: "visible",
                 }}
               >
-              <Box sx={{ position: "relative", zIndex: expandedOption === "d" ? 1600 : "auto", display: "inline-flex", alignItems: "center" }}>
-                <Tooltip title="Pen">
-                  <IconButton aria-label="pen" size="small" onClick={clickPen} sx={{ ...toolBtnSx, ...shapeSelectedSx("pen") }}>
+              <ToolClickAway
+                active={expandedOption === "d"}
+                onClickAway={handleDrawToolClickAway}
+                sx={{ ...toolGroupSx, zIndex: expandedOption === "d" ? 1600 : "auto" }}
+              >
+                <Tooltip title="Freehand">
+                  <IconButton aria-label="freehand" size="small" onClick={clickPen} sx={{ ...toolBtnSx, ...shapeSelectedSx("pen") }}>
                     <DrawIcon sx={{ color: "inherit" }} />
                   </IconButton>
                 </Tooltip>
@@ -241,11 +279,31 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "d"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
-                  showPenModes
-                  penDrawMode={props.penDrawMode}
-                  onPenDrawModeChange={props.onPenDrawModeChange}
+                  penToolKind="freehand"
+                  penDraftActive={props.penDraftActive}
+                  penDraftKind={props.penDraftKind}
+                  onDeletePenDraft={props.onDeletePenDraft}
+                  brushSize={props.brushSize}
+                  updateBrushSize={props.updateBrushSize}
+                />
+              </ToolClickAway>
+
+              <ToolClickAway
+                active={expandedOption === "p"}
+                onClickAway={handleDrawToolClickAway}
+                sx={{ ...toolGroupSx, zIndex: expandedOption === "p" ? 1600 : "auto" }}
+              >
+                <Tooltip title="Polyline">
+                  <IconButton aria-label="polyline" size="small" onClick={clickPolyline} sx={{ ...toolBtnSx, ...shapeSelectedSx("polyline") }}>
+                    <TimelineIcon sx={{ color: "inherit" }} />
+                  </IconButton>
+                </Tooltip>
+                <DrawColorPlatte
+                  expanded={expandedOption === "p"}
+                  updateDrawPen={props.updateDrawPen}
+                  setDrawingEnabled={props.setDrawingEnabled}
+                  penToolKind="polyline"
                   polylineVertexCount={props.polylineVertexCount}
-                  onCancelPolyline={props.onCancelPolyline}
                   penDraftActive={props.penDraftActive}
                   penDraftKind={props.penDraftKind}
                   penDraftFilled={props.penDraftFilled}
@@ -255,9 +313,13 @@ export function MroDrawToolkit(props) {
                   brushSize={props.brushSize}
                   updateBrushSize={props.updateBrushSize}
                 />
-              </Box>
+              </ToolClickAway>
 
-              <Box sx={{ position: "relative", zIndex: expandedOption === "r" ? 1600 : "auto", display: "inline-flex", alignItems: "center" }}>
+              <ToolClickAway
+                active={expandedOption === "r"}
+                onClickAway={handleDrawToolClickAway}
+                sx={{ ...toolGroupSx, zIndex: expandedOption === "r" ? 1600 : "auto" }}
+              >
                 <Tooltip title="Rectangle">
                   <IconButton aria-label="rectangle" size="small" onClick={clickRectangle} sx={{ ...toolBtnSx, ...shapeSelectedSx("rectangle") }}>
                     <CropSquareOutlinedIcon sx={{ color: "inherit" }} />
@@ -271,9 +333,13 @@ export function MroDrawToolkit(props) {
                   onApplyShapeDraft={props.onApplyShapeDraft}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
-              </Box>
+              </ToolClickAway>
 
-              <Box sx={{ position: "relative", zIndex: expandedOption === "l" ? 1600 : "auto", display: "inline-flex", alignItems: "center" }}>
+              <ToolClickAway
+                active={expandedOption === "l"}
+                onClickAway={handleDrawToolClickAway}
+                sx={{ ...toolGroupSx, zIndex: expandedOption === "l" ? 1600 : "auto" }}
+              >
                 <Tooltip title="Ellipse">
                   <IconButton aria-label="ellipse" size="small" onClick={clickEllipse} sx={{ ...toolBtnSx, ...shapeSelectedSx("ellipse") }}>
                     <CircleOutlinedIcon sx={{ color: "inherit" }} />
@@ -287,9 +353,13 @@ export function MroDrawToolkit(props) {
                   onApplyShapeDraft={props.onApplyShapeDraft}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
-              </Box>
+              </ToolClickAway>
 
-              <Box sx={{ position: "relative", zIndex: expandedOption === "e" ? 1600 : "auto", display: "inline-flex", alignItems: "center" }}>
+              <ToolClickAway
+                active={expandedOption === "e"}
+                onClickAway={handleDrawToolClickAway}
+                sx={{ ...toolGroupSx, zIndex: expandedOption === "e" ? 1600 : "auto" }}
+              >
                 <Tooltip title="Eraser">
                   <IconButton
                     aria-label="erase"
@@ -314,7 +384,7 @@ export function MroDrawToolkit(props) {
                   eraserSize={props.eraserSize}
                   updateEraserSize={props.updateEraserSize}
                 />
-              </Box>
+              </ToolClickAway>
 
               <Tooltip title="Undo">
                 <IconButton aria-label="revert" size="small" onClick={() => props.drawUndo()} sx={toolBtnSx}>
@@ -407,6 +477,5 @@ export function MroDrawToolkit(props) {
           </CardContent>
         </Card>
       </div>
-    </ClickAwayListener>
   );
 }
