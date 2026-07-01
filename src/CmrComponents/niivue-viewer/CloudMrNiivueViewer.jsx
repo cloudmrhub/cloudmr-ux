@@ -13,9 +13,10 @@ import {
   fillPolylineDraft,
   unfillPolylineDraft,
   polylineDraftFromNv,
+  redrawPolylineDraft,
+  redrawFreehandDraft,
   syncPolylineDraftToNv,
   registerAppliedPolyline,
-  restoreCommittedPolyline,
   collectPolylineAppliedVoxelIndices,
 } from './penDraftUtils';
 import {
@@ -23,6 +24,7 @@ import {
   updateShapeRegistryErosionState,
   removeShapeRegistryEntry,
   clearShapeRegistry,
+  redrawDraftShape,
 } from './shapeDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
 import { Niivue } from './NiivuePatcher';
@@ -587,7 +589,7 @@ export default function CloudMrNiivueViewer(props) {
     setBrushSize(size);
     brushSizeRef.current = size;
     const tool = drawShapeToolRef.current;
-    if ((tool === "pen" || tool === "polyline") && drawPen !== 0 && drawPen !== 8) {
+    if ((tool === "pen" || tool === "polyline") && drawPen !== 8) {
       applyNvBrushSize(size);
     }
   }
@@ -595,7 +597,7 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateEraserSize(size) {
     setEraserSize(size);
     eraserSizeRef.current = size;
-    if (drawPen === 0 || drawPen === 8) {
+    if (drawPen === 8) {
       applyNvBrushSize(size);
     }
   }
@@ -603,7 +605,7 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateDrawPen(a) {
     const raw = Number(a.target.value);
     setDrawPen(raw);
-    const isEraser = raw === 0 || raw === 8;
+    const isEraser = raw === 8;
 
     if (raw === 8) {
       nv.setPenValue(0, true);
@@ -628,6 +630,41 @@ export default function CloudMrNiivueViewer(props) {
       nv.opts.polylinePenMode = true;
       nv.opts.isFilledPen = false;
       applyNvBrushSize(brushSizeRef.current);
+    }
+
+    // Immediately repaint any active draft in the new color so the user sees the change.
+    if (!isEraser) {
+      const colorValue = raw & 7;
+      if (shapeDraftRef.current) {
+        const next = { ...shapeDraftRef.current, penValue: colorValue };
+        shapeDraftRef.current = next;
+        setShapeDraft(next);
+        redrawDraftShape(nv, next);
+      } else if (penDraftRef.current) {
+        const next = { ...penDraftRef.current, penValue: colorValue };
+        penDraftRef.current = next;
+        setPenDraft(next);
+        if (next.kind === "polyline") {
+          const count = next.vertices?.length ?? 0;
+          if (count >= 2) {
+            // Redraw segments in the new color, then update the base so the
+            // rubber-band preview also uses the new color.
+            redrawPolylineDraft(nv, { ...next, filled: false });
+            if (nv.drawBitmap) nv._cloudMrPolylineBaseBitmap = nv.drawBitmap.slice();
+            // Re-apply fill on top when polygon is closeable (base stays segments-only).
+            if (count >= 3) {
+              nv.drawPenAxCorSag = next.axCorSag;
+              nv.drawPenFillPts = next.vertices.map((v) => [...v]);
+              nv._cloudMrSkipNextUndoBitmap = true;
+              nv.drawPenFilled();
+              nv.refreshDrawing(false, false);
+              nv.drawScene();
+            }
+          }
+        } else if (next.kind === "freehand") {
+          redrawFreehandDraft(nv, next);
+        }
+      }
     }
   }
 
@@ -917,8 +954,18 @@ export default function CloudMrNiivueViewer(props) {
     if (!draft) return;
     const registryId = draft._registryId;
     cancelPenDraft(nv, draft);
-    if (registryId && draft.kind === "polyline") {
-      restoreCommittedPolyline(nv, registryId);
+    if (registryId) {
+      // Restore the exact committed voxels from the registry (works for both the
+      // legacy polyline-draft case and the new freehand-converted case).
+      const entry = nv._cloudMrPolylineRegistry?.find((e) => e.id === registryId);
+      if (entry) {
+        const bitmap = nv.drawBitmap;
+        entry.voxelIndices.forEach((idx) => {
+          if (idx < bitmap.length) bitmap[idx] = entry.penValue;
+        });
+        nv.refreshDrawing(true, false);
+        nv.drawScene();
+      }
     }
     if (draft.kind === "polyline") {
       nv.cloudMrResetPolyline?.();
@@ -937,11 +984,17 @@ export default function CloudMrNiivueViewer(props) {
     let draft = penDraftRef.current;
     if (!draft) return;
     if (draft.kind === "polyline" && nv._cloudMrPolylineVertices?.length >= 2) {
-      const fresh = polylineDraftFromNv(nv, { filled: !!draft.filled });
+      const fresh = polylineDraftFromNv(nv, { filled: draft.vertices?.length >= 3 });
       if (fresh) {
         draft = fresh;
         penDraftRef.current = draft;
       }
+    }
+    // Auto-fill polyline on apply — fillPolylineDraft updates _cloudMrPolylineBaseBitmap
+    // to the filled state so applyPenDraft commits the correct filled bitmap.
+    if (draft.kind === "polyline" && draft.vertices?.length >= 3) {
+      draft = fillPolylineDraft(nv, draft);
+      penDraftRef.current = draft;
     }
     draft = applyPenDraft(nv, draft) ?? draft;
     if (draft.kind === "polyline" && nv._cloudMrPolylineSessionStartBitmap) {
@@ -956,6 +1009,12 @@ export default function CloudMrNiivueViewer(props) {
       registerAppliedPolyline(nv, draft, draft._registryId);
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
+    } else if (draft._registryId && nv._cloudMrPolylineRegistry) {
+      // Was a committed polyline reopened as a freehand draft (move-only).
+      // Remove the stale registry entry so it is not matched on future clicks.
+      nv._cloudMrPolylineRegistry = nv._cloudMrPolylineRegistry.filter(
+        (e) => e.id !== draft._registryId,
+      );
     }
     setPenDraft(null);
     penDraftRef.current = null;
@@ -1040,13 +1099,16 @@ export default function CloudMrNiivueViewer(props) {
   nv.onPolylineChange = (count) => {
     setPolylineVertexCount(count);
     if (drawShapeToolRef.current === "polyline" && count >= 2) {
-      const prev = penDraftRef.current;
-      const preserveFill =
-        prev?.kind === "polyline" &&
-        prev.filled &&
-        prev.vertices?.length === count;
-      const draft = polylineDraftFromNv(nv, { filled: preserveFill });
+      const draft = polylineDraftFromNv(nv, { filled: count >= 3 });
       if (draft) {
+        if (count >= 3) {
+          // Show fill live on canvas after each vertex commit.
+          // Save/restore _cloudMrPolylineBaseBitmap (segments-only) so the
+          // rubber-band preview still works correctly on mouse move.
+          const savedBase = nv._cloudMrPolylineBaseBitmap?.slice();
+          redrawPolylineDraft(nv, draft);
+          if (savedBase) nv._cloudMrPolylineBaseBitmap = savedBase;
+        }
         setPenDraft(draft);
         penDraftRef.current = draft;
       }

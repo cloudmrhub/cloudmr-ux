@@ -17,6 +17,8 @@ import {
 import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 const HANDLE_SIZE = 10;
+/** Extra space (px) added around the polyline bounding box so it's easy to see and click. */
+const POLYLINE_BOX_PADDING = 14;
 
 function cloneFreehandDraft(draft) {
   return {
@@ -107,7 +109,13 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overla
     const width = Math.max(...xs) - left;
     const height = Math.max(...ys) - top;
     if (width < 2 && height < 2) return null;
-    return { left, top, width: Math.max(width, 2), height: Math.max(height, 2) };
+    const pad = isPolyline ? POLYLINE_BOX_PADDING : 0;
+    return {
+      left: left - pad,
+      top: top - pad,
+      width: Math.max(width, 2) + pad * 2,
+      height: Math.max(height, 2) + pad * 2,
+    };
   }, [cornerCss, draft?.axCorSag, freehandCorners, isPolyline, nv, overlayKey]);
 
   const applyDraft = useCallback(
@@ -262,21 +270,7 @@ export function PenDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, overla
           title="Move shape"
         />
       )}
-      {isPolyline &&
-        cornerCss.map((pos, i) => (
-          <div
-            key={`handle-${i}`}
-            role="presentation"
-            onPointerDown={(e) => startDrag(e, "corner", i)}
-            style={{
-              ...handleStyle,
-              left: pos.x,
-              top: pos.y,
-              cursor: "grab",
-            }}
-            title="Move vertex"
-          />
-        ))}
+      {/* Polyline vertex handles intentionally omitted — move-only after apply */}
     </div>
   );
 }

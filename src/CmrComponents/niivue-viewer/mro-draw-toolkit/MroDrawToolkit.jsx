@@ -17,10 +17,9 @@ import {
   Typography,
 } from "@mui/material";
 import DrawIcon from "@mui/icons-material/Draw";
-import TimelineIcon from "@mui/icons-material/Timeline";
+import PolylineIcon from "@mui/icons-material/Polyline";
 import CropSquareOutlinedIcon from "@mui/icons-material/CropSquareOutlined";
 import CircleOutlinedIcon from "@mui/icons-material/CircleOutlined";
-import AutoFixNormalOutlinedIcon from "@mui/icons-material/AutoFixNormalOutlined";
 import ReplyIcon from "@mui/icons-material/Reply";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import SvgIcon from "@mui/material/SvgIcon";
@@ -104,10 +103,8 @@ export function MroDrawToolkit(props) {
   const [expandOpacityOptions, setExpandOpacityOptions] = useState(false);
   const [, setMaskColor] = useState(undefined);
 
-  const filled = props.drawPen > 7;
-
   useEffect(() => {
-    const eraserSelected = props.drawPen === 0 || props.drawPen === 8;
+    const eraserSelected = props.drawPen === 8;
     // Close palette when tool is deactivated programmatically (e.g. after Apply).
     // Keep eraser palette open when switching from shape/pen edit → eraser in one click.
     if (drawShapeTool === null && !props.shapeDraftActive && !props.penDraftActive) {
@@ -130,7 +127,7 @@ export function MroDrawToolkit(props) {
   const eraserActive = expandedOption === "e";
 
   function leaveEraserIfActive() {
-    if (!eraserActive && props.drawPen !== 0 && props.drawPen !== 8) {
+    if (!eraserActive && props.drawPen !== 8) {
       return;
     }
     props.onDeactivateDrawTools?.();
@@ -280,6 +277,7 @@ export function MroDrawToolkit(props) {
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
                   penToolKind="freehand"
+                  currentPenValue={props.drawPen}
                   penDraftActive={props.penDraftActive}
                   penDraftKind={props.penDraftKind}
                   onDeletePenDraft={props.onDeletePenDraft}
@@ -295,7 +293,7 @@ export function MroDrawToolkit(props) {
               >
                 <Tooltip title="Polyline">
                   <IconButton aria-label="polyline" size="small" onClick={clickPolyline} sx={{ ...toolBtnSx, ...shapeSelectedSx("polyline") }}>
-                    <TimelineIcon sx={{ color: "inherit" }} />
+                    <PolylineIcon sx={{ color: "inherit" }} />
                   </IconButton>
                 </Tooltip>
                 <DrawColorPlatte
@@ -303,6 +301,7 @@ export function MroDrawToolkit(props) {
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
                   penToolKind="polyline"
+                  currentPenValue={props.drawPen}
                   polylineVertexCount={props.polylineVertexCount}
                   penDraftActive={props.penDraftActive}
                   penDraftKind={props.penDraftKind}
@@ -329,6 +328,7 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "r"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  currentPenValue={props.drawPen}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "rectangle"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
@@ -349,6 +349,7 @@ export function MroDrawToolkit(props) {
                   expanded={expandedOption === "l"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
+                  currentPenValue={props.drawPen}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "ellipse"}
                   onApplyShapeDraft={props.onApplyShapeDraft}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
@@ -370,17 +371,11 @@ export function MroDrawToolkit(props) {
                       ...(eraserActive ? theme.selectedToolSx : {}),
                     }}
                   >
-                    {filled || !eraserActive ? (
-                      <EraserIcon />
-                    ) : (
-                      <AutoFixNormalOutlinedIcon sx={{ color: ICON_COLOR }} />
-                    )}
+                    <EraserIcon />
                   </IconButton>
                 </Tooltip>
                 <EraserPlatte
                   expandEraseOptions={expandedOption === "e"}
-                  updateDrawPen={props.updateDrawPen}
-                  setDrawingEnabled={props.setDrawingEnabled}
                   eraserSize={props.eraserSize}
                   updateEraserSize={props.updateEraserSize}
                 />
@@ -440,7 +435,7 @@ export function MroDrawToolkit(props) {
                   color: ICON_COLOR,
                 }}
               >
-                <Tooltip title="Drawing opacity">
+                <Tooltip title="ROI opacity">
                   <IconButton aria-label="opaque" size="small" onClick={() => setExpandOpacityOptions(!expandOpacityOptions)} sx={toolBtnSx}>
                     <OpacityIcon sx={{ color: ICON_COLOR }} />
                   </IconButton>

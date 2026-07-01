@@ -30,7 +30,6 @@ import {
   redrawFreehandDraft,
   redrawPolylineDraft,
   shouldDeferFreehandCommit,
-  syncPolylineDraftToNv,
 } from "./penDraftUtils.js";
 
 /*
@@ -1587,12 +1586,9 @@ function cloudMrTryReopenPenDraftOnClick(nv) {
     if (kind !== 3) penKind = 2;
   }
 
-  if (draft.kind === "polyline") {
-    redrawPolylineDraft(nv, draft);
-    syncPolylineDraftToNv(nv, draft);
-  } else {
-    redrawFreehandDraft(nv, draft);
-  }
+  // capturePolylineDraftFromClick always returns a freehand draft now (exact stored
+  // voxels, no vertex state, no re-flood-fill), so the redraw path is uniform.
+  redrawFreehandDraft(nv, draft);
   nv._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof nv.onPenDraftReopenReady === "function") {
     nv.onPenDraftReopenReady(draft, penKind);

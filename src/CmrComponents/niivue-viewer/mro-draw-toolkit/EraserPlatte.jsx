@@ -1,20 +1,12 @@
-import { Stack, IconButton } from "@mui/material";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import FiberManualRecordOutlinedIcon from "@mui/icons-material/FiberManualRecordOutlined";
+import { Stack } from "@mui/material";
 import { BrushSizeSlider } from "./BrushSizeSlider";
 
+/** Eraser palette — size control only (filled/region eraser is always used). */
 export default function EraserPlatte({
   expandEraseOptions,
-  updateDrawPen,
-  setDrawingEnabled,
   eraserSize = 1,
   updateEraserSize,
 }) {
-  const eraseOptions = [
-    <FiberManualRecordIcon key="e0" style={{ color: "white" }} />,
-    <FiberManualRecordOutlinedIcon key="e1" style={{ color: "white" }} />,
-  ];
-
   return (
     <Stack
       style={{
@@ -40,19 +32,6 @@ export default function EraserPlatte({
           updateBrushSize={updateEraserSize}
         />
       )}
-      <Stack direction="row" style={{ justifyContent: "center" }}>
-        {eraseOptions.map((value, index) => (
-          <IconButton
-            key={index}
-            onClick={() => {
-              updateDrawPen({ target: { value: index === 0 ? 8 : 0 } });
-              setDrawingEnabled(true);
-            }}
-          >
-            {value}
-          </IconButton>
-        ))}
-      </Stack>
     </Stack>
   );
 }

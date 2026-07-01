@@ -425,22 +425,49 @@ export function applyPenDraft(nv, draft) {
 }
 
 /**
- * Reconstruct a polyline PenDraft from stored vertices (not flood-fill).
- * Returns null if the click didn't land on a registered polyline.
+ * Reconstruct a PenDraft from a registered polyline entry, returned as a
+ * **freehand** draft so it follows the same simple move-only edit flow.
+ *
+ * Using the exact stored voxel set instead of re-running drawPenFilled avoids
+ * two bugs:
+ *   1. Re-running the flood-fill on complex/self-intersecting shapes can produce
+ *      a different pixel set (winding-rule differences, sub-voxel rounding).
+ *   2. syncPolylineDraftToNv was planting old vertices back into
+ *      _cloudMrPolylineVertices; a React re-render could then re-enable
+ *      polylinePenMode and the next canvas click would append to the stale
+ *      vertices, visually "recreating" the old shape.
  */
 export function capturePolylineDraftFromClick(nv) {
   const seedVox = voxFromMouse(nv);
   const entry = findPolylineRegistryEntry(nv, seedVox);
-  if (!entry) return null;
+  if (!entry || !nv.back?.dims) return null;
+
+  const dx = nv.back.dims[1];
+  const dy = nv.back.dims[2];
+
+  // Decode stored linear indices back to [x, y, z] triples.
+  const strokeVoxels = [];
+  let x1 = Infinity, y1 = Infinity, z1 = Infinity;
+  let x2 = -Infinity, y2 = -Infinity, z2 = -Infinity;
+  entry.voxelIndices.forEach((idx) => {
+    const z = Math.floor(idx / (dx * dy));
+    const rem = idx - z * dx * dy;
+    const y = Math.floor(rem / dx);
+    const x = rem % dx;
+    strokeVoxels.push([x, y, z]);
+    if (x < x1) x1 = x; if (x > x2) x2 = x;
+    if (y < y1) y1 = y; if (y > y2) y2 = y;
+    if (z < z1) z1 = z; if (z > z2) z2 = z;
+  });
 
   const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, entry.voxelIndices);
   return {
-    kind: "polyline",
+    kind: "freehand",
     baseBitmap,
     axCorSag: entry.axCorSag,
     penValue: entry.penValue,
-    vertices: entry.vertices.map((v) => [...v]),
-    filled: entry.filled,
+    strokeVoxels,
+    bounds: { x1, y1, z1, x2, y2, z2 },
     _registryId: entry.id,
   };
 }
