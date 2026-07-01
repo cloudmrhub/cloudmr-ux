@@ -18,6 +18,12 @@ import {
   restoreCommittedPolyline,
   collectPolylineAppliedVoxelIndices,
 } from './penDraftUtils';
+import {
+  registerAppliedShape,
+  updateShapeRegistryErosionState,
+  removeShapeRegistryEntry,
+  clearShapeRegistry,
+} from './shapeDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
 import { Niivue } from './NiivuePatcher';
 import NVSwitch from './Switch';
@@ -145,6 +151,9 @@ export default function CloudMrNiivueViewer(props) {
   const [polylineVertexCount, setPolylineVertexCount] = useState(0);
   const [penDraft, setPenDraft] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
+  const [eraserSize, setEraserSize] = useState(1);
+  const brushSizeRef = React.useRef(1);
+  const eraserSizeRef = React.useRef(1);
   const shapeDraftRef = React.useRef(null);
   const penDraftRef = React.useRef(null);
   const drawShapeToolRef = React.useRef(null);
@@ -421,6 +430,13 @@ export default function CloudMrNiivueViewer(props) {
       nv._cloudMrSuppressDrawingChangedMouseUp = false;
       return;
     }
+    if (
+      nv.opts.drawingEnabled &&
+      nv.opts.penType === NI_PEN_TYPE.PEN &&
+      nv.opts.penValue === 0
+    ) {
+      updateShapeRegistryErosionState(nv);
+    }
     if (nv.opts.drawingEnabled) {
       setDrawingChanged(true);
       resampleImage();
@@ -562,10 +578,25 @@ export default function CloudMrNiivueViewer(props) {
     nv.drawScene();
   }
 
-  function nvUpdateBrushSize(size) {
-    setBrushSize(size);
+  function applyNvBrushSize(size) {
     nv.opts.penBounds = (size - 1) / 2;
     nv.opts.penSize = size;
+  }
+
+  function nvUpdateBrushSize(size) {
+    setBrushSize(size);
+    brushSizeRef.current = size;
+    if (drawShapeToolRef.current === "pen" && drawPen !== 0 && drawPen !== 8) {
+      applyNvBrushSize(size);
+    }
+  }
+
+  function nvUpdateEraserSize(size) {
+    setEraserSize(size);
+    eraserSizeRef.current = size;
+    if (drawPen === 0 || drawPen === 8) {
+      applyNvBrushSize(size);
+    }
   }
 
   function nvUpdateDrawPen(a) {
@@ -585,20 +616,12 @@ export default function CloudMrNiivueViewer(props) {
       nv.opts.deferShapeCommit = false;
       nv.opts.polylinePenMode = false;
       nv.cloudMrResetPolyline?.();
-      if (penDraftRef.current) {
-        cancelPenDraft(nv, penDraftRef.current);
-        setPenDraft(null);
-        penDraftRef.current = null;
-        nv._cloudMrPenDraftActive = false;
-        setPolylineVertexCount(0);
-      }
-      if (shapeDraftRef.current) {
-        cancelShapeDraft();
-      }
+      applyActiveDraftIfAny();
     } else if (drawShapeToolRef.current === "pen") {
       nv.opts.deferFreehandCommit = false;
       nv.opts.polylinePenMode = penDrawModeRef.current === "polyline";
       nv.opts.isFilledPen = penDrawModeRef.current === "freehand";
+      applyNvBrushSize(brushSizeRef.current);
     }
   }
 
@@ -626,26 +649,18 @@ export default function CloudMrNiivueViewer(props) {
       nv.setPenValue(1, false);
       nv.opts.isFilledPen = false;
     }
+    applyNvBrushSize(1);
   }
 
   function activateEraser() {
+    applyActiveDraftIfAny();
     setDrawShapeTool(null);
     nv.opts.penType = NI_PEN_TYPE.PEN;
     nv.opts.deferShapeCommit = false;
     nv.opts.deferFreehandCommit = false;
     nv.opts.polylinePenMode = false;
-    if (shapeDraftRef.current) {
-      cancelShapeDraft();
-    }
-    if (penDraftRef.current) {
-      cancelPenDraft(nv, penDraftRef.current);
-      nv.cloudMrResetPolyline?.();
-      setPolylineVertexCount(0);
-      setPenDraft(null);
-      penDraftRef.current = null;
-      nv._cloudMrPenDraftActive = false;
-    }
     nvUpdateDrawPen({ target: { value: 8 } });
+    applyNvBrushSize(eraserSizeRef.current);
     nvSetDrawingEnabled(true);
   }
 
@@ -979,6 +994,7 @@ export default function CloudMrNiivueViewer(props) {
   nv.onShapeCommitted = (draft) => {
     nv.drawAddUndoBitmap(nv.drawFillOverwrites);
     markShapeVoxelKind(draft);
+    registerAppliedShape(nv, draft);
     setDrawingChanged(true);
     resampleImage();
   };
@@ -1056,6 +1072,7 @@ export default function CloudMrNiivueViewer(props) {
     nv._cloudMrPolylineBaseBitmap = null;
     nv._cloudMrPolylineSessionStartBitmap = null;
     nv._cloudMrToolKindBitmap = null;
+    clearShapeRegistry(nv);
   }
 
   function clearDrawingHandler() {
@@ -1093,6 +1110,9 @@ export default function CloudMrNiivueViewer(props) {
   function deleteShapeDraftHandler() {
     const draft = shapeDraftRef.current;
     if (!draft?.baseBitmap) return;
+    if (draft._registryId != null) {
+      removeShapeRegistryEntry(nv, draft._registryId);
+    }
     // Clear tool-kind tags for voxels this shape occupied
     if (nv._cloudMrToolKindBitmap) {
       for (let i = 0; i < nv.drawBitmap.length; i++) {
@@ -1196,11 +1216,26 @@ export default function CloudMrNiivueViewer(props) {
     }
   }
 
+  function applyActiveDraftIfAny() {
+    if (shapeDraftRef.current) {
+      applyShapeDraft();
+    } else if (penDraftRef.current) {
+      applyPenDraftHandler();
+    }
+  }
+
   function applyShapeDraft({ keepTool = false } = {}) {
     const draft = shapeDraftRef.current;
     if (!draft) return;
     nv.drawAddUndoBitmap(nv.drawFillOverwrites);
     markShapeVoxelKind(draft);
+    const registryId = registerAppliedShape(nv, draft, {
+      existingId: draft._registryId,
+      eroded: (draft.shapeVoxels?.length ?? 0) > 0,
+    });
+    if (registryId != null) {
+      draft._registryId = registryId;
+    }
     setDrawingChanged(true);
     setShapeDraft(null);
     shapeDraftRef.current = null;
@@ -1221,6 +1256,7 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   nv.onShapeDraftReady = (draft) => {
+    applyNvBrushSize(1);
     setShapeDraft(draft);
     shapeDraftRef.current = draft;
     nv._cloudMrShapeDraftActive = true;
@@ -1233,11 +1269,7 @@ export default function CloudMrNiivueViewer(props) {
   };
 
   nv.onApplyActiveDraft = () => {
-    if (shapeDraftRef.current) {
-      applyShapeDraft();
-    } else if (penDraftRef.current) {
-      applyPenDraftHandler();
-    }
+    applyActiveDraftIfAny();
   };
 
   React.useEffect(() => {
@@ -1733,6 +1765,8 @@ export default function CloudMrNiivueViewer(props) {
     penDraftFilled: penDraft?.filled === true,
     brushSize,
     updateBrushSize: nvUpdateBrushSize,
+    eraserSize,
+    updateEraserSize: nvUpdateEraserSize,
     onActivateEraser: activateEraser,
     onDeactivateDrawTools: deactivateDrawTools,
     onClearDrawing: clearDrawingHandler,

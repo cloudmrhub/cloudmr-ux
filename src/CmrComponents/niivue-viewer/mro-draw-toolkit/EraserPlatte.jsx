@@ -7,8 +7,8 @@ export default function EraserPlatte({
   expandEraseOptions,
   updateDrawPen,
   setDrawingEnabled,
-  brushSize = 1,
-  updateBrushSize,
+  eraserSize = 1,
+  updateEraserSize,
 }) {
   const eraseOptions = [
     <FiberManualRecordIcon key="e0" style={{ color: "white" }} />,
@@ -33,11 +33,11 @@ export default function EraserPlatte({
       }}
       direction="column"
     >
-      {updateBrushSize && (
+      {updateEraserSize && (
         <BrushSizeSlider
           label="Eraser size"
-          brushSize={brushSize}
-          updateBrushSize={updateBrushSize}
+          brushSize={eraserSize}
+          updateBrushSize={updateEraserSize}
         />
       )}
       <Stack direction="row" style={{ justifyContent: "center" }}>

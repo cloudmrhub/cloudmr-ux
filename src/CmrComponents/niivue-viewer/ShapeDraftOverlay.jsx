@@ -76,6 +76,8 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
     return { left, top, width, height };
   }, [cornerCss]);
 
+  const resizeDisabled = (draft?.shapeVoxels?.length ?? 0) > 0;
+
   const applyDraft = useCallback(
     (nextDraft) => {
       redrawDraftShape(nv, nextDraft);
@@ -115,6 +117,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
           ...currentDraft,
           ptA: translatePt(drag.startPtA, delta),
           ptB: translatePt(drag.startPtB, delta),
+          shapeVoxels: drag.startShapeVoxels?.map(([x, y, z]) => translatePt([x, y, z], delta)),
         };
       applyDraft(next);
       return;
@@ -124,7 +127,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
       const vox = voxUnderClient(nv, event.clientX, event.clientY);
       if (!vox) return;
         const next = resizeDraftCorner(nv, currentDraft, drag.cornerIndex, vox);
-      applyDraft(next);
+      applyDraft({ ...next, shapeVoxels: undefined });
     }
   };
 
@@ -140,6 +143,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
         startClientY: event.clientY,
         startPtA: [...draft.ptA],
         startPtB: [...draft.ptB],
+        startShapeVoxels: draft.shapeVoxels?.map(([x, y, z]) => [x, y, z]),
       };
       window.addEventListener("pointermove", onPointerMoveRef.current);
       window.addEventListener("pointerup", finishDragRef.current);
@@ -215,10 +219,11 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
             marginLeft: -6,
             marginTop: -6,
           }}
-          title="Move shape"
+          title={resizeDisabled ? "Move shape (resize unavailable after erasing)" : "Move shape"}
         />
       )}
-      {cornerCss.map((pos, i) => (
+      {!resizeDisabled &&
+        cornerCss.map((pos, i) => (
         <div
           key={`corner-${i}`}
           role="presentation"

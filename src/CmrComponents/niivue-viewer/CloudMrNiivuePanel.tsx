@@ -165,6 +165,14 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
         : tool === "ellipse"
           ? NI_PEN_TYPE.ELLIPSE
           : NI_PEN_TYPE.PEN;
+    if (tool === "rectangle" || tool === "ellipse") {
+      nv.opts.penBounds = 0;
+      nv.opts.penSize = 1;
+    } else if (tool === "pen") {
+      const penBrush = props.drawToolkitProps.brushSize ?? 1;
+      nv.opts.penBounds = (penBrush - 1) / 2;
+      nv.opts.penSize = penBrush;
+    }
     nv.drawScene();
     if ((tool === "rectangle" || tool === "ellipse") && !props.drawToolkitProps.drawingEnabled) {
       props.drawToolkitProps.setDrawingEnabled(true);

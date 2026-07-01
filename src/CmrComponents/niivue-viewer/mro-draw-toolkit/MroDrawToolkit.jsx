@@ -311,8 +311,8 @@ export function MroDrawToolkit(props) {
                   expandEraseOptions={expandedOption === "e"}
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
-                  brushSize={props.brushSize}
-                  updateBrushSize={props.updateBrushSize}
+                  eraserSize={props.eraserSize}
+                  updateEraserSize={props.updateEraserSize}
                 />
               </Box>
 

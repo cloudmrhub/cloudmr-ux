@@ -1673,6 +1673,16 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 
   if (!pendingDraft?.baseBitmap) {
+    // If a draft is open and the user clicked (not dragged) on the canvas,
+    // treat it as an "apply" — same behaviour as right-click or the Apply button.
+    if (
+      (this._cloudMrShapeDraftActive || this._cloudMrPenDraftActive) &&
+      isClickWithoutDrag(this.uiData) &&
+      typeof this.onApplyActiveDraft === "function"
+    ) {
+      this.onApplyActiveDraft();
+      return;
+    }
     cloudMrTryReopenDraftOnClick(this);
     return;
   }
