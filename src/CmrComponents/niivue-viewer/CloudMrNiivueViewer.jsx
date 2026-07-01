@@ -647,19 +647,8 @@ export default function CloudMrNiivueViewer(props) {
         if (next.kind === "polyline") {
           const count = next.vertices?.length ?? 0;
           if (count >= 2) {
-            // Redraw segments in the new color, then update the base so the
-            // rubber-band preview also uses the new color.
             redrawPolylineDraft(nv, { ...next, filled: false });
             if (nv.drawBitmap) nv._cloudMrPolylineBaseBitmap = nv.drawBitmap.slice();
-            // Re-apply fill on top when polygon is closeable (base stays segments-only).
-            if (count >= 3) {
-              nv.drawPenAxCorSag = next.axCorSag;
-              nv.drawPenFillPts = next.vertices.map((v) => [...v]);
-              nv._cloudMrSkipNextUndoBitmap = true;
-              nv.drawPenFilled();
-              nv.refreshDrawing(false, false);
-              nv.drawScene();
-            }
           }
         } else if (next.kind === "freehand") {
           redrawFreehandDraft(nv, next);
@@ -1010,11 +999,40 @@ export default function CloudMrNiivueViewer(props) {
       nv.cloudMrResetPolyline?.();
       setPolylineVertexCount(0);
     } else if (draft._registryId && nv._cloudMrPolylineRegistry) {
-      // Was a committed polyline reopened as a freehand draft (move-only).
-      // Remove the stale registry entry so it is not matched on future clicks.
-      nv._cloudMrPolylineRegistry = nv._cloudMrPolylineRegistry.filter(
-        (e) => e.id !== draft._registryId,
-      );
+      // Was a committed polyline reopened as a freehand draft (move-only, possibly recolored).
+      // Re-register with the current penValue and voxel positions so future clicks
+      // open it with the correct (possibly changed) color.
+      const entryIdx = nv._cloudMrPolylineRegistry.findIndex((e) => e.id === draft._registryId);
+      if (entryIdx >= 0) {
+        const old = nv._cloudMrPolylineRegistry[entryIdx];
+        // Collect the newly committed voxel positions using the draft's current penValue.
+        const newIndices = new Set();
+        if (nv.drawBitmap && draft.baseBitmap) {
+          const pv = draft.penValue;
+          for (let i = 0; i < nv.drawBitmap.length; i++) {
+            if (nv.drawBitmap[i] === pv && draft.baseBitmap[i] !== pv) newIndices.add(i);
+          }
+        }
+        // Fall back to stroke voxel positions if bitmap diff returned nothing.
+        if (newIndices.size === 0 && draft.strokeVoxels && nv.back?.dims) {
+          const dx = nv.back.dims[1];
+          const dy = nv.back.dims[2];
+          for (const [x, y, z] of draft.strokeVoxels) {
+            newIndices.add(x + y * dx + z * dx * dy);
+          }
+        }
+        if (newIndices.size > 0) {
+          nv._cloudMrPolylineRegistry[entryIdx] = {
+            ...old,
+            penValue: draft.penValue,
+            voxelIndices: newIndices,
+          };
+        } else {
+          nv._cloudMrPolylineRegistry = nv._cloudMrPolylineRegistry.filter(
+            (e) => e.id !== draft._registryId,
+          );
+        }
+      }
     }
     setPenDraft(null);
     penDraftRef.current = null;
@@ -1094,21 +1112,18 @@ export default function CloudMrNiivueViewer(props) {
     nv.opts.deferFreehandCommit = false;
     nv.opts.polylinePenMode = false;
     nvSetDrawingEnabled(false);
+    // Sync palette to the reopened ROI's color so the user can change it.
+    if (draft.penValue != null) {
+      setDrawPen(draft.penValue);
+      nv.setPenValue(draft.penValue, false);
+    }
   };
 
   nv.onPolylineChange = (count) => {
     setPolylineVertexCount(count);
     if (drawShapeToolRef.current === "polyline" && count >= 2) {
-      const draft = polylineDraftFromNv(nv, { filled: count >= 3 });
+      const draft = polylineDraftFromNv(nv, { filled: false });
       if (draft) {
-        if (count >= 3) {
-          // Show fill live on canvas after each vertex commit.
-          // Save/restore _cloudMrPolylineBaseBitmap (segments-only) so the
-          // rubber-band preview still works correctly on mouse move.
-          const savedBase = nv._cloudMrPolylineBaseBitmap?.slice();
-          redrawPolylineDraft(nv, draft);
-          if (savedBase) nv._cloudMrPolylineBaseBitmap = savedBase;
-        }
         setPenDraft(draft);
         penDraftRef.current = draft;
       }
@@ -1334,6 +1349,11 @@ export default function CloudMrNiivueViewer(props) {
     nv.opts.penType = draft.penType;
     nv.opts.deferShapeCommit = true;
     nvSetDrawingEnabled(false);
+    // Sync palette to the reopened shape's color so the user can change it.
+    if (draft.penValue != null) {
+      setDrawPen(draft.penValue);
+      nv.setPenValue(draft.penValue, false);
+    }
   };
 
   nv.onApplyActiveDraft = () => {
@@ -1353,6 +1373,9 @@ export default function CloudMrNiivueViewer(props) {
       return undefined;
     }
     const canvas = document.getElementById("niiCanvas");
+    if (!canvas) {
+      return undefined;
+    }
 
     const applyOnRightClick = (event) => {
       event.preventDefault();
@@ -1360,30 +1383,17 @@ export default function CloudMrNiivueViewer(props) {
       nv.onApplyActiveDraft?.();
     };
 
-    // Right-click on canvas: apply via Niivue's own handler.
-    if (canvas) {
-      canvas.addEventListener("contextmenu", applyOnRightClick, true);
-    }
-
-    // Any mousedown outside the canvas exits editing mode.
-    // Clicks on the canvas are handled by Niivue's own mouseUpListener,
-    // so we skip them here to avoid a double-apply race.
-    const onDocMouseDown = (event) => {
-      const target = event.target;
-      const onCanvas =
-        target === canvas || (canvas && canvas.contains(target));
-      if (onCanvas) return;
-      // Left or right click anywhere outside the canvas → apply draft.
-      nv.onApplyActiveDraft?.();
+    const onMouseDown = (event) => {
+      if (event.button === 2) {
+        applyOnRightClick(event);
+      }
     };
 
-    document.addEventListener("mousedown", onDocMouseDown, true);
-
+    canvas.addEventListener("mousedown", onMouseDown, true);
+    canvas.addEventListener("contextmenu", applyOnRightClick, true);
     return () => {
-      if (canvas) {
-        canvas.removeEventListener("contextmenu", applyOnRightClick, true);
-      }
-      document.removeEventListener("mousedown", onDocMouseDown, true);
+      canvas.removeEventListener("mousedown", onMouseDown, true);
+      canvas.removeEventListener("contextmenu", applyOnRightClick, true);
     };
   }, [shapeDraft, penDraft]);
 
