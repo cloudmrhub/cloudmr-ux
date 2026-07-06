@@ -140,3 +140,25 @@
   font-weight: 400;
   font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
 }
+
+/* wrapper that stacks the input + error text */
+.tkdr__input-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* red outline when the value is invalid */
+.tkdr__num--error {
+  border-color: #d32f2f;
+  outline-color: #d32f2f;
+}
+
+/* small red validation message */
+.tkdr__error {
+  font-size: 0.7rem;
+  color: #d32f2f;
+  line-height: 1;
+  white-space: nowrap;
+}

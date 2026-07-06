@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./tk-dual-range.css";
 
 type Props = {
@@ -26,6 +26,91 @@ type Props = {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+// Display REAL-space values; use scientific notation for small non-zero values
+// so they don't display as "0.000". Use type="text" because type="number" can
+// show "0" for very small values instead of scientific notation.
+function fmt(v: number, precision: number) {
+  if (!Number.isFinite(v)) return "";
+  return v !== 0 && Math.abs(v) < 0.01
+    ? Number(v).toExponential(precision)
+    : v.toFixed(precision);
+}
+
+function parse(s: string): number {
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+/**
+ * A text input that holds a local string draft while the user is typing,
+ * committing only on blur or Enter. This lets the user type multi-digit and
+ * decimal values without mid-entry validation snapping the field.
+ * Shows a small red "Out of range" message when the committed value falls
+ * outside [lo, hi].
+ */
+function DeferredInput({
+  committed,
+  onCommit,
+  lo,
+  hi,
+  className,
+}: {
+  committed: string;
+  onCommit: (raw: string) => void;
+  lo: number;
+  hi: number;
+  className?: string;
+}) {
+  const [draft, setDraft] = useState(committed);
+  const [focused, setFocused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sync external changes into the field only when the user is not typing.
+  useEffect(() => {
+    if (!focused) setDraft(committed);
+  }, [committed, focused]);
+
+  const commit = (value: string) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) {
+      setError(`"${value}" is not a valid number`);
+    } else if (n < lo || n > hi) {
+      setError(`${value.trim()} is out of range`);
+    } else {
+      setError(null);
+    }
+    onCommit(value);
+    // After commit the parent re-formats, so sync back to avoid a stale draft.
+    setDraft(committed);
+  };
+
+  return (
+    <div className="tkdr__input-wrap">
+      <input
+        className={`${className ?? ""}${error ? " tkdr__num--error" : ""}`}
+        type="text"
+        inputMode="decimal"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onFocus={() => {
+          setFocused(true);
+          setError(null);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          commit(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+      {error && <span className="tkdr__error">{error}</span>}
+    </div>
+  );
+}
+
 export default function TKDualRange({
   name = "Values",
   minDomain,
@@ -40,7 +125,7 @@ export default function TKDualRange({
   precision = 3,
   accentColor = "#580f8b",
 }: Props) {
-  // Map domain & current values into RENDER space (like TestKarts)
+  // Map domain & current values into RENDER space
   const tMin = transform(minDomain);
   const tMax = transform(maxDomain);
   const tLow = transform(valueLow);
@@ -50,7 +135,7 @@ export default function TKDualRange({
   const pct = (t: number) => ((t - tMin) / span) * 100;
   const s = step ?? Math.max(span * 0.001, Number.EPSILON);
 
-  // Keep ends from crossing; clamp in REAL space against the other end
+  // Keep ends from crossing; clamp in REAL space against the other end.
   const handleLowRender = (nextRender: number) => {
     const nextReal = clamp(inverse(nextRender), minDomain, valueHigh);
     onChangeLow(nextReal);
@@ -60,38 +145,19 @@ export default function TKDualRange({
     onChangeHigh(nextReal);
   };
 
-  // Display REAL-space values (matching the color bar); use scientific notation for
-  // small non-zero values so they don't display as "0.000". Use type="text" because
-  // type="number" can show "0" for very small values instead of scientific notation.
-  const fmt = (v: number) =>
-    Number.isFinite(v)
-      ? v !== 0 && Math.abs(v) < 0.01
-        ? Number(v).toExponential(precision)
-        : v.toFixed(precision)
-      : "";
-  const parse = (s: string) => {
-    const n = Number(s);
-    return Number.isFinite(n) ? n : NaN;
-  };
-
   return (
     <div className="tkdr">
       {/* Header row: two inputs at the ends with Min / Max labels */}
       <div className="tkdr__row tkdr__row--ends">
         <div className="tkdr__group">
           <span className="tkdr__hint">Min</span>
-          <input
+          <DeferredInput
             className="tkdr__num"
-            type="text"
-            inputMode="decimal"
-            value={fmt(valueLow)}
-            onChange={(e) => {
-              const n = parse(e.target.value);
-              if (!Number.isFinite(n)) return;
-              onChangeLow(clamp(n, minDomain, valueHigh));
-            }}
-            onBlur={(e) => {
-              const n = parse(e.target.value);
+            committed={fmt(valueLow, precision)}
+            lo={minDomain}
+            hi={valueHigh}
+            onCommit={(raw) => {
+              const n = parse(raw);
               if (!Number.isFinite(n)) return;
               onChangeLow(clamp(n, minDomain, valueHigh));
             }}
@@ -100,18 +166,13 @@ export default function TKDualRange({
 
         <div className="tkdr__group">
           <span className="tkdr__hint">Max</span>
-          <input
+          <DeferredInput
             className="tkdr__num"
-            type="text"
-            inputMode="decimal"
-            value={fmt(valueHigh)}
-            onChange={(e) => {
-              const n = parse(e.target.value);
-              if (!Number.isFinite(n)) return;
-              onChangeHigh(clamp(n, valueLow, maxDomain));
-            }}
-            onBlur={(e) => {
-              const n = parse(e.target.value);
+            committed={fmt(valueHigh, precision)}
+            lo={valueLow}
+            hi={maxDomain}
+            onCommit={(raw) => {
+              const n = parse(raw);
               if (!Number.isFinite(n)) return;
               onChangeHigh(clamp(n, valueLow, maxDomain));
             }}
@@ -150,5 +211,4 @@ export default function TKDualRange({
       </div>
     </div>
   );
-  
 }
