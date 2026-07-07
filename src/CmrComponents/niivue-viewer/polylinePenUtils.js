@@ -41,6 +41,7 @@ export function notifyPolylineChange(nv, count) {
 export function resetPolylineState(nv) {
   nv._cloudMrPolylineVertices = [];
   nv._cloudMrPolylineBaseBitmap = null;
+  nv._cloudMrPolylinePrevBaseBitmap = null;
   nv._cloudMrPolylineSessionStartBitmap = null;
   nv._cloudMrPolylineAxCorSag = -1;
   nv._cloudMrLastPolylineClickMs = null;
@@ -93,13 +94,21 @@ export function addPolylineVertex(nv) {
   nv._cloudMrLastPolylineClickMs = now;
 
   if (isDoubleClick) {
-    // Don't add this click as a vertex — signal close instead.
+    // The first click of the double-click already placed an extra vertex.
+    // Roll it back using the snapshot saved before that click, then close.
+    if (nv._cloudMrPolylinePrevBaseBitmap) {
+      verts.pop();
+      nv._cloudMrPolylineBaseBitmap = nv._cloudMrPolylinePrevBaseBitmap;
+      nv.drawBitmap.set(nv._cloudMrPolylinePrevBaseBitmap);
+      nv.refreshDrawing(false, false);
+    }
     return POLYLINE_CLOSE;
   }
 
   if (verts.length === 0) {
     nv._cloudMrPolylineSessionStartBitmap = nv.drawBitmap.slice();
     nv._cloudMrPolylineBaseBitmap = nv._cloudMrPolylineSessionStartBitmap.slice();
+    nv._cloudMrPolylinePrevBaseBitmap = null;
     nv._cloudMrPolylineAxCorSag = axCorSagFromMouse(nv);
     nv.drawPenAxCorSag = nv._cloudMrPolylineAxCorSag;
     verts.push(pt);
@@ -111,6 +120,8 @@ export function addPolylineVertex(nv) {
       return false;
     }
     nv.drawPenAxCorSag = nv._cloudMrPolylineAxCorSag;
+    // Save the pre-segment bitmap so a subsequent double-click can roll back.
+    nv._cloudMrPolylinePrevBaseBitmap = nv._cloudMrPolylineBaseBitmap;
     nv.drawPenLine(pt, prev, penValue);
     verts.push(pt);
     nv._cloudMrPolylineBaseBitmap = nv.drawBitmap.slice();

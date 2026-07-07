@@ -445,11 +445,17 @@ export function capturePolylineDraftFromClick(nv) {
   const dx = nv.back.dims[1];
   const dy = nv.back.dims[2];
 
-  // Decode stored linear indices back to [x, y, z] triples.
+  // Decode stored linear indices back to [x, y, z] triples, but only include
+  // voxels that are still present in the current bitmap.  Registered indices
+  // that were cleared by the eraser must not be restored — otherwise re-opening
+  // the draft would silently undo the user's erasure.
   const strokeVoxels = [];
+  const presentIndices = new Set();
   let x1 = Infinity, y1 = Infinity, z1 = Infinity;
   let x2 = -Infinity, y2 = -Infinity, z2 = -Infinity;
   entry.voxelIndices.forEach((idx) => {
+    if (nv.drawBitmap[idx] === 0) return; // already erased — skip
+    presentIndices.add(idx);
     const z = Math.floor(idx / (dx * dy));
     const rem = idx - z * dx * dy;
     const y = Math.floor(rem / dx);
@@ -460,7 +466,9 @@ export function capturePolylineDraftFromClick(nv) {
     if (z < z1) z1 = z; if (z > z2) z2 = z;
   });
 
-  const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, entry.voxelIndices);
+  if (strokeVoxels.length === 0) return null;
+
+  const baseBitmap = eraseClusterFromBitmap(nv.drawBitmap, presentIndices);
   return {
     kind: "freehand",
     baseBitmap,

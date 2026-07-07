@@ -1469,7 +1469,15 @@ Niivue.prototype.groupLabelsFromSelection = function (
 };
 
 Niivue.prototype.resetScene = function () {
+  // Reset 2D pan + zoom
   this.scene.pan2Dxyzmm = [0, 0, 0, 1];
+  // Reset 3D camera to Niivue defaults (azimuth=110, elevation=10, scale=1)
+  if (typeof this.setRenderAzimuthElevation === "function") {
+    this.setRenderAzimuthElevation(110, 10);
+  }
+  if (typeof this.setScale === "function") {
+    this.setScale(1.0);
+  }
   this.drawScene();
 };
 
@@ -1490,18 +1498,18 @@ Niivue.prototype.recenter = function () {
 };
 
 Niivue.prototype.resetZoom = function () {
-  // this.scene.pan2Dxyzmm[0] = 0;
-  // this.scene.pan2Dxyzmm[1] = 0;
-  // this.scene.pan2Dxyzmm[2] = 0;
-
+  // Reset 2D zoom (pan stays, only zoom component adjusted)
   const zoom = 1;
-
   const zoomChange = this.scene.pan2Dxyzmm[3] - zoom;
   this.scene.pan2Dxyzmm[3] = zoom;
   const mm = this.frac2mm(this.scene.crosshairPos);
   this.scene.pan2Dxyzmm[0] += zoomChange * mm[0];
   this.scene.pan2Dxyzmm[1] += zoomChange * mm[1];
   this.scene.pan2Dxyzmm[2] += zoomChange * mm[2];
+  // Reset 3D zoom to default scale
+  if (typeof this.setScale === "function") {
+    this.setScale(1.0);
+  }
   this.drawScene();
 };
 
