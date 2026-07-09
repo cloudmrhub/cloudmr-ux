@@ -9,7 +9,6 @@ import CenterFocusStrongIcon from '@mui/icons-material/CenterFocusStrong';
 import ZoomInMapIcon from '@mui/icons-material/ZoomInMap';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
-import Brightness6Icon from '@mui/icons-material/Brightness6';
 import DeleteIcon from "@mui/icons-material/Delete";
 import CmrConfirmation from "../dialogue/Confirmation";
 import axios from "axios";
@@ -528,16 +527,6 @@ export default function Toolbar(props: ToolbarProps) {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={'Reset Contrast'} placement={'right'}>
-              <IconButton onClick={() => {
-                props.nv.resetContrast()
-                props.nv.setGamma(1.0);     // engine reset
-                props.nv.onResetGamma?.();  // UI reset: bumps gammaKey + sets gamma=1.0
-              }}
-              >
-                <Brightness6Icon />
-              </IconButton>
-            </Tooltip>
             <Tooltip title={'Zoom Out'} placement={'right'}>
               <IconButton
                 onClick={() => {

@@ -1,5 +1,6 @@
 import React from "react";
-import { Card, CardContent, Box } from "@mui/material";
+import { Box, Button, Card, CardContent } from "@mui/material";
+import Brightness6Icon from "@mui/icons-material/Brightness6";
 import TKDualRange from "../tk-dualrange/TKDualRange";
 import CmrLabel from "../label/Label";
 import {
@@ -130,6 +131,44 @@ export function NiivueContrastAdjustments({
   const accentColor = resolveNiivueAccentColor(accentColorProp, theme);
   const { a, b } = transformFactors;
 
+  const handleResetContrast = () => {
+    nv.resetContrast();
+    nv.setGamma(1.0);
+    nv.onResetGamma?.();
+    const vol = nv.volumes?.[0];
+    if (vol) {
+      setMin(vol.cal_min);
+      setMax(vol.cal_max);
+    }
+  };
+
+  const resetContrastButtonSx = {
+    color: "rgba(0, 0, 0, 0.87)",
+    textTransform: "none" as const,
+    fontSize: "0.78rem",
+    py: 0,
+    minWidth: 0,
+    background: "none",
+    "& .MuiButton-startIcon": {
+      color: "inherit",
+    },
+    "&:hover": {
+      color: accentColor,
+      background: "none",
+    },
+    "&:active": {
+      color: accentColor,
+      opacity: 0.8,
+      background: "none",
+    },
+    "&:focus": {
+      background: "none",
+    },
+    "&.MuiButtonBase-root:hover": {
+      backgroundColor: "transparent",
+    },
+  };
+
   return (
     <div style={style} className={className}>
       {title !== "" && (
@@ -191,6 +230,18 @@ export function NiivueContrastAdjustments({
                 style={{ width: "100%", accentColor }}
               />
             </div>
+
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 0.5, mb: 1 }}>
+              <Button
+                size="small"
+                disableRipple
+                startIcon={<Brightness6Icon fontSize="small" />}
+                onClick={handleResetContrast}
+                sx={resetContrastButtonSx}
+              >
+                Reset Contrast
+              </Button>
+            </Box>
 
             {layerList.length > 0 && (
               <Box style={{ height: "100%" }}>
