@@ -1,5 +1,5 @@
 import React, { ChangeEvent, Fragment, useState } from 'react'
-import { Box, Button, CircularProgress, Menu, Stack, SvgIconProps, Switch, Tooltip, Typography } from "@mui/material"
+import { Box, Button, CircularProgress, Menu, Stack, SvgIconProps, Switch, TextField, Tooltip, Typography } from "@mui/material"
 import { IconButton, FormControl, Select, MenuItem, InputLabel } from "@mui/material";
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -82,6 +82,60 @@ export default function Toolbar(props: ToolbarProps) {
     { value: "none", label: "Slice and None" }
   ];
   const displayModes = ["absolute", "real", "imaginary", "phase"];
+
+  const [zoomText, setZoomText] = useState('');
+  const zoomEditingRef = React.useRef(false);
+
+  /** Compute the base pixels-per-mm at zoom=1.0, reading live canvas + volume state. */
+  const getBasePxPerMm = (): number | null => {
+    const nv = props.nv;
+    const canvas = nv?.gl?.canvas as HTMLCanvasElement | undefined;
+    const back = nv?.back;
+    if (!canvas || !back?.dims || !back?.pixDims) return null;
+    const imgWmm = back.dims[1] * Math.abs(back.pixDims[1]);
+    const imgHmm = back.dims[2] * Math.abs(back.pixDims[2]);
+    if (imgWmm <= 0 || imgHmm <= 0) return null;
+    const w = canvas.clientWidth || canvas.width;
+    const h = canvas.clientHeight || canvas.height;
+    return Math.min(w / imgWmm, h / imgHmm);
+  };
+
+  /** Returns the display value (number only, no unit suffix). */
+  const formatPxPerMm = (): string => {
+    const zoom = props.nv?.scene?.pan2Dxyzmm?.[3];
+    if (zoom == null) return '';
+    const base = getBasePxPerMm();
+    if (base != null && base > 0) return (base * zoom).toFixed(2);
+    return (zoom * 100).toFixed(0);
+  };
+
+  React.useEffect(() => {
+    let rafId: number;
+    const sync = () => {
+      if (!zoomEditingRef.current) setZoomText(formatPxPerMm());
+      rafId = requestAnimationFrame(sync);
+    };
+    rafId = requestAnimationFrame(sync);
+    return () => cancelAnimationFrame(rafId);
+  }, [props.nv]);
+
+  const applyZoom = (text: string) => {
+    const num = parseFloat(text.trim());
+    if (isNaN(num) || num <= 0) return;
+    const base = getBasePxPerMm();
+    const targetZoom = (base != null && base > 0) ? num / base : num / 100;
+    const scene = props.nv.scene;
+    const current = scene.pan2Dxyzmm[3];
+    const next = Math.max(0.01, targetZoom);
+    const delta = current - next;
+    scene.pan2Dxyzmm[3] = next;
+    const mm = props.nv.frac2mm(scene.crosshairPos);
+    scene.pan2Dxyzmm[0] += delta * mm[0];
+    scene.pan2Dxyzmm[1] += delta * mm[1];
+    scene.pan2Dxyzmm[2] += delta * mm[2];
+    props.nv.drawScene();
+  };
+
   const [roiDeleteOpen, setRoiDeleteOpen] = useState(false);
   const [roiDeleteMsg, setRoiDeleteMsg] = useState<string | undefined>(undefined);
   const [roiDeleteConfirm, setRoiDeleteConfirm] = useState<() => void>(() => () => { });
@@ -508,6 +562,36 @@ export default function Toolbar(props: ToolbarProps) {
                 <ZoomOutIcon />
               </IconButton>
             </Tooltip>
+            <TextField
+              label="px/mm"
+              size="small"
+              value={zoomText}
+              onChange={(e) => setZoomText(e.target.value)}
+              onFocus={(e) => {
+                zoomEditingRef.current = true;
+                requestAnimationFrame(() => e.target.select());
+              }}
+              onBlur={() => {
+                zoomEditingRef.current = false;
+                applyZoom(zoomText);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                } else if (e.key === 'Escape') {
+                  zoomEditingRef.current = false;
+                  setZoomText(formatPxPerMm());
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              sx={{
+                width: 100,
+                '& .MuiInputBase-input': {
+                  textAlign: 'center',
+                  fontSize: '0.8rem',
+                },
+              }}
+            />
             <Tooltip title={'Zoom In'} placement={'right'}>
               <IconButton
                 onClick={() => {
