@@ -19,6 +19,10 @@ interface ToolbarProps {
   nv: any;
   nvUpdateSliceType: any;
   sliceType: string;
+  /** When true, only axial orientation is valid (e.g. noise covariance / coefficients). */
+  axialOnlyView?: boolean;
+  /** When true, only absolute display mode is valid (e.g. SNR, g-factor maps). */
+  absoluteOnlyView?: boolean;
   toggleLayers: React.MouseEventHandler<HTMLButtonElement> | undefined;
   toggleSettings: React.MouseEventHandler<HTMLButtonElement> | undefined;
   volumes: { url: string, name: string, alias: string }[];
@@ -65,9 +69,9 @@ export default function Toolbar(props: ToolbarProps) {
   const { saving, setSaving } = props;
   const viewerTheme = useNiivueViewerTheme();
   function handleSliceTypeChange(e: { target: { value: any } }) {
-    let newSliceType = e.target.value
-    let nvUpdateSliceType = props.nvUpdateSliceType
-    nvUpdateSliceType(newSliceType)
+    const newSliceType = e.target.value;
+    if (props.axialOnlyView && newSliceType !== "axial") return;
+    props.nvUpdateSliceType(newSliceType);
   }
 
   // let dragModes = ["Pan","Measurement","Contrast",'None'];
@@ -77,6 +81,7 @@ export default function Toolbar(props: ToolbarProps) {
     { value: "contrast", label: "Slice and Contrast" },
     { value: "none", label: "Slice and None" }
   ];
+  const displayModes = ["absolute", "real", "imaginary", "phase"];
   const [roiDeleteOpen, setRoiDeleteOpen] = useState(false);
   const [roiDeleteMsg, setRoiDeleteMsg] = useState<string | undefined>(undefined);
   const [roiDeleteConfirm, setRoiDeleteConfirm] = useState<() => void>(() => () => { });
@@ -157,10 +162,10 @@ export default function Toolbar(props: ToolbarProps) {
               onChange={handleSliceTypeChange}
             >
               <MenuItem value={'axial'}>Axial</MenuItem>
-              <MenuItem value={'coronal'}>Coronal</MenuItem>
-              <MenuItem value={'sagittal'}>Sagittal</MenuItem>
-              <MenuItem value={'multi'}>Multi</MenuItem>
-              <MenuItem value={'3d'}>3D</MenuItem>
+              <MenuItem value={'coronal'} disabled={props.axialOnlyView}>Coronal</MenuItem>
+              <MenuItem value={'sagittal'} disabled={props.axialOnlyView}>Sagittal</MenuItem>
+              <MenuItem value={'multi'} disabled={props.axialOnlyView}>Multi</MenuItem>
+              <MenuItem value={'3d'} disabled={props.axialOnlyView}>3D</MenuItem>
             </Select>
           </FormControl>
 
@@ -201,10 +206,25 @@ export default function Toolbar(props: ToolbarProps) {
               id="slice-type"
               value={props.complexMode}
               label="Display Mode"
-              onChange={(e) => props.setComplexMode(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (props.absoluteOnlyView && next !== "absolute") return;
+                if (!props.complexOptions.includes(next)) return;
+                props.setComplexMode(next);
+              }}
             >
-              {props.complexOptions.map(value => {
-                return <MenuItem value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</MenuItem>
+              {displayModes.map(value => {
+                const unavailable = !props.complexOptions.includes(value);
+                const absoluteOnlyLocked = props.absoluteOnlyView && value !== "absolute";
+                return (
+                  <MenuItem
+                    key={value}
+                    value={value}
+                    disabled={unavailable || absoluteOnlyLocked}
+                  >
+                    {value.charAt(0).toUpperCase() + value.slice(1)}
+                  </MenuItem>
+                );
               })}
             </Select>
           </FormControl>

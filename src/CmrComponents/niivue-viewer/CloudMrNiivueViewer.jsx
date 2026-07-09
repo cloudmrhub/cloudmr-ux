@@ -131,6 +131,7 @@ export default function CloudMrNiivueViewer(props) {
 
   // Persists zoom, gamma and opacity across volume/channel switches so they are not reset
   const savedViewStateRef = React.useRef(null);
+  const loadingVolumeIndexRef = React.useRef(props.selectedVolume);
 
   const [showCrosshair, setShowCrosshair] = React.useState(false);
 
@@ -197,6 +198,10 @@ export default function CloudMrNiivueViewer(props) {
   }, []);
 
   React.useEffect(() => {
+    loadingVolumeIndexRef.current = props.selectedVolume;
+  }, [props.selectedVolume]);
+
+  React.useEffect(() => {
     const nii = props.niis?.[props.selectedVolume];
     if (nii) stylingProxy(nii);
   }, [props.selectedVolume, props.niis])
@@ -229,7 +234,7 @@ export default function CloudMrNiivueViewer(props) {
   nv.onImageLoaded = () => {
     const oldCrosshairPos = [...nv.scene.crosshairPos]
     if (nv.volumes.length > 1) {
-      const nii = props.niis?.[props.selectedVolume];
+      const nii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
       if (nii?.link) {
         nv.loadVolumes([niiToVolume(nii)]);
         setWarning("Error loading results, please check internet connectivity");
@@ -282,9 +287,9 @@ export default function CloudMrNiivueViewer(props) {
     setBoundMins(nv.frac2mm([0, 0, 0]));
     setBoundMaxs(nv.frac2mm([1, 1, 1]));
     // setMMs(nv.frac2mm([0.5, 0.5, 0.5])); // Commented to prevent recentering on volume load; we now re-apply saved crosshair if available
-    if (verifyComplex(nv.volumes[0]))//Check if there are complex components
-      nvSetDisplayedVoxels('absolute');
-    else nvSetDisplayedVoxels('absolute');
+    const currentNii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
+    verifyComplex(nv.volumes[0], currentNii);
+    nvSetDisplayedVoxels('absolute');
     // let volume = nv.volumes[0];
 
     nvSetDragMode(dragMode); // keep engine behavior in sync with dropdown
@@ -341,9 +346,17 @@ export default function CloudMrNiivueViewer(props) {
   }
 
 
-  function verifyComplex(volume) {
+  function verifyComplex(volume, nii) {
     volume.real = volume.img;
     setComplexMode('absolute');
+    if (isAbsoluteOnlyVolume(nii)) {
+      volume.absolute = new volume.img.constructor(volume.img.length);
+      for (let i = 0; i < volume.img.length; i++) {
+        const realPart = volume.real[i];
+        const imaginaryPart = volume.imaginary?.[i] ?? 0;
+        volume.absolute[i] = Math.sqrt(realPart * realPart + imaginaryPart * imaginaryPart);
+      }
+    }
     // Ensure volume.imaginary is defined and has the same length as volume.img
     if (!volume.imaginary || volume.imaginary.length !== volume.img.length) {
       setComplexOptions(['absolute', 'real']);
@@ -386,6 +399,8 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function nvSetDisplayedVoxels(voxelType) {
+    const nii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[selectedVolume];
+    if (isAbsoluteOnlyVolume(nii) && voxelType !== 'absolute') return;
     setComplexMode(voxelType);
     let volume = nv.volumes[0];
     switch (voxelType) {
@@ -1421,7 +1436,11 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   const [sliceType, setSliceType] = React.useState('axial')
+  const axialOnlyView = isAxialOnlyVolume(props.niis?.[selectedVolume]);
+  const absoluteOnlyView = isAbsoluteOnlyVolume(props.niis?.[selectedVolume]);
+
   function nvUpdateSliceType(newSliceType) {
+    if (axialOnlyView && newSliceType !== 'axial') return;
     setSliceType(newSliceType);
     if (newSliceType === 'axial') {
       nv.setSliceType(nv.sliceTypeAxial)
@@ -1458,7 +1477,12 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function stylingProxy(nii) {
-    if (nii.dim === 2) {
+    if (isAbsoluteOnlyVolume(nii)) {
+      if (complexMode !== 'absolute' && nv.volumes[0]?.absolute) {
+        nvSetDisplayedVoxels('absolute');
+      }
+    }
+    if (isAxialOnlyVolume(nii)) {
       nvUpdateSliceType('axial');
       setShowCrosshair(false);
       setTextsVisible(false);
@@ -1479,6 +1503,7 @@ export default function CloudMrNiivueViewer(props) {
 
   const selectVolume = async (volumeIndex) => {
     const openVolume = async () => {
+      loadingVolumeIndexRef.current = volumeIndex;
       nv.closeDrawing();
       setDrawingChanged(false);
       if (drawingEnabled)
@@ -1504,8 +1529,9 @@ export default function CloudMrNiivueViewer(props) {
         nv.setSliceMM(worldSpace);
         //applySavedCrosshairIfAny();
 
-        // ensure engine mode matches the remembered selection
-        nvUpdateSliceType(sliceType);
+        // ensure engine mode matches the remembered selection (axial-only volumes force axial)
+        const nextNii = props.niis[volumeIndex];
+        nvUpdateSliceType(isAxialOnlyVolume(nextNii) ? 'axial' : sliceType);
         nv.opts.crosshairWidth = showCrosshair ? 1 : 0;
       } catch (e) {
         setWarning("Error loading results, please check internet connectivity");
@@ -2131,6 +2157,8 @@ export default function CloudMrNiivueViewer(props) {
         nv={nv}
         nvUpdateSliceType={nvUpdateSliceType}
         sliceType={sliceType}
+        axialOnlyView={axialOnlyView}
+        absoluteOnlyView={absoluteOnlyView}
 
         toggleSettings={toggleSettings}
         toggleLayers={toggleLayers}
@@ -2251,4 +2279,36 @@ function niiToVolume(nii) {
     //alias is for user selection in toolbar
     alias: nii.name
   };
+}
+
+/** 2D matrix results (noise covariance, noise coefficients, etc.) only support axial view. */
+function isAxialOnlyVolume(nii) {
+  if (!nii) return false;
+  if (nii.dim === 2) return true;
+  const label = `${nii.name || ""} ${nii.type || ""}`.toLowerCase();
+  return (
+    label.includes("noise covariance") ||
+    label.includes("noise coefficients") ||
+    label.includes("noise coefficient")
+  );
+}
+
+/** SNR, g-factor maps, inverse g-factor, and noise coefficients are magnitude-only. */
+function isAbsoluteOnlyVolume(nii) {
+  if (!nii) return false;
+  const label = `${nii.name || ""} ${nii.type || ""} ${nii.filename || ""}`.toLowerCase();
+  if (label.includes("noise coefficient")) return true;
+  if (
+    label.includes("inverse g factor") ||
+    label.includes("inverse g-factor") ||
+    label.includes("inverse gfactor") ||
+    label.includes("inverse g")
+  ) return true;
+  if (
+    label.includes("g factor") ||
+    label.includes("g-factor") ||
+    /\bgfactor\b/.test(label)
+  ) return true;
+  if (label.includes("snr")) return true;
+  return false;
 }
