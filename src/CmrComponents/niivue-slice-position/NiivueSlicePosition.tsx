@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@mui/material";
 import CmrLabel from "../label/Label";
 import {
@@ -56,6 +56,74 @@ export interface NiivueSlicePositionProps {
 const safeSpan = (min: number, max: number) => Math.max(1e-9, max - min);
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+// ─── Deferred number input ────────────────────────────────────────────────────
+
+/**
+ * A text input that holds a local string draft while the user is typing,
+ * committing only on blur or Enter. This prevents mid-entry snapping when the
+ * parent immediately re-renders with the snapped Niivue position.
+ * Arrow Up / Arrow Down step by one voxel via `onStep`.
+ */
+function SliceInput({
+  value,
+  inputStyle,
+  onCommit,
+  onStep,
+}: {
+  /** Current committed mm value from parent state. */
+  value: number;
+  inputStyle: React.CSSProperties;
+  /** Called with the parsed mm value when the user blurs or presses Enter. */
+  onCommit: (mm: number) => void;
+  /** Called with +1 or -1 when the user presses Arrow Up / Arrow Down. */
+  onStep: (direction: 1 | -1) => void;
+}) {
+  const committed = value.toFixed(3);
+  const [draft, setDraft] = useState(committed);
+  const [focused, setFocused] = useState(false);
+
+  // Keep draft in sync with parent while the field is not being edited.
+  useEffect(() => {
+    if (!focused) setDraft(committed);
+  }, [committed, focused]);
+
+  const commit = (raw: string) => {
+    const n = Number(raw);
+    if (Number.isFinite(n)) {
+      onCommit(n);
+    } else {
+      // Revert to last known good value.
+      setDraft(committed);
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={draft}
+      style={inputStyle}
+      onChange={(e) => setDraft(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        setFocused(false);
+        commit(e.target.value);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          onStep(1);
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          onStep(-1);
+        }
+      }}
+    />
+  );
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -302,20 +370,11 @@ export function NiivueSlicePosition({
       <div style={{ marginBottom: 20 }}>
         <div style={rowStyle}>
           <CmrLabel>X:</CmrLabel>
-          <input
-            type="number"
-            value={xVal.toFixed(3)}
-            min={sliderMinX}
-            max={sliderMaxX}
-            step={stepX}
-            style={inputStyle}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              if (Number.isFinite(next)) applyX(next);
-            }}
-            onBlur={(e) => {
-              applyX(clamp(Number(e.target.value), sliderMinX, sliderMaxX));
-            }}
+          <SliceInput
+            value={xVal}
+            inputStyle={inputStyle}
+            onCommit={(mm) => applyX(clamp(mm, sliderMinX, sliderMaxX))}
+            onStep={(dir) => applyX(clamp(xVal + dir * stepX, sliderMinX, sliderMaxX))}
           />
         </div>
         <input
@@ -334,20 +393,11 @@ export function NiivueSlicePosition({
       <div style={{ marginBottom: 20 }}>
         <div style={rowStyle}>
           <CmrLabel>Y:</CmrLabel>
-          <input
-            type="number"
-            value={yVal.toFixed(3)}
-            min={sliderMinY}
-            max={sliderMaxY}
-            step={stepY}
-            style={inputStyle}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              if (Number.isFinite(next)) applyY(next);
-            }}
-            onBlur={(e) => {
-              applyY(clamp(Number(e.target.value), sliderMinY, sliderMaxY));
-            }}
+          <SliceInput
+            value={yVal}
+            inputStyle={inputStyle}
+            onCommit={(mm) => applyY(clamp(mm, sliderMinY, sliderMaxY))}
+            onStep={(dir) => applyY(clamp(yVal + dir * stepY, sliderMinY, sliderMaxY))}
           />
         </div>
         <input
@@ -366,20 +416,11 @@ export function NiivueSlicePosition({
       <div>
         <div style={rowStyle}>
           <CmrLabel>Z:</CmrLabel>
-          <input
-            type="number"
-            value={zVal.toFixed(3)}
-            min={sliderMinZ}
-            max={sliderMaxZ}
-            step={stepZ}
-            style={inputStyle}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              if (Number.isFinite(next)) applyZ(next);
-            }}
-            onBlur={(e) => {
-              applyZ(clamp(Number(e.target.value), sliderMinZ, sliderMaxZ));
-            }}
+          <SliceInput
+            value={zVal}
+            inputStyle={inputStyle}
+            onCommit={(mm) => applyZ(mm)}
+            onStep={(dir) => applyZBySliceIndex(zSliceIndex + dir)}
           />
         </div>
         <input

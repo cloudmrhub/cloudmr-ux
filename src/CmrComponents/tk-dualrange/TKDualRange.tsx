@@ -135,6 +135,16 @@ export default function TKDualRange({
   const pct = (t: number) => ((t - tMin) / span) * 100;
   const s = step ?? Math.max(span * 0.001, Number.EPSILON);
 
+  // Whether either value is currently outside the domain (from manual text input).
+  const isOutOfBounds =
+    valueLow < minDomain || valueLow > maxDomain ||
+    valueHigh < minDomain || valueHigh > maxDomain;
+
+  // Clamped render-space values used only for the fill bar and slider thumbs,
+  // so they don't go offscreen when the real value is outside the domain.
+  const tLowDisplay = clamp(tLow, tMin, tMax);
+  const tHighDisplay = clamp(tHigh, tMin, tMax);
+
   // Keep ends from crossing; clamp in REAL space against the other end.
   const handleLowRender = (nextRender: number) => {
     const nextReal = clamp(inverse(nextRender), minDomain, valueHigh);
@@ -155,11 +165,11 @@ export default function TKDualRange({
             className="tkdr__num"
             committed={fmt(valueLow, precision)}
             lo={minDomain}
-            hi={valueHigh}
+            hi={maxDomain}
             onCommit={(raw) => {
               const n = parse(raw);
               if (!Number.isFinite(n)) return;
-              onChangeLow(clamp(n, minDomain, valueHigh));
+              onChangeLow(n);
             }}
           />
         </div>
@@ -169,24 +179,34 @@ export default function TKDualRange({
           <DeferredInput
             className="tkdr__num"
             committed={fmt(valueHigh, precision)}
-            lo={valueLow}
+            lo={minDomain}
             hi={maxDomain}
             onCommit={(raw) => {
               const n = parse(raw);
               if (!Number.isFinite(n)) return;
-              onChangeHigh(clamp(n, valueLow, maxDomain));
+              onChangeHigh(n);
             }}
           />
         </div>
       </div>
 
       {/* Track with two native range inputs stacked */}
-      <div className="tkdr__track" style={{ ["--tkdr-accent" as any]: accentColor }}>
+      <div
+        className="tkdr__track"
+        style={{
+          ["--tkdr-accent" as any]: accentColor,
+          ...(isOutOfBounds && {
+            opacity: 0.35,
+            filter: "grayscale(1)",
+            transition: "opacity 0.15s, filter 0.15s",
+          }),
+        }}
+      >
         <div
           className="tkdr__range-fill"
           style={{
-            left: `${pct(Math.min(tLow, tHigh))}%`,
-            width: `${Math.abs(pct(tHigh) - pct(tLow))}%`,
+            left: `${pct(Math.min(tLowDisplay, tHighDisplay))}%`,
+            width: `${Math.abs(pct(tHighDisplay) - pct(tLowDisplay))}%`,
           }}
           aria-hidden
         />
@@ -196,7 +216,7 @@ export default function TKDualRange({
           min={tMin}
           max={tMax}
           step={s}
-          value={tLow}
+          value={tLowDisplay}
           onChange={(e) => handleLowRender(Number(e.target.value))}
         />
         <input
@@ -205,7 +225,7 @@ export default function TKDualRange({
           min={tMin}
           max={tMax}
           step={s}
-          value={tHigh}
+          value={tHighDisplay}
           onChange={(e) => handleHighRender(Number(e.target.value))}
         />
       </div>
