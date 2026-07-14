@@ -11,7 +11,7 @@ const srcDir = path.join(root, "src");
 const distDir = path.join(root, "dist");
 
 const exts = new Set([".scss", ".css"]);
-const basenames = new Set(["NiivuePatcher.js", "util.js"]);
+const basenames = new Set(["NiivuePatcher.js", "NiivuePatcher.d.ts", "util.js"]);
 
 function walk(dir, out = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {

@@ -32,6 +32,17 @@ import {
   redrawPolylineDraft,
   shouldDeferFreehandCommit,
 } from "./penDraftUtils.js";
+import {
+  CLOUDMR_DEFAULT_VIEW_ZOOM,
+  CLOUDMR_NIIVUE_FIT_ZOOM,
+} from "./niivueViewDefaults.js";
+
+export {
+  CLOUDMR_DEFAULT_VIEW_ZOOM,
+  CLOUDMR_INSET_VIEW_ZOOM,
+  CLOUDMR_NIIVUE_FIT_ZOOM,
+  CLOUDMR_STANDARD_VIEW_ZOOM,
+} from "./niivueViewDefaults.js";
 
 /*
  * bitmapOverlay — in-browser state only: remembers each voxel's label *before* Group
@@ -848,9 +859,25 @@ Niivue.prototype.groupLabelsFromSelection = function (sourceLabels = [], targetL
     this.groupLabelsInto(sourceLabels, newTarget);
 };
 
+Niivue.prototype.applyDefaultViewState = function () {
+    const defaultZoom = this._cloudMrDefaultZoom ?? CLOUDMR_DEFAULT_VIEW_ZOOM;
+    this.scene.crosshairPos = [0.5, 0.5, 0.5];
+    this.scene.pan2Dxyzmm[0] = 0;
+    this.scene.pan2Dxyzmm[1] = 0;
+    this.scene.pan2Dxyzmm[2] = 0;
+    this.scene.pan2Dxyzmm[3] = defaultZoom;
+    // Niivue needs pan offset when zoom !== fit to keep the volume centered.
+    const zoomChange = CLOUDMR_NIIVUE_FIT_ZOOM - defaultZoom;
+    if (zoomChange !== 0) {
+        const mm = this.frac2mm([0.5, 0.5, 0.5]);
+        this.scene.pan2Dxyzmm[0] += zoomChange * mm[0];
+        this.scene.pan2Dxyzmm[1] += zoomChange * mm[1];
+        this.scene.pan2Dxyzmm[2] += zoomChange * mm[2];
+    }
+    this.drawScene();
+};
+
 Niivue.prototype.resetScene = function () {
-    // Reset 2D pan + zoom
-    this.scene.pan2Dxyzmm = [0, 0, 0, 1];
     // Reset 3D camera to Niivue defaults (azimuth=110, elevation=10, scale=1)
     if (typeof this.setRenderAzimuthElevation === "function") {
         this.setRenderAzimuthElevation(110, 10);
@@ -858,7 +885,7 @@ Niivue.prototype.resetScene = function () {
     if (typeof this.setScale === "function") {
         this.setScale(1.0);
     }
-    this.drawScene();
+    this.applyDefaultViewState();
 }
 
 Niivue.prototype.recenter = function () {
@@ -880,7 +907,7 @@ Niivue.prototype.recenter = function () {
 
 Niivue.prototype.resetZoom = function () {
     // Reset 2D zoom (pan stays, only zoom component adjusted)
-    const zoom = 1;
+    const zoom = this._cloudMrDefaultZoom ?? CLOUDMR_DEFAULT_VIEW_ZOOM;
     const zoomChange = this.scene.pan2Dxyzmm[3] - zoom;
     this.scene.pan2Dxyzmm[3] = zoom;
     const mm = this.frac2mm(this.scene.crosshairPos);

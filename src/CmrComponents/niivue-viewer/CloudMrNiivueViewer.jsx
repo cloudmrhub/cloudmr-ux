@@ -27,7 +27,7 @@ import {
   redrawDraftShape,
 } from './shapeDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
-import { Niivue } from './NiivuePatcher';
+import { Niivue, CLOUDMR_DEFAULT_VIEW_ZOOM } from './NiivuePatcher';
 import NVSwitch from './Switch';
 import Toolbar from './Toolbar';
 import Layer from './Layer';
@@ -77,6 +77,7 @@ export const nv = new Niivue({
 
 nv.opts.penBounds = 0;
 nv.opts.penSize = 1;
+nv._cloudMrDefaultZoom = CLOUDMR_DEFAULT_VIEW_ZOOM;
 
 window.nv = nv;
 
@@ -129,7 +130,7 @@ export default function CloudMrNiivueViewer(props) {
 
   const [rois, setROIs] = React.useState([]);
 
-  // Persists zoom, gamma and opacity across volume/channel switches so they are not reset
+  // Persists gamma and opacity across volume/channel switches (pan/zoom always reset to default)
   const savedViewStateRef = React.useRef(null);
   const loadingVolumeIndexRef = React.useRef(props.selectedVolume);
 
@@ -232,7 +233,6 @@ export default function CloudMrNiivueViewer(props) {
   let [boundMaxs, setBoundMaxs] = useState([1, 1, 1]);
   let [mms, setMMs] = useState([0.5, 0.5, 0.5]);
   nv.onImageLoaded = () => {
-    const oldCrosshairPos = [...nv.scene.crosshairPos]
     if (nv.volumes.length > 1) {
       const nii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
       if (nii?.link) {
@@ -259,13 +259,14 @@ export default function CloudMrNiivueViewer(props) {
       }
       if (nv.volumes.length !== 1) return;
     }
-    // console.log(nv.volumes);
 
-    // Restore zoom, gamma, opacity and colormap if switching channels/volumes, otherwise reset to defaults.
-    // Do this BEFORE setLayers so that Layer mounts with the correct opacity already on the volume object.
+    const currentNii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
+    const axialOnlyLoad = isAxialOnlyVolume(currentNii);
+    nv._cloudMrDefaultZoom = CLOUDMR_DEFAULT_VIEW_ZOOM;
+
+    // Restore gamma/opacity/colormap when switching channels; always reset pan/zoom to default.
     const saved = savedViewStateRef.current;
     if (saved) {
-      nv.scene.pan2Dxyzmm = [...saved.pan2Dxyzmm];
       nv.setGamma(saved.gamma);
       setGamma(saved.gamma);
       setGammaKey(k => k + 1);
@@ -280,27 +281,24 @@ export default function CloudMrNiivueViewer(props) {
     } else {
       nv.setGamma(1.0);
       nv.onResetGamma?.();
-      nv.resetScene();
     }
+
+    nv.resetScene();
 
     setLayers([...nv.volumes]);
     setBoundMins(nv.frac2mm([0, 0, 0]));
     setBoundMaxs(nv.frac2mm([1, 1, 1]));
-    // setMMs(nv.frac2mm([0.5, 0.5, 0.5])); // Commented to prevent recentering on volume load; we now re-apply saved crosshair if available
-    const currentNii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
     verifyComplex(nv.volumes[0], currentNii);
     nvSetDisplayedVoxels('absolute');
-    // let volume = nv.volumes[0];
 
-    nvSetDragMode(dragMode); // keep engine behavior in sync with dropdown
-    // Re-apply world/voxel mode and last crosshair after resets
+    nvSetDragMode(dragMode);
     nv.setSliceMM(worldSpace);
-    // applySavedCrosshairIfAny();
-    nv.scene.crosshairPos = [...oldCrosshairPos]
-    // keep display mode consistent after resets
-    nvUpdateSliceType(sliceType);
+    nv.scene.crosshairPos = [0.5, 0.5, 0.5];
+    nvUpdateSliceType(axialOnlyLoad ? 'axial' : sliceType);
     nv.opts.crosshairWidth = showCrosshair ? 1 : 0;
     setMMs(nv.frac2mm(nv.scene.crosshairPos));
+    nv.applyDefaultViewState?.();
+    setTimeout(() => nv.applyDefaultViewState?.(), 800);
   }
 
 
@@ -1488,16 +1486,16 @@ export default function CloudMrNiivueViewer(props) {
       setTextsVisible(false);
       nv.opts.crosshairWidth = 0;
       nv.hideText = true;
-      setTimeout(() => {
-        nv.setCenteredZoom(0.7)
-      }, 300)
     } else {
-      // nvUpdateSliceType('multi');
       nvUpdateSliceType(sliceType);
       setShowCrosshair(false);
       setTextsVisible(false);
       nv.opts.crosshairWidth = 0;
       nv.hideText = true;
+    }
+    nv._cloudMrDefaultZoom = CLOUDMR_DEFAULT_VIEW_ZOOM;
+    if (nv.volumes.length > 0) {
+      setTimeout(() => nv.applyDefaultViewState?.(), 300);
     }
   }
 
@@ -1509,11 +1507,9 @@ export default function CloudMrNiivueViewer(props) {
       if (drawingEnabled)
         nvUpdateDrawingEnabled();
 
-      // Snapshot zoom, gamma, opacity and colormap so onImageLoaded can restore them
-      // Read gamma and opacity from React state — they are always kept in sync with the engine
+      // Snapshot gamma, opacity and colormap so onImageLoaded can restore them
       const vol = nv.volumes[0];
       savedViewStateRef.current = {
-        pan2Dxyzmm: [...nv.scene.pan2Dxyzmm],
         gamma,
         opacity,
         colormap: vol?.colormap ?? 'gray',
