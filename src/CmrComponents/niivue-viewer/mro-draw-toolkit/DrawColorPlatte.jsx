@@ -4,7 +4,6 @@
  */
 import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import CheckIcon from "@mui/icons-material/Check";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { BrushSizeSlider } from "./BrushSizeSlider";
 
@@ -42,14 +41,10 @@ export default function DrawColorPlatte({
   polylineVertexCount = 0,
   penDraftActive = false,
   penDraftKind,
-  penDraftFilled = false,
-  onApplyPenDraft,
   onDeletePenDraft,
-  onFillPenDraft,
   brushSize = 1,
   updateBrushSize,
   shapeDraftActive = false,
-  onApplyShapeDraft,
   onDeleteShapeDraft,
 }) {
   const isFreehandTool = penToolKind === "freehand";
@@ -127,7 +122,7 @@ export default function DrawColorPlatte({
       {isPolylineTool && expanded && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>
           {polylineVertexCount >= 3
-            ? "Double-click to close & fill · Right-click to cancel"
+            ? "Double-click to close & fill"
             : "Click to add vertices"}
         </Typography>
       )}
@@ -139,7 +134,7 @@ export default function DrawColorPlatte({
         <Stack
           direction="row"
           alignItems="center"
-          justifyContent="space-between"
+          justifyContent="flex-start"
           sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
         >
           <Tooltip title="Delete this ROI drawing">
@@ -161,28 +156,6 @@ export default function DrawColorPlatte({
               Delete
             </Button>
           </Tooltip>
-
-          {isPolylineTool && (
-            <Tooltip title="Apply polyline (Enter or right-click)">
-              <Button
-                size="small"
-                aria-label="apply pen draft"
-                onClick={() => onApplyPenDraft?.()}
-                startIcon={<CheckIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
-                sx={{
-                  color: "#c9a0e8",
-                  fontSize: ACTION_FONT_SIZE,
-                  textTransform: "none",
-                  minWidth: 0,
-                  py: 0.25,
-                  px: 0.75,
-                  "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
-                }}
-              >
-                Apply
-              </Button>
-            </Tooltip>
-          )}
         </Stack>
       )}
 
