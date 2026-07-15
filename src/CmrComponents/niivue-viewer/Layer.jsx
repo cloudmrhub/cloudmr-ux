@@ -47,6 +47,10 @@ export default function Layer(props) {
   const [detailsOpen, setDetailsOpen] = React.useState(true)
   const [color, setColor] = React.useState(image.colormap)
   const opacity = props.opacity ?? 1.0
+
+  React.useEffect(() => {
+    setColor(image.colormap)
+  }, [image.colormap, image.id])
   let ArrowIcon = detailsOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />
   // console.log(props.colorMapValues)
   let allColors = props.nv.colormaps().filter((colorName) => allowedColorMaps.includes(colorName)).map((colorName) => {
@@ -132,7 +136,8 @@ export default function Layer(props) {
           display: detailsOpen ? 'flex' : 'none',
           flexDirection: 'column'
         }}>
-        <Box
+        {/* Opacity slider hidden — colormap only */}
+        {/* <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -153,7 +158,7 @@ export default function Layer(props) {
             value={opacity}
             onChange={(e) => {
               const v = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
-              handleOpacityChanged(v);           // updates local state, image.opacity, and notifies parent
+              handleOpacityChanged(v);
             }}
             style={{
               width: '100%',
@@ -162,7 +167,7 @@ export default function Layer(props) {
               accentColor: theme.accentColor,
             }}
           />
-        </Box>
+        </Box> */}
 
         <Box
           sx={{

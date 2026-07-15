@@ -239,7 +239,7 @@ export function NiivueContrastAdjustments({
                 onClick={handleResetContrast}
                 sx={resetContrastButtonSx}
               >
-                Reset Contrast
+                Auto Contrast
               </Button>
             </Box>
 

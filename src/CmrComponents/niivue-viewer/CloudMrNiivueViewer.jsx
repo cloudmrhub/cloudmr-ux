@@ -283,6 +283,13 @@ export default function CloudMrNiivueViewer(props) {
       nv.onResetGamma?.();
     }
 
+    const defaultColormap = defaultColormapForVolume(currentNii);
+    const vol = nv.volumes[0];
+    if (vol) {
+      nv.setColorMap(vol.id, defaultColormap);
+      nv.updateGLVolume();
+    }
+
     nv.resetScene();
 
     setLayers([...nv.volumes]);
@@ -1517,10 +1524,11 @@ export default function CloudMrNiivueViewer(props) {
 
       // Snapshot gamma, opacity and colormap so onImageLoaded can restore them
       const vol = nv.volumes[0];
+      const nextNii = props.niis[volumeIndex];
       savedViewStateRef.current = {
         gamma,
         opacity,
-        colormap: vol?.colormap ?? 'gray',
+        colormap: defaultColormapForVolume(nextNii),
       };
 
       if (props.niis[selectedVolume] !== undefined) {
@@ -2256,6 +2264,7 @@ export default function CloudMrNiivueViewer(props) {
         gamma={gamma}
         gammaKey={gammaKey}
         setGamma={setGamma}
+        layerList={layerList.filter(Boolean)}
 
         shapeDraft={shapeDraft}
         onShapeDraftChange={onShapeDraftChange}
@@ -2289,7 +2298,13 @@ function niiToVolume(nii) {
 function isAxialOnlyVolume(nii) {
   if (!nii) return false;
   if (nii.dim === 2) return true;
-  const label = `${nii.name || ""} ${nii.type || ""}`.toLowerCase();
+  return isNoiseCoefficientOrCovarianceVolume(nii);
+}
+
+/** Noise coefficient / covariance maps use the "jet" colormap by default. */
+function isNoiseCoefficientOrCovarianceVolume(nii) {
+  if (!nii) return false;
+  const label = `${nii.name || ""} ${nii.type || ""} ${nii.filename || ""}`.toLowerCase();
   return (
     label.includes("noise covariance") ||
     label.includes("noise coefficients") ||
@@ -2297,22 +2312,43 @@ function isAxialOnlyVolume(nii) {
   );
 }
 
-/** SNR, g-factor maps, inverse g-factor, and noise coefficients are magnitude-only. */
-function isAbsoluteOnlyVolume(nii) {
+/** Inverse g-factor maps use the "hot" colormap by default. */
+function isInverseGFactorVolume(nii) {
   if (!nii) return false;
   const label = `${nii.name || ""} ${nii.type || ""} ${nii.filename || ""}`.toLowerCase();
-  if (label.includes("noise coefficient")) return true;
-  if (
+  return (
     label.includes("inverse g factor") ||
     label.includes("inverse g-factor") ||
     label.includes("inverse gfactor") ||
     label.includes("inverse g")
-  ) return true;
+  );
+}
+
+/** SNR maps use the "viridis" colormap by default. */
+function isSnrVolume(nii) {
+  if (!nii) return false;
+  const label = `${nii.name || ""} ${nii.type || ""} ${nii.filename || ""}`.toLowerCase();
+  return label.includes("snr");
+}
+
+function defaultColormapForVolume(nii) {
+  if (isInverseGFactorVolume(nii)) return 'hot';
+  if (isNoiseCoefficientOrCovarianceVolume(nii)) return 'jet';
+  if (isSnrVolume(nii)) return 'viridis';
+  return 'gray';
+}
+
+/** SNR, g-factor maps, inverse g-factor, and noise coefficients are magnitude-only. */
+function isAbsoluteOnlyVolume(nii) {
+  if (!nii) return false;
+  const label = `${nii.name || ""} ${nii.type || ""} ${nii.filename || ""}`.toLowerCase();
+  if (isNoiseCoefficientOrCovarianceVolume(nii)) return true;
+  if (isInverseGFactorVolume(nii)) return true;
   if (
     label.includes("g factor") ||
     label.includes("g-factor") ||
     /\bgfactor\b/.test(label)
   ) return true;
-  if (label.includes("snr")) return true;
+  if (isSnrVolume(nii)) return true;
   return false;
 }

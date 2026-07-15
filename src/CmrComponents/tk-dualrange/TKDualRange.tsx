@@ -43,27 +43,20 @@ function parse(s: string): number {
 
 /**
  * A text input that holds a local string draft while the user is typing,
- * committing only on blur or Enter. This lets the user type multi-digit and
- * decimal values without mid-entry validation snapping the field.
- * Shows a small red "Out of range" message when the committed value falls
- * outside [lo, hi].
+ * committing only on blur or Enter. Invalid entries are ignored by the parent
+ * and the field re-syncs to the last committed formatted value.
  */
 function DeferredInput({
   committed,
   onCommit,
-  lo,
-  hi,
   className,
 }: {
   committed: string;
   onCommit: (raw: string) => void;
-  lo: number;
-  hi: number;
   className?: string;
 }) {
   const [draft, setDraft] = useState(committed);
   const [focused, setFocused] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Sync external changes into the field only when the user is not typing.
   useEffect(() => {
@@ -71,31 +64,19 @@ function DeferredInput({
   }, [committed, focused]);
 
   const commit = (value: string) => {
-    const n = Number(value);
-    if (!Number.isFinite(n)) {
-      setError(`"${value}" is not a valid number`);
-    } else if (n < lo || n > hi) {
-      setError(`${value.trim()} is out of range`);
-    } else {
-      setError(null);
-    }
     onCommit(value);
-    // After commit the parent re-formats, so sync back to avoid a stale draft.
     setDraft(committed);
   };
 
   return (
     <div className="tkdr__input-wrap">
       <input
-        className={`${className ?? ""}${error ? " tkdr__num--error" : ""}`}
+        className={className ?? ""}
         type="text"
         inputMode="decimal"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onFocus={() => {
-          setFocused(true);
-          setError(null);
-        }}
+        onFocus={() => setFocused(true)}
         onBlur={(e) => {
           setFocused(false);
           commit(e.target.value);
@@ -106,7 +87,6 @@ function DeferredInput({
           }
         }}
       />
-      {error && <span className="tkdr__error">{error}</span>}
     </div>
   );
 }
@@ -164,8 +144,6 @@ export default function TKDualRange({
           <DeferredInput
             className="tkdr__num"
             committed={fmt(valueLow, precision)}
-            lo={minDomain}
-            hi={maxDomain}
             onCommit={(raw) => {
               const n = parse(raw);
               if (!Number.isFinite(n)) return;
@@ -179,8 +157,6 @@ export default function TKDualRange({
           <DeferredInput
             className="tkdr__num"
             committed={fmt(valueHigh, precision)}
-            lo={minDomain}
-            hi={maxDomain}
             onCommit={(raw) => {
               const n = parse(raw);
               if (!Number.isFinite(n)) return;
