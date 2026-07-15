@@ -1598,7 +1598,6 @@ function cloudMrTryReopenShapeDraftOnClick(nv) {
   if (!reopenDraft) return false;
 
   redrawDraftShape(nv, reopenDraft);
-  nv._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof nv.onShapeDraftReady === "function") {
     nv.onShapeDraftReady(reopenDraft);
   }
@@ -1629,7 +1628,6 @@ function cloudMrTryReopenPenDraftOnClick(nv) {
   // capturePolylineDraftFromClick always returns a freehand draft now (exact stored
   // voxels, no vertex state, no re-flood-fill), so the redraw path is uniform.
   redrawFreehandDraft(nv, draft);
-  nv._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof nv.onPenDraftReopenReady === "function") {
     nv.onPenDraftReopenReady(draft, penKind);
   }
@@ -1701,6 +1699,15 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
     polylineClick = true;
   }
 
+  const willCommitDeferredShape =
+    pendingDraft?.baseBitmap &&
+    !isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB);
+  if (willCommitDeferredShape) {
+    // Set before native mouseUpListener so onMouseUp can skip resampleImage;
+    // onShapeCommitted will resample once for this stroke.
+    this._cloudMrSuppressDrawingChangedMouseUp = true;
+  }
+
   _mouseUpListener.call(this);
 
   if (polylineClick) {
@@ -1733,7 +1740,6 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
     cloudMrTryReopenDraftOnClick(this);
     return;
   }
-  this._cloudMrSuppressDrawingChangedMouseUp = true;
   if (typeof this.onShapeCommitted === "function") {
     this.onShapeCommitted(pendingDraft);
   } else if (typeof this.onShapeDraftReady === "function") {

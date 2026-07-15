@@ -441,8 +441,15 @@ export default function CloudMrNiivueViewer(props) {
     // console.log(nv.scene.pan2Dxyzmm);
   }
   nv.onMouseUp = () => {
-    if (nv._cloudMrSuppressDrawingChangedMouseUp) {
+    const suppress = nv._cloudMrSuppressDrawingChangedMouseUp;
+    if (suppress) {
       nv._cloudMrSuppressDrawingChangedMouseUp = false;
+    }
+    const isEraserStroke =
+      nv.opts.drawingEnabled &&
+      nv.opts.penType === NI_PEN_TYPE.PEN &&
+      nv.opts.penValue === 0;
+    if (suppress && !isEraserStroke) {
       return;
     }
     if (
@@ -699,6 +706,7 @@ export default function CloudMrNiivueViewer(props) {
 
   function activateEraser() {
     applyActiveDraftIfAny();
+    nv._cloudMrSuppressDrawingChangedMouseUp = false;
     setDrawShapeTool(null);
     nv.opts.penType = NI_PEN_TYPE.PEN;
     nv.opts.deferShapeCommit = false;
