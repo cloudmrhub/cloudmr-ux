@@ -2,7 +2,7 @@
  * Color palette for pen/shape ROI tools. Freehand and polyline each use their own
  * toolbar button and pass `penToolKind` to show the matching options.
  */
-import { Stack, IconButton, Button, Tooltip, Typography } from "@mui/material";
+import { Stack, IconButton, Tooltip, Typography, Box } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { BrushSizeSlider } from "./BrushSizeSlider";
@@ -29,6 +29,71 @@ function swatchGlowFilter(glow, { active = false, hover = false } = {}) {
 
 const ACTION_FONT_SIZE = "0.75rem";
 const ACTION_ICON_SIZE = "0.875rem";
+
+function DeleteDraftRow({ ariaLabel, draftKind, onClick }) {
+  return (
+    <Stack
+      direction="row"
+      alignItems="center"
+      justifyContent="flex-end"
+      sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
+    >
+      <Tooltip title="Delete this ROI drawing">
+        <Box
+          component="button"
+          type="button"
+          aria-label={ariaLabel}
+          data-testid={`roi-palette-delete-${draftKind}-draft`}
+          onClick={onClick}
+          sx={{
+            color: "#f44336",
+            fontSize: ACTION_FONT_SIZE,
+            fontFamily: "inherit",
+            fontWeight: 500,
+            textTransform: "none",
+            border: 0,
+            background: "transparent",
+            cursor: "pointer",
+            m: 0,
+            p: "2px 6px",
+            minHeight: 0,
+            borderRadius: "4px",
+            display: "inline-flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "4px",
+            lineHeight: 1,
+            verticalAlign: "middle",
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.06)",
+            },
+            "& .MuiSvgIcon-root": {
+              fontSize: ACTION_ICON_SIZE,
+              width: "1em",
+              height: "1em",
+              display: "block",
+              flexShrink: 0,
+            },
+          }}
+        >
+          <DeleteOutlineIcon />
+          <Box
+            component="span"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              lineHeight: 1,
+              height: ACTION_ICON_SIZE,
+            }}
+          >
+            Delete
+          </Box>
+        </Box>
+      </Tooltip>
+    </Stack>
+  );
+}
 
 export default function DrawColorPlatte({
   expanded,
@@ -131,61 +196,19 @@ export default function DrawColorPlatte({
         expanded &&
         ((isFreehandTool && penDraftKind === "freehand") ||
           (isPolylineTool && penDraftKind === "polyline")) && (
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="flex-start"
-          sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
-        >
-          <Tooltip title="Delete this ROI drawing">
-            <Button
-              size="small"
-              aria-label="delete pen draft"
-              onClick={() => onDeletePenDraft?.()}
-              startIcon={<DeleteOutlineIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
-              sx={{
-                color: "#f44336",
-                fontSize: ACTION_FONT_SIZE,
-                textTransform: "none",
-                minWidth: 0,
-                py: 0.25,
-                px: 0.75,
-                "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
-              }}
-            >
-              Delete
-            </Button>
-          </Tooltip>
-        </Stack>
+        <DeleteDraftRow
+          ariaLabel="delete pen draft"
+          draftKind="pen"
+          onClick={() => onDeletePenDraft?.()}
+        />
       )}
 
       {shapeDraftActive && expanded && (
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="flex-start"
-          sx={{ px: 1, py: 0.5, borderTop: "1px solid #555", width: "100%" }}
-        >
-          <Tooltip title="Delete this ROI drawing">
-            <Button
-              size="small"
-              aria-label="delete shape draft"
-              onClick={() => onDeleteShapeDraft?.()}
-              startIcon={<DeleteOutlineIcon sx={{ fontSize: ACTION_ICON_SIZE }} />}
-              sx={{
-                color: "#f44336",
-                fontSize: ACTION_FONT_SIZE,
-                textTransform: "none",
-                minWidth: 0,
-                py: 0.25,
-                px: 0.75,
-                "& .MuiButton-startIcon": { mr: 0.5, ml: 0 },
-              }}
-            >
-              Delete
-            </Button>
-          </Tooltip>
-        </Stack>
+        <DeleteDraftRow
+          ariaLabel="delete shape draft"
+          draftKind="shape"
+          onClick={() => onDeleteShapeDraft?.()}
+        />
       )}
     </Stack>
   );
