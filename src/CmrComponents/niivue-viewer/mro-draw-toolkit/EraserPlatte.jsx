@@ -1,7 +1,7 @@
 import { Stack } from "@mui/material";
 import { BrushSizeSlider } from "./BrushSizeSlider";
 
-/** Eraser palette — size control only (filled/region eraser is always used). */
+/** Eraser palette — size control only (stroke eraser is always used). */
 export default function EraserPlatte({
   expandEraseOptions,
   eraserSize = 1,

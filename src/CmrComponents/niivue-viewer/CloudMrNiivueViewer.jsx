@@ -616,7 +616,7 @@ export default function CloudMrNiivueViewer(props) {
     setBrushSize(size);
     brushSizeRef.current = size;
     const tool = drawShapeToolRef.current;
-    if ((tool === "pen" || tool === "polyline") && drawPen !== 8) {
+    if ((tool === "pen" || tool === "polyline") && drawPen !== 0) {
       applyNvBrushSize(size);
     }
   }
@@ -624,7 +624,7 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateEraserSize(size) {
     setEraserSize(size);
     eraserSizeRef.current = size;
-    if (drawPen === 8) {
+    if (drawPen === 0) {
       applyNvBrushSize(size);
     }
   }
@@ -632,9 +632,11 @@ export default function CloudMrNiivueViewer(props) {
   function nvUpdateDrawPen(a) {
     const raw = Number(a.target.value);
     setDrawPen(raw);
-    const isEraser = raw === 8;
+    const isEraser = raw === 0 || raw === 8;
 
-    if (raw === 8) {
+    if (raw === 0) {
+      nv.setPenValue(0, false);
+    } else if (raw === 8) {
       nv.setPenValue(0, true);
     } else {
       nv.setPenValue(raw & 7, raw > 0);
@@ -646,6 +648,10 @@ export default function CloudMrNiivueViewer(props) {
       nv.opts.deferShapeCommit = false;
       nv.opts.polylinePenMode = false;
       nv.cloudMrResetPolyline?.();
+      if (raw === 0) {
+        nv.opts.isFilledPen = false;
+        nv.drawPenFillPts = [];
+      }
       applyActiveDraftIfAny();
     } else if (drawShapeToolRef.current === "pen") {
       nv.opts.deferFreehandCommit = false;
@@ -719,7 +725,9 @@ export default function CloudMrNiivueViewer(props) {
     nv.opts.deferShapeCommit = false;
     nv.opts.deferFreehandCommit = false;
     nv.opts.polylinePenMode = false;
-    nvUpdateDrawPen({ target: { value: 8 } });
+    nvUpdateDrawPen({ target: { value: 0 } });
+    nv.opts.isFilledPen = false;
+    nv.drawPenFillPts = [];
     applyNvBrushSize(eraserSizeRef.current);
     nvSetDrawingEnabled(true);
   }

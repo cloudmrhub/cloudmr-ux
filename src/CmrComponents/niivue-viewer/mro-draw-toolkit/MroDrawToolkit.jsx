@@ -104,7 +104,7 @@ export function MroDrawToolkit(props) {
   const [, setMaskColor] = useState(undefined);
 
   useEffect(() => {
-    const eraserSelected = props.drawPen === 8;
+    const eraserSelected = props.drawPen === 0;
     // Close palette when tool is deactivated programmatically (e.g. after Apply).
     // Keep eraser palette open when switching from shape/pen edit → eraser in one click.
     if (drawShapeTool === null && !props.shapeDraftActive && !props.penDraftActive) {
@@ -127,7 +127,7 @@ export function MroDrawToolkit(props) {
   const eraserActive = expandedOption === "e";
 
   function leaveEraserIfActive() {
-    if (!eraserActive && props.drawPen !== 8) {
+    if (!eraserActive && props.drawPen !== 0) {
       return;
     }
     props.onDeactivateDrawTools?.();
