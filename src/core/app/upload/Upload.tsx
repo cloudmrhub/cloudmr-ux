@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useState } from "react";
-import "./Upload.scss";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { UploadedFile } from "../../features/data/dataSlice";
 import IconButton from "@mui/material/IconButton";
@@ -22,12 +21,48 @@ import { uploadHandlerFactory } from "../../common/utilities/SystemUtilities";
 
 const Upload = () => {
   const dispatch = useAppDispatch();
-  const { uploadToken } = useAppSelector((state) => state.authenticate);
+  const { uploadToken, level, isAdmin: isAdminFlag } = useAppSelector(
+    (state) => state.authenticate,
+  );
   const { files } = useAppSelector((state) => state.data);
+  const isAdmin = Boolean(isAdminFlag) || level === "admin";
 
-  const renamingProxy = (newName: string, proxyCallback: () => void) => {
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [renamingCallback, setRenamingCallback] = useState<
+    (alias: string, isDemoData?: boolean) => Promise<boolean>
+  >(async () => true);
+  const [originalName, setOriginalName] = useState("");
+  const [selectedFileIsDemoData, setSelectedFileIsDemoData] = useState<
+    boolean | undefined
+  >(undefined);
+
+  const [name, setName] = useState<string | undefined>(undefined);
+  const [message, setMessage] = useState<string | undefined>(undefined);
+  const [color, setColor] = useState<
+    | "inherit"
+    | "primary"
+    | "secondary"
+    | "success"
+    | "error"
+    | "info"
+    | "warning"
+    | undefined
+  >(undefined);
+  const [open, setOpen] = useState<boolean>(false);
+  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
+  const [cancelCallback, setCancelCallback] = useState<() => void>(() => {});
+
+  const [selectedData, setSelectedData] = useState<GridRowSelectionModel>([]);
+  const [uploadKey, setUploadKey] = useState(0);
+
+  const renamingProxy = (
+    originalFileName: string,
+    newName: string,
+    isDemoData: boolean | undefined,
+    proxyCallback: () => void,
+  ) => {
     return new Promise<boolean>((resolve) => {
-      let originalExt = originalName.split(".").pop();
+      let originalExt = originalFileName.split(".").pop();
       if (newName.split(".").length === 1) {
         setMessage(`Missing file extension in '${newName}'.`);
         setColor("error");
@@ -57,6 +92,7 @@ const Upload = () => {
       }
     });
   };
+
   const uploadedFilesColumns = [
     {
       headerName: "File Name",
@@ -89,22 +125,31 @@ const Upload = () => {
           <div>
             <IconButton
               onClick={() => {
-                setOriginalName(files[index].fileName);
+                const currentFileName = files[index].fileName;
+                setOriginalName(currentFileName);
                 setNameDialogOpen(true);
-                setRenamingCallback(() => (newName: string) => {
-                  return renamingProxy(newName, () => {
-                    // In case of working API
-                    let dataReference = files[index];
-                    //@ts-ignore
-                    dispatch(
-                      renameUploadedData({
-                        fileId: dataReference.id,
-                        newName: newName,
-                      }),
-                    );
-                  });
-                  // In case of non-working API, change name locally
-                  // dispatch(dataSlice.actions.renameData({index:index,alias:newName}));
+                setSelectedFileIsDemoData(
+                  isAdmin ? !!files[index].is_demo_data : undefined,
+                );
+                setRenamingCallback(() => (newName: string, isDemoData?: boolean) => {
+                  return renamingProxy(
+                    currentFileName,
+                    newName,
+                    isDemoData,
+                    () => {
+                      let dataReference = files[index];
+                      dispatch(
+                        renameUploadedData({
+                          fileId: dataReference.id,
+                          newName: newName,
+                          ...(isAdmin &&
+                            isDemoData !== undefined && {
+                              is_demo_data: isDemoData,
+                            }),
+                        }),
+                      );
+                    },
+                  );
                 });
               }}
             >
@@ -120,42 +165,24 @@ const Upload = () => {
     },
   ];
 
-  // const dispatch = useAppDispatch();
-  // const { uploadToken } = useAppSelector((state) => state.authenticate);
-  // const { files } = useAppSelector((state) => state.data);
-  const [nameDialogOpen, setNameDialogOpen] = useState(false);
-  const [renamingCallback, setRenamingCallback] = useState<
-    (alias: string) => Promise<boolean>
-  >(async () => true);
-  const [originalName, setOriginalName] = useState("");
-
-  const [name, setName] = useState<string | undefined>(undefined);
-  const [message, setMessage] = useState<string | undefined>(undefined);
-  const [color, setColor] = useState<
-    | "inherit"
-    | "primary"
-    | "secondary"
-    | "success"
-    | "error"
-    | "info"
-    | "warning"
-    | undefined
-  >(undefined);
-  const [open, setOpen] = useState<boolean>(false);
-  const [confirmCallback, setConfirmCallback] = useState<() => void>(() => {});
-  const [cancelCallback, setCancelCallback] = useState<() => void>(() => {});
-
-  const [selectedData, setSelectedData] = useState<GridRowSelectionModel>([]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    //@ts-ignore
-    dispatch(getUploadedData());
-    //@ts-ignore
-    dispatch(getUpstreamJobs());
-    console.log("dispatched");
+    (async () => {
+      try {
+        //@ts-ignore
+        const p1 = dispatch(getUploadedData());
+        //@ts-ignore
+        const p2 = dispatch(getUpstreamJobs());
+        await Promise.all([p1, p2]);
+        console.log("dispatched");
+      } catch (err) {
+        console.error("Initial data load failed:", err);
+        setMessage("Could not load initial application data. Some features may be unavailable.");
+        setColor("error");
+        setOpen(true);
+      }
+    })();
   }, []);
-
-  const [uploadKey, setUploadKey] = useState(0);
 
   function downloadSelectedValues() {
     let downloadPending: UploadedFile[] = [];
@@ -196,12 +223,7 @@ const Upload = () => {
       >
         <CmrPanel key="0" header="Uploaded Data" className="mb-2">
           <CmrTable
-            dataSource={[...files].filter((file) => {
-              const name = file.fileName.toLowerCase();
-              // return !name.endsWith(".zip") && !name.endsWith(".nii");
-              // TODO RJW: does this make sense? confusing if you upload a zip, it just disappears
-              return true; // Show all files for now
-            })}
+            dataSource={[...files].reverse()}
             rowSelectionModel={selectedData}
             onRowSelectionModelChange={(rowSelectionModel) => {
               setSelectedData(rowSelectionModel);
@@ -305,6 +327,7 @@ const Upload = () => {
           setOpen={setNameDialogOpen}
           originalName={originalName}
           renamingCallback={renamingCallback}
+          isDemoData={selectedFileIsDemoData}
         />
 
         <CmrConfirmation
