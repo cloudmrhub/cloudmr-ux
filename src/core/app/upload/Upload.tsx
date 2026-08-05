@@ -218,7 +218,7 @@ const Upload = () => {
     <Fragment>
       <CmrCollapse
         accordion={false}
-        defaultActiveKey={[0, 1]}
+        defaultActiveKey={[0]}
         expandIconPosition="right"
       >
         <CmrPanel key="0" header="Uploaded Data" className="mb-2">
@@ -322,26 +322,28 @@ const Upload = () => {
             </div>
           </div>
         </CmrPanel>
-        <CmrNameDialog
-          open={nameDialogOpen}
-          setOpen={setNameDialogOpen}
-          originalName={originalName}
-          renamingCallback={renamingCallback}
-          isDemoData={selectedFileIsDemoData}
-        />
-
-        <CmrConfirmation
-          name={name}
-          message={message}
-          color={color}
-          open={open}
-          setOpen={setOpen}
-          confirmCallback={confirmCallback}
-          cancelCallback={cancelCallback}
-          cancellable={true}
-          width={450}
-        />
       </CmrCollapse>
+
+      <CmrNameDialog
+        open={nameDialogOpen}
+        setOpen={setNameDialogOpen}
+        originalName={originalName}
+        renamingCallback={renamingCallback}
+        isDemoData={selectedFileIsDemoData}
+      />
+
+      <CmrConfirmation
+        name={name}
+        message={message}
+        color={color}
+        open={open}
+        setOpen={setOpen}
+        confirmCallback={confirmCallback}
+        cancelCallback={cancelCallback}
+        cancellable={true}
+        width={450}
+      />
+
       <div style={{ height: "69px" }}></div>
     </Fragment>
   );

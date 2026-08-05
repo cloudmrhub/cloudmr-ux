@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, useTheme } from '@mui/material';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -15,10 +15,11 @@ export default function CmrNameDialog(props: {
     open:boolean,
     setOpen:(open:boolean)=>void,
     isDemoData?: boolean
-    /** Checked state color for the Demo Data checkbox (e.g. CAMRIE `#1578A1`). */
+    /** Checked state color for the Demo Data checkbox. Defaults to the app's MUI theme primary color. */
     checkboxCheckedColor?: string;
 }) {
-    let {originalName, open, setOpen, isDemoData, checkboxCheckedColor = '#1578A1'} = props;
+    const theme = useTheme();
+    let {originalName, open, setOpen, isDemoData, checkboxCheckedColor = theme.palette.primary.main} = props;
     const [helperText, setHelperText] = React.useState('');
     const [text, setText] = React.useState(originalName);
     const [error, setError] = React.useState(false);
@@ -106,6 +107,12 @@ export default function CmrNameDialog(props: {
                                     margin: 0,
                                     marginLeft: 0,
                                     alignItems: 'center',
+                                },
+                                '& .MuiCheckbox-root': {
+                                    paddingLeft: 0,
+                                    paddingRight: '6px',
+                                    paddingTop: '2px',
+                                    paddingBottom: '2px',
                                 },
                             }}
                         >
