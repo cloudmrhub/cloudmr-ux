@@ -48,9 +48,14 @@ export default function CmrNameDialog(props: {
         checkError(e.target.value);
     }
     const checkError=(text: string)=>{
-        const fileNameRegex = /^[a-zA-Z0-9_\-]+\.[a-zA-Z]{1,5}$/;
-        let newExtension = text.split('.').pop();
-        let orgExtension = (originalName.indexOf('.')>=0)? originalName.split('.').pop(): '?';
+        // Allow multi-part names/extensions (e.g. file.nii.gz, Duke_Brain_1.5T.nii.gz)
+        const fileNameRegex = /^[a-zA-Z0-9_\-]+(?:\.[a-zA-Z0-9_\-]+)+$/;
+        const extensionOf = (name: string) => {
+            const i = name.indexOf('.');
+            return i >= 0 ? name.slice(i + 1) : '?';
+        };
+        const newExtension = extensionOf(text);
+        const orgExtension = extensionOf(originalName);
         if(!fileNameRegex.test(text)){
             setError(true);
             if(text.indexOf('.')<0){
