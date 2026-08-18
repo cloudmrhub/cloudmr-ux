@@ -38,16 +38,19 @@ const createStyles = (primaryColor: string): StylesConfig<Option, false> => {
     control: (base, state) => ({
       ...base,
       minHeight: 40,
-      borderColor: primaryColor,
+      // Default gray like MUI OutlinedInput; primary only when focused
+      borderColor: state.isFocused ? primaryColor : "rgba(0, 0, 0, 0.23)",
       boxShadow: state.isFocused ? `0 0 0 1px ${primaryColor}` : "none",
-      "&:hover": { borderColor: primaryColor },
+      "&:hover": {
+        borderColor: state.isFocused ? primaryColor : "rgba(0, 0, 0, 0.87)",
+      },
       fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
       borderRadius: 4,
     }),
 
     singleValue: (base) => ({
       ...base,
-      color: primaryColor,
+      color: "#000",
       fontWeight: 400,
       fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
     }),
