@@ -298,14 +298,19 @@ export default function CloudMrNiivueViewer(props) {
     verifyComplex(nv.volumes[0], currentNii);
     nvSetDisplayedVoxels('absolute');
 
-    nvSetDragMode(dragMode);
+    nvSetDragMode(dragModeRef.current);
     nv.setSliceMM(worldSpace);
     nv.scene.crosshairPos = [0.5, 0.5, 0.5];
     nvUpdateSliceType(axialOnlyLoad ? 'axial' : sliceType);
     nv.opts.crosshairWidth = showCrosshair ? 1 : 0;
     setMMs(nv.frac2mm(nv.scene.crosshairPos));
     nv.applyDefaultViewState?.();
-    setTimeout(() => nv.applyDefaultViewState?.(), 800);
+    setTimeout(() => {
+      nv.applyDefaultViewState?.();
+      // Panel remount (key=selectedVolume) can finish attach after this callback —
+      // re-assert the toolbar mode so dropdown and engine stay aligned.
+      nvSetDragMode(dragModeRef.current);
+    }, 800);
   }
 
 
@@ -566,9 +571,15 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   const [dragMode, setDragMode] = useState("pan");
+  // Ref keeps the latest mode for async paths (onImageLoaded / loadVolumes) so
+  // stale closures cannot re-apply an old value after the user changes the dropdown.
+  const dragModeRef = React.useRef(dragMode);
+  React.useEffect(() => {
+    dragModeRef.current = dragMode;
+  }, [dragMode]);
 
-  function nvSetDragMode(dragMode) {
-    switch (dragMode) {
+  function nvSetDragMode(nextDragMode) {
+    switch (nextDragMode) {
       case "none":
         nv.opts.dragMode = nv.dragModes.none;
         break;
@@ -585,7 +596,8 @@ export default function CloudMrNiivueViewer(props) {
         break;
     }
     // nv.drawScene();
-    setDragMode(dragMode);
+    dragModeRef.current = nextDragMode;
+    setDragMode(nextDragMode);
   }
 
   function nvSaveImage() {
@@ -1474,7 +1486,7 @@ export default function CloudMrNiivueViewer(props) {
     } else if (newSliceType === '3d') {
       nv.setSliceType(nv.sliceTypeRender)
     }
-    nvSetDragMode(dragMode); // some Niivue builds reset interaction on slice change
+    nvSetDragMode(dragModeRef.current); // some Niivue builds reset interaction on slice change
     // Re-apply world/voxel mode and last crosshair after slice type changes
     nv.setSliceMM(worldSpace);
     //applySavedCrosshairIfAny();
@@ -1544,7 +1556,7 @@ export default function CloudMrNiivueViewer(props) {
       }
       try {
         await nv.loadVolumes([niiToVolume(props.niis[volumeIndex])]);
-        nvSetDragMode(dragMode); // re-apply user's drag mode after Niivue resets
+        nvSetDragMode(dragModeRef.current); // re-apply user's drag mode after Niivue resets
         // Re-apply world/voxel mode and last crosshair after loading a new volume
         nv.setSliceMM(worldSpace);
         //applySavedCrosshairIfAny();
@@ -1564,6 +1576,8 @@ export default function CloudMrNiivueViewer(props) {
       }
       setSelectedVolume(volumeIndex);
       setSelectedDrawingLayer('');
+      // CloudMrNiivuePanel remounts on selectedVolume; re-apply after that commit.
+      setTimeout(() => nvSetDragMode(dragModeRef.current), 0);
     }
     // In case that changes has been made
     if (drawingChanged) {
@@ -2238,6 +2252,7 @@ export default function CloudMrNiivueViewer(props) {
       {props.niis[selectedVolume] != undefined && <CloudMrNiivuePanel
         nv={nv}
         key={`${selectedVolume}`}
+        dragMode={dragMode}
         transformFactors={transformFactors}
 
         decimalPrecision={decimalPrecision}

@@ -33,8 +33,29 @@ export type CloudMrDrawToolkitProps = Omit<
   onCancelShapeDraft?: () => void;
 };
 
+/** Map toolbar "Scroll and Right Click Drag" values onto Niivue engine opts. */
+function applyNvDragMode(nv: any, mode: string | undefined) {
+  switch (mode) {
+    case "none":
+      nv.opts.dragMode = nv.dragModes.none;
+      break;
+    case "contrast":
+      nv.opts.dragMode = nv.dragModes.contrast;
+      break;
+    case "measurement":
+      nv.opts.dragMode = nv.dragModes.measurement;
+      break;
+    case "pan":
+    default:
+      nv.opts.dragMode = nv.dragModes.pan;
+      break;
+  }
+}
+
 export interface CloudMrNiivuePanelProps {
   nv: any;
+  /** Current toolbar drag mode — must be re-applied after canvas attach (panel remounts on volume change). */
+  dragMode?: string;
   pipelineID: string;
   locationTableVisible: boolean;
   locationData: any[];
@@ -104,8 +125,10 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
     (async () => {
       try {
         await props.nv.attachTo("niiCanvas");
+        // Do NOT hardcode pan here — panel remounts when selectedVolume changes
+        // (key={selectedVolume}), and forcing pan left the dropdown out of sync.
         if (!cancelled) {
-          props.nv.opts.dragMode = props.nv.dragModes.pan;
+          applyNvDragMode(props.nv, props.dragMode);
         }
       } catch (e) {
         console.error("Niivue attachTo failed", e);
@@ -115,6 +138,11 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
       cancelled = true;
     };
   }, [canvas]);
+
+  // Keep engine behavior matched to the toolbar if dragMode changes while attached.
+  React.useEffect(() => {
+    applyNvDragMode(props.nv, props.dragMode);
+  }, [props.dragMode]);
 
   React.useEffect(() => {
     props.nv.resizeListener();
