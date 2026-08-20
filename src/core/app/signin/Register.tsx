@@ -46,6 +46,8 @@ export default function Register({
   );
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
@@ -93,6 +95,14 @@ export default function Register({
     return () => clearTimeout(timeoutId);
   }, [password]);
 
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(e.target.value.toLowerCase());
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value.toLowerCase());
+  };
+
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
   };
@@ -124,10 +134,8 @@ export default function Register({
     event.preventDefault();
     const data = new FormData(event.currentTarget);
 
-    const emailValue = data.get("email") as string;
-
     // Validate email format
-    if (!isEmailValid(emailValue)) {
+    if (!isEmailValid(email)) {
       return;
     }
     // Do immediate validation before submit
@@ -146,11 +154,11 @@ export default function Register({
     }
 
     const registerData: RegisterDataType = {
-      email: emailValue,
+      email,
       password: password,
       firstname: data.get("firstname") as string,
       lastname: data.get("lastname") as string,
-      username: data.get("username") as string,
+      username,
     };
 
     dispatch(registerUser(registerData));
@@ -212,6 +220,9 @@ export default function Register({
         label="Username"
         name="username"
         size="small"
+        value={username}
+        onChange={handleUsernameChange}
+        autoComplete="username"
       />
 
       <TextField
@@ -223,6 +234,8 @@ export default function Register({
         name="email"
         type="email"
         size="small"
+        value={email}
+        onChange={handleEmailChange}
         autoComplete="email"
       />
 
