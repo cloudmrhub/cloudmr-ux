@@ -17,8 +17,11 @@ export const resultSlice = createSlice({
   name: "job",
   initialState,
   reducers: {
-    setPipelineID(state: ROIState, action: PayloadAction<Job>) {
+    setPipelineID(state: ROIState, action: PayloadAction<Job | undefined>) {
       state.activeJob = action.payload;
+    },
+    clearActiveJob(state: ROIState) {
+      state.activeJob = undefined;
     },
     selectVolume(state: ROIState, action: PayloadAction<number>) {
       state.selectedVolume = action.payload;
