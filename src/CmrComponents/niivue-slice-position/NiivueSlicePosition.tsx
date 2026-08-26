@@ -86,7 +86,6 @@ export interface NiivueSlicePositionProps {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
-const fmtMm = (v: number) => (Number.isFinite(v) ? round3(v).toFixed(3) : "0.000");
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -95,10 +94,10 @@ const fmtMm = (v: number) => (Number.isFinite(v) ? round3(v).toFixed(3) : "0.000
  *
  * A reusable "Slice Position" control panel that drives a Niivue viewer.
  * Renders:
- *   - Axial: a "Slice Number" slider along Z.
- *   - Coronal / sagittal: an "Index" slider along Y or X.
- *   - Multiplanar: independent X, Y, and Z index sliders.
- *   - Read-only X, Y, Z millimetre text that follows the slider / viewer.
+ *   - Axial: a Z slider.
+ *   - Coronal: a Y slider.
+ *   - Sagittal: an X slider.
+ *   - Multiplanar: independent X, Y, and Z sliders.
  *   - An "Anatomical / Native plane" toggle that calls `onWorldSpaceChange`.
  *
  * Slice stepping uses `nv.moveCrosshairInVox` along the active axis (or axes
@@ -192,7 +191,6 @@ export function NiivueSlicePosition({
   const xIdx = indexForAxis(0);
   const yIdx = indexForAxis(1);
   const zIdx = indexForAxis(2);
-  const currentSliceIdx = axisIdx === 0 ? xIdx : axisIdx === 1 ? yIdx : zIdx;
   const totalSlices = totals[axisIdx];
 
   // ── Local slider display state ────────────────────────────────────────────
@@ -325,9 +323,7 @@ export function NiivueSlicePosition({
               <div style={{ marginBottom: 16 }}>
                 <div style={rowStyle}>
                   <CmrLabel>
-                    {sliceType === "coronal" || sliceType === "sagittal"
-                      ? "Index:"
-                      : "Slice Number:"}
+                    {sliceType === "sagittal" ? "X:" : sliceType === "coronal" ? "Y:" : "Z:"}
                   </CmrLabel>
                   <CmrLabel style={{ paddingRight: 0, color: "#000" }}>
                     {dispCurrent + 1}/{totalSlices}
@@ -345,19 +341,6 @@ export function NiivueSlicePosition({
                 />
               </div>
             )}
-
-            {/* X / Y / Z millimetre readout — same solid color as labels (not MUI 0.87 text) */}
-            {(["X", "Y", "Z"] as const).map((axis, i) => {
-              const value = i === 0 ? xVal : i === 1 ? yVal : zVal;
-              return (
-                <div key={axis} style={{ ...rowStyle, marginBottom: i < 2 ? 4 : 0 }}>
-                  <CmrLabel style={{ minWidth: 20, color: "#000" }}>{axis}:</CmrLabel>
-                  <CmrLabel style={{ paddingRight: 0, color: "#000" }}>
-                    {fmtMm(value)} mm
-                  </CmrLabel>
-                </div>
-              );
-            })}
 
           </div>
         </CardContent>
