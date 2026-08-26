@@ -965,7 +965,8 @@ Niivue.prototype.loadDrawingFromBase64 = async function (fnm, base64) {
         // const volume = await NVImage.loadFromUrl()
         if (base64) {
             let imageOptions = NVImageFromUrlOptions(fnm);
-            const drawingBitmap = NVImage.loadFromBase64({ name: fnm, base64 })
+            // NVImage.loadFromBase64 is async in NiiVue >=0.68
+            const drawingBitmap = await NVImage.loadFromBase64({ name: fnm, base64 })
             if (drawingBitmap) {
                 this.loadDrawing(drawingBitmap)
             }
@@ -996,7 +997,8 @@ Niivue.prototype.mergeDrawingFromBase64 = async function (fnm, base64) {
         if (!this.back) {
             throw new Error('back undefined');
         }
-        const drawingBitmap = NVImage.loadFromBase64({ name: fnm, base64 });
+        // NVImage.loadFromBase64 is async in NiiVue >=0.68
+        const drawingBitmap = await NVImage.loadFromBase64({ name: fnm, base64 });
         if (!drawingBitmap || !drawingBitmap.hdr || !drawingBitmap.hdr.dims) {
             return result;
         }

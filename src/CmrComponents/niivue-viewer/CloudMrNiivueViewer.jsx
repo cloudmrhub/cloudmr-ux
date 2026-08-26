@@ -56,6 +56,7 @@ import { NiivueViewerThemeProvider } from './NiivueViewerThemeContext';
  * @property {() => Promise<void>} refreshPipelineRois — e.g. dispatch getPipelineROI
  * @property {() => any[]} getPipelineRois — returns current ROI list for pipeline (e.g. from Redux)
  * @property {string} [accentColor] — override viewer accent; else host MUI primary if set, else `#580f8b`
+ * @property {number} [sliceCount] — number of acquired slices from job settings; forwarded to the Slice # slider
  */
 
 export const nv = new Niivue({
@@ -232,6 +233,7 @@ export default function CloudMrNiivueViewer(props) {
   let [boundMins, setBoundMins] = useState([0, 0, 0]);
   let [boundMaxs, setBoundMaxs] = useState([1, 1, 1]);
   let [mms, setMMs] = useState([0.5, 0.5, 0.5]);
+  let [vox, setVox] = useState([0, 0, 0]);
   nv.onImageLoaded = () => {
     if (nv.volumes.length > 1) {
       const nii = props.niis?.[loadingVolumeIndexRef.current] ?? props.niis?.[props.selectedVolume];
@@ -441,6 +443,7 @@ export default function CloudMrNiivueViewer(props) {
   nv.onLocationChange = (data) => {
     if (data.values[0]) {
       setMMs([...data.values[0].mm]);                // ensure new array -> React re-renders
+      if (data.values[0].vox) setVox([...data.values[0].vox]); // k-index for Slice # slider
       data.values[0].transformA = nv.transformA;
       data.values[0].transformB = nv.transformB;
       data.values[0].power = nv.power;
@@ -870,10 +873,13 @@ export default function CloudMrNiivueViewer(props) {
     setDecimalPrecision(v)
   }
 
-  function nvUpdateWorldSpace() {
-    nvUpdateCrosshair3D(!worldSpace)
-    setWorldSpace(!worldSpace)
-    nv.setSliceMM(!worldSpace)
+  function nvUpdateWorldSpace(value) {
+    // When called from the toolbar NVSwitch it receives a boolean value directly.
+    // When called from NiivueSlicePosition onWorldSpaceChange it also receives a boolean.
+    const next = typeof value === 'boolean' ? value : !worldSpace;
+    nvUpdateCrosshair3D(next)
+    setWorldSpace(next)
+    nv.setSliceMM(next)
 
     // keep sliders synced to the currently displayed crosshair
     try { setMMs(nv.frac2mm(nv.scene.crosshairPos)); } catch { }
@@ -1856,7 +1862,9 @@ export default function CloudMrNiivueViewer(props) {
       };
 
       // False if nothing has been drawn on canvas
-      let successful = nv.saveImage({
+      // NiiVue 0.68+ saveImage is async — await it so the de-patch runs AFTER
+      // NiiVue has called the monkey-patched URL.createObjectURL internally.
+      let successful = await nv.saveImage({
         filename,
         isSaveDrawing: true,
       });
@@ -2271,6 +2279,10 @@ export default function CloudMrNiivueViewer(props) {
         mins={boundMins}
         maxs={boundMaxs}
         mms={mms}
+        vox={vox}
+        sliceCount={props.sliceCount}
+        worldSpace={worldSpace}
+        onWorldSpaceChange={nvUpdateWorldSpace}
 
         min={min}
         max={max}

@@ -68,6 +68,14 @@ export interface CloudMrNiivuePanelProps {
   mins: number[];
   maxs: number[];
   mms: number[];
+  /** Current voxel indices [i, j, k] from onLocationChange data.values[0].vox. */
+  vox?: number[];
+  /** Number of acquired slices from job settings; forwarded to Slice Position as the Slice # range. */
+  sliceCount?: number;
+  /** Whether the viewer is in world-space (anatomical) mode (sliceMM=true). */
+  worldSpace?: boolean;
+  /** Called when the user toggles Anatomical / Native plane. Parent handles nv.setSliceMM. */
+  onWorldSpaceChange?: (v: boolean) => void;
   rois: {}[];
   min: number;
   max: number;
@@ -341,6 +349,10 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
           mins={mins}
           maxs={maxs}
           mms={mms}
+          vox={props.vox}
+          sliceCount={props.sliceCount}
+          worldSpace={props.worldSpace}
+          onWorldSpaceChange={props.onWorldSpaceChange}
           style={{ minWidth: 245 }}
         />
 
