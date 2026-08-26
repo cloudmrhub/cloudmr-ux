@@ -51,7 +51,9 @@ export const uploadJob = createAsyncThunk('UploadJob', async (
                                              part: any, cancelTokenSource: any,
                                              index: number, retries = 2) {
             try {
-                const response = await AuthenticatedHttpClient.put(partUrl, part, {
+                // Presigned S3 URLs must not get a Bearer token — extra
+                // Authorization headers make S3 return 400 XML.
+                const response = await axios.put(partUrl, part, {
                     headers: {
                         'Content-Type': ""
                     },

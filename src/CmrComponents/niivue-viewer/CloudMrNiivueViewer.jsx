@@ -2281,6 +2281,7 @@ export default function CloudMrNiivueViewer(props) {
         mms={mms}
         vox={vox}
         sliceCount={props.sliceCount}
+        sliceType={sliceType}
         worldSpace={worldSpace}
         onWorldSpaceChange={nvUpdateWorldSpace}
 

@@ -72,6 +72,11 @@ export interface CloudMrNiivuePanelProps {
   vox?: number[];
   /** Number of acquired slices from job settings; forwarded to Slice Position as the Slice # range. */
   sliceCount?: number;
+  /**
+   * Current display orientation ('axial' | 'coronal' | 'sagittal' | 'multiplanar' | 'render').
+   * Forwarded to NiivueSlicePosition to select the correct paging axis and range.
+   */
+  sliceType?: string;
   /** Whether the viewer is in world-space (anatomical) mode (sliceMM=true). */
   worldSpace?: boolean;
   /** Called when the user toggles Anatomical / Native plane. Parent handles nv.setSliceMM. */
@@ -351,6 +356,7 @@ export function CloudMrNiivuePanel(props: CloudMrNiivuePanelProps) {
           mms={mms}
           vox={props.vox}
           sliceCount={props.sliceCount}
+          sliceType={props.sliceType}
           worldSpace={props.worldSpace}
           onWorldSpaceChange={props.onWorldSpaceChange}
           style={{ minWidth: 245 }}

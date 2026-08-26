@@ -49,6 +49,16 @@ export interface NiivueSlicePositionProps {
    */
   sliceCount?: number;
   /**
+   * Current display orientation. Controls which voxel axis the slice slider
+   * steps along and what dimension the range covers.
+   * - `'axial'` (default) → Z axis (vox[2]), range = nz (or sliceCount)
+   * - `'coronal'`         → Y axis (vox[1]), range = ny
+   * - `'sagittal'`        → X axis (vox[0]), range = nx
+   * - `'multi'` / `'multiplanar'` → three sliders, one per axis (X, Y, Z)
+   * - other               → Z axis fallback
+   */
+  sliceType?: string;
+  /**
    * Whether the viewer is in world-space (anatomical) mode, i.e. sliceMM=true.
    * Controlled externally; toggling calls `onWorldSpaceChange`.
    */
@@ -85,13 +95,14 @@ const fmtMm = (v: number) => (Number.isFinite(v) ? round3(v).toFixed(3) : "0.000
  *
  * A reusable "Slice Position" control panel that drives a Niivue viewer.
  * Renders:
- *   - A "Slice Number" slider that pages through acquired slices along the
- *     voxel k-direction.
+ *   - Axial: a "Slice Number" slider along Z.
+ *   - Coronal / sagittal: an "Index" slider along Y or X.
+ *   - Multiplanar: independent X, Y, and Z index sliders.
  *   - Read-only X, Y, Z millimetre text that follows the slider / viewer.
  *   - An "Anatomical / Native plane" toggle that calls `onWorldSpaceChange`.
  *
- * Slice stepping uses `nv.moveCrosshairInVox(0, 0, Δk)` so it operates in
- * native voxel space regardless of the current display orientation.
+ * Slice stepping uses `nv.moveCrosshairInVox` along the active axis (or axes
+ * in multiplanar) so it operates in native voxel space.
  */
 export function NiivueSlicePosition({
   nv,
@@ -100,6 +111,7 @@ export function NiivueSlicePosition({
   mms,
   vox,
   sliceCount,
+  sliceType = 'axial',
   worldSpace = false,
   onWorldSpaceChange,
   title = "Slice Position",
@@ -113,17 +125,30 @@ export function NiivueSlicePosition({
   // ── Derive voxel grid from the loaded volume ──────────────────────────────
   const vol = nv?.volumes?.[0];
   const meta = vol?.getImageMetadata?.();
+  const nx = Math.max(1, meta?.nx ?? 1);
+  const ny = Math.max(1, meta?.ny ?? 1);
   const nz = Math.max(1, meta?.nz ?? 1);
 
-  // ── Slice Number range ────────────────────────────────────────────────────
-  // If sliceCount is supplied from job settings, honour it; otherwise fall back
-  // to the volume's nz.
+  const isMulti = sliceType === "multi" || sliceType === "multiplanar";
+
+  // ── Orientation-aware axis selection (single-view modes) ─────────────────
+  // sagittal → X (vox[0]), coronal → Y (vox[1]), axial/other → Z (vox[2])
+  const axisIdx: 0 | 1 | 2 =
+    sliceType === "sagittal" ? 0 : sliceType === "coronal" ? 1 : 2;
+
+  // sliceCount from job settings only applies in single axial view — in multi
+  // view all three axes must use the true volume dimensions so the slider range
+  // is never incorrectly capped by the job's acquisition slice count.
   const jobTotal =
+    !isMulti &&
     sliceCount != null && Number.isFinite(Number(sliceCount)) && Number(sliceCount) > 0
       ? Math.round(Number(sliceCount))
       : undefined;
-  const totalSlices = Math.max(1, jobTotal ?? nz);
-  const maxSliceIdx = Math.max(0, totalSlices - 1);
+  const xTotal = nx;
+  const yTotal = ny;
+  const zTotal = Math.max(1, jobTotal ?? nz);
+  const totals: [number, number, number] = [xTotal, yTotal, zTotal];
+  const volumeDims: [number, number, number] = [nx, ny, nz];
 
   // ── Local mm readout (mirrors mms; synced by useEffect) ───────────────────
   const [xVal, setXVal] = useState(round3(mms[0]));
@@ -148,54 +173,75 @@ export function NiivueSlicePosition({
     setZVal(Number.isFinite(mms[2]) ? round3(mms[2]) : 0);
   }, [mms]);
 
-  // ── Current slice index ────────────────────────────────────────────────────
-  // Prefer `vox[2]` (integer k-index from onLocationChange) over derived value.
-  const currentSliceIdx: number = (() => {
-    if (vox != null && Number.isFinite(vox[2])) {
-      return clamp(Math.round(vox[2]), 0, maxSliceIdx);
+  const indexForAxis = (axis: 0 | 1 | 2): number => {
+    const total = totals[axis];
+    const maxIdx = Math.max(0, total - 1);
+    if (vox != null && Number.isFinite(vox[axis])) {
+      return clamp(Math.round(vox[axis]), 0, maxIdx);
     }
-    if (nz <= 1) return 0;
+    const dim = volumeDims[axis];
+    if (dim <= 1) return 0;
     try {
-      const fracZ = nv.mm2frac([xVal, yVal, zVal])[2];
-      return clamp(Math.round(fracZ * nz - 0.5), 0, maxSliceIdx);
+      const frac = nv.mm2frac([xVal, yVal, zVal])[axis];
+      return clamp(Math.round(frac * dim - 0.5), 0, maxIdx);
     } catch {
       return 0;
     }
-  })();
+  };
 
-  // Ref tracking the last k-index we issued to moveCrosshairInVox.
-  // Updated synchronously on every slider event so rapid drags accumulate
-  // deltas correctly without waiting for a React re-render to update
-  // currentSliceIdx.
-  const lastAppliedKRef = React.useRef<number>(currentSliceIdx);
+  const xIdx = indexForAxis(0);
+  const yIdx = indexForAxis(1);
+  const zIdx = indexForAxis(2);
+  const currentSliceIdx = axisIdx === 0 ? xIdx : axisIdx === 1 ? yIdx : zIdx;
+  const totalSlices = totals[axisIdx];
 
-  // Keep the ref in sync whenever NiiVue reports a new position externally
-  // (canvas scroll, keyboard, etc.)
+  // ── Local slider display state ────────────────────────────────────────────
+  // These update immediately on drag so the slider thumb moves without waiting
+  // for NiiVue's async onLocationChange to update `vox`.
+  const [dispX, setDispX] = useState(xIdx);
+  const [dispY, setDispY] = useState(yIdx);
+  const [dispZ, setDispZ] = useState(zIdx);
+
+  // Sync display state whenever NiiVue reports a new position externally
+  // (scroll, keyboard, programmatic crosshair move, etc.)
+  useEffect(() => { setDispX(xIdx); }, [xIdx]);
+  useEffect(() => { setDispY(yIdx); }, [yIdx]);
+  useEffect(() => { setDispZ(zIdx); }, [zIdx]);
+
+  const dispForAxis = (axis: 0 | 1 | 2) =>
+    axis === 0 ? dispX : axis === 1 ? dispY : dispZ;
+  const setDispForAxis = (axis: 0 | 1 | 2, v: number) => {
+    if (axis === 0) setDispX(v);
+    else if (axis === 1) setDispY(v);
+    else setDispZ(v);
+  };
+  const dispCurrent = axisIdx === 0 ? dispX : axisIdx === 1 ? dispY : dispZ;
+
+  // Track last applied index per axis so rapid drags accumulate correctly.
+  const lastAppliedRef = React.useRef<[number, number, number]>([xIdx, yIdx, zIdx]);
   useEffect(() => {
-    lastAppliedKRef.current = currentSliceIdx;
-  }, [currentSliceIdx]);
+    lastAppliedRef.current = [xIdx, yIdx, zIdx];
+  }, [xIdx, yIdx, zIdx]);
 
   /**
-   * Move to slice index `targetK` (0-based) by calling `moveCrosshairInVox`
-   * so NiiVue keeps all its internal state in sync.
-   *
-   * Computes the delta against `lastAppliedKRef` (not the React-state-derived
-   * `currentSliceIdx`) so that rapid successive drag events accumulate
-   * correctly even before a re-render updates the state.
+   * Move to 0-based slice index `target` along `axis` via `moveCrosshairInVox`.
+   * Updates local display state immediately so the thumb doesn't snap back.
    */
-  const applySliceIndex = (targetK: number) => {
-    const k = clamp(Math.round(targetK), 0, maxSliceIdx);
-    const delta = k - lastAppliedKRef.current;
-    lastAppliedKRef.current = k; // commit synchronously before re-render
+  const applyAxisIndex = (axis: 0 | 1 | 2, target: number) => {
+    const total = totals[axis];
+    const maxIdx = Math.max(0, total - 1);
+    const idx = clamp(Math.round(target), 0, maxIdx);
+    setDispForAxis(axis, idx); // update thumb immediately
+    const delta = idx - lastAppliedRef.current[axis];
+    lastAppliedRef.current[axis] = idx;
     if (delta === 0) return;
     try {
-      nv.moveCrosshairInVox(0, 0, delta);
+      nv.moveCrosshairInVox(axis === 0 ? delta : 0, axis === 1 ? delta : 0, axis === 2 ? delta : 0);
     } catch {
-      // Fallback: set crosshair fractional position directly
-      const cx = nv.scene.crosshairPos[0];
-      const cy = nv.scene.crosshairPos[1];
-      const fz = nz > 1 ? (k + 0.5) / nz : 0.5;
-      nv.scene.crosshairPos = [cx, cy, fz];
+      const pos = [...nv.scene.crosshairPos] as [number, number, number];
+      const dim = volumeDims[axis];
+      pos[axis] = dim > 1 ? (idx + 0.5) / dim : 0.5;
+      nv.scene.crosshairPos = pos;
     }
     nv.drawScene?.();
     syncMmFromViewer();
@@ -246,25 +292,59 @@ export function NiivueSlicePosition({
               </div>
             )}
 
-            {/* Slice Number — 1-based display, 0-based internally */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={rowStyle}>
-                <CmrLabel>Slice Number:</CmrLabel>
-                <CmrLabel style={{ paddingRight: 0, color: "#000" }}>
-                  {currentSliceIdx + 1}
-                </CmrLabel>
+            {isMulti ? (
+              ([
+                { label: "Sagittal (X)", axisKey: 0 as const },
+                { label: "Coronal (Y)",  axisKey: 1 as const },
+                { label: "Axial (Z)",    axisKey: 2 as const },
+              ].map(({ label, axisKey }) => {
+                const total = totals[axisKey];
+                const disp = dispForAxis(axisKey);
+                return (
+                  <div key={label} style={{ marginBottom: 16 }}>
+                    <div style={rowStyle}>
+                      <CmrLabel>{label}:</CmrLabel>
+                      <CmrLabel style={{ paddingRight: 0, color: "#000" }}>
+                        {disp + 1}/{total}
+                      </CmrLabel>
+                    </div>
+                    <input
+                      id={`sliceIndex${label}`}
+                      type="range"
+                      min={1}
+                      max={total}
+                      step={1}
+                      value={disp + 1}
+                      style={sliderStyle}
+                      onChange={(e) => applyAxisIndex(axisKey, Number(e.target.value) - 1)}
+                    />
+                  </div>
+                );
+              }))
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <div style={rowStyle}>
+                  <CmrLabel>
+                    {sliceType === "coronal" || sliceType === "sagittal"
+                      ? "Index:"
+                      : "Slice Number:"}
+                  </CmrLabel>
+                  <CmrLabel style={{ paddingRight: 0, color: "#000" }}>
+                    {dispCurrent + 1}/{totalSlices}
+                  </CmrLabel>
+                </div>
+                <input
+                  id="sliceNumber"
+                  type="range"
+                  min={1}
+                  max={totalSlices}
+                  step={1}
+                  value={dispCurrent + 1}
+                  style={sliderStyle}
+                  onChange={(e) => applyAxisIndex(axisIdx, Number(e.target.value) - 1)}
+                />
               </div>
-              <input
-                id="sliceNumber"
-                type="range"
-                min={1}
-                max={totalSlices}
-                step={1}
-                value={currentSliceIdx + 1}
-                style={sliderStyle}
-                onChange={(e) => applySliceIndex(Number(e.target.value) - 1)}
-              />
-            </div>
+            )}
 
             {/* X / Y / Z millimetre readout — same solid color as labels (not MUI 0.87 text) */}
             {(["X", "Y", "Z"] as const).map((axis, i) => {
