@@ -292,9 +292,9 @@ export function NiivueSlicePosition({
 
             {isMulti ? (
               ([
-                { label: "Sagittal (X)", axisKey: 0 as const },
-                { label: "Coronal (Y)",  axisKey: 1 as const },
-                { label: "Axial (Z)",    axisKey: 2 as const },
+                { label: "X", axisKey: 0 as const },
+                { label: "Y", axisKey: 1 as const },
+                { label: "Z", axisKey: 2 as const },
               ].map(({ label, axisKey }) => {
                 const total = totals[axisKey];
                 const disp = dispForAxis(axisKey);
