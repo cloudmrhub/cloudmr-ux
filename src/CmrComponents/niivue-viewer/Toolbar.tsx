@@ -1,5 +1,5 @@
 import React, { ChangeEvent, Fragment, useState } from 'react'
-import { Box, Button, CircularProgress, Menu, Stack, SvgIconProps, Switch, TextField, Tooltip, Typography } from "@mui/material"
+import { Box, Button, Card, CardContent, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Menu, Stack, SvgIconProps, Switch, TextField, Tooltip, Typography } from "@mui/material"
 import { IconButton, FormControl, Select, MenuItem, InputLabel } from "@mui/material";
 import SettingsIcon from '@mui/icons-material/Settings';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -11,8 +11,9 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import DeleteIcon from "@mui/icons-material/Delete";
 import CmrConfirmation from "../dialogue/Confirmation";
+import CmrLabel from "../label/Label";
 import axios from "axios";
-import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
+import { resolveNiivueAccentColor, useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 interface ToolbarProps {
   nv: any;
@@ -62,11 +63,30 @@ interface ToolbarProps {
   roiDeleteUrl: string;
   /** Refetch ROI list after server mutation */
   refreshPipelineRois: () => Promise<void>;
+
+  /** Crosshair color as RGBA 0–1 array, e.g. [1, 1, 0, 1]. */
+  crosshairColor?: number[];
+  /** Crosshair opacity 0–1. */
+  crosshairOpacity?: number;
+  /** Crosshair width in pixels. */
+  crosshairSize?: number;
+  onCrosshairColorChange?: (rgb01: number[], opacity: number) => void;
+  onCrosshairOpacityChange?: (opacity: number) => void;
+  onCrosshairSizeChange?: (size: number) => void;
+
+  /** Background color as RGBA 0–1 array. */
+  backgroundColor?: number[];
+  onBackgroundColorChange?: (rgb01: number[]) => void;
+
+  /** Orientation / slice label (font) color as RGBA 0–1 array. */
+  labelColor?: number[];
+  onLabelColorChange?: (rgb01: number[]) => void;
 }
 
 export default function Toolbar(props: ToolbarProps) {
   const { saving, setSaving } = props;
   const viewerTheme = useNiivueViewerTheme();
+  const accentColor = resolveNiivueAccentColor(undefined, viewerTheme);
   function handleSliceTypeChange(e: { target: { value: any } }) {
     const newSliceType = e.target.value;
     if (props.axialOnlyView && newSliceType !== "axial") return;
@@ -138,6 +158,51 @@ export default function Toolbar(props: ToolbarProps) {
   const [roiDeleteOpen, setRoiDeleteOpen] = useState(false);
   const [roiDeleteMsg, setRoiDeleteMsg] = useState<string | undefined>(undefined);
   const [roiDeleteConfirm, setRoiDeleteConfirm] = useState<() => void>(() => () => { });
+
+  // Settings dialog state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [draftColorHex, setDraftColorHex] = useState('#ffff00');
+  const [draftOpacity, setDraftOpacity] = useState(1);
+  const [draftSize, setDraftSize] = useState(1);
+  const [draftBackColorHex, setDraftBackColorHex] = useState('#000000');
+  const [draftLabelColorHex, setDraftLabelColorHex] = useState('#00ef5e');
+
+  function rgb01ToHex(rgba: number[]): string {
+    const r = Math.round((rgba[0] ?? 1) * 255);
+    const g = Math.round((rgba[1] ?? 1) * 255);
+    const b = Math.round((rgba[2] ?? 1) * 255);
+    return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hexToRgb01(hex: string): number[] {
+    return [
+      parseInt(hex.substring(1, 3), 16) / 255,
+      parseInt(hex.substring(3, 5), 16) / 255,
+      parseInt(hex.substring(5, 7), 16) / 255,
+    ];
+  }
+
+  function openSettingsDialog() {
+    const color = props.crosshairColor ?? [1, 1, 0, 1];
+    setDraftColorHex(rgb01ToHex(color));
+    // Prefer alpha from the color array so it stays in sync after a color+opacity save
+    setDraftOpacity(color[3] ?? props.crosshairOpacity ?? 1);
+    setDraftSize(props.crosshairSize ?? 1);
+    setDraftBackColorHex(rgb01ToHex(props.backgroundColor ?? [0, 0, 0, 1]));
+    setDraftLabelColorHex(rgb01ToHex(props.labelColor ?? [0, 0.94, 0.37, 1]));
+    setSettingsOpen(true);
+  }
+
+  function handleSettingsSave() {
+    // Apply color + opacity in one call. Calling opacity separately would
+    // overwrite with a stale crosshairColor from the React closure.
+    const rgb = hexToRgb01(draftColorHex);
+    props.onCrosshairColorChange?.(rgb, draftOpacity);
+    props.onCrosshairSizeChange?.(draftSize);
+    props.onBackgroundColorChange?.(hexToRgb01(draftBackColorHex));
+    props.onLabelColorChange?.(hexToRgb01(draftLabelColorHex));
+    setSettingsOpen(false);
+  }
 
 
   // const deleteROI= createAsyncThunk('DeleteROI', async (arg: { accessToken: string, jobId: string }) => {
@@ -400,12 +465,14 @@ export default function Toolbar(props: ToolbarProps) {
             }}>
             Save Drawing Layer
           </Button>
-          <IconButton
+          {/* Temporarily hide Niivue side-menu gear (opens SettingsPanel). Keep for reference until fully removed. */}
+          {/* <IconButton
             onClick={props.toggleSettings}
             style={{ marginLeft: 'auto' }}
           >
             <SettingsIcon />
-          </IconButton>
+          </IconButton> */}
+          <Box style={{ marginLeft: 'auto' }} />
         </Box>
         <Box
           sx={{
@@ -504,6 +571,12 @@ export default function Toolbar(props: ToolbarProps) {
               sx={viewerTheme.muiSwitchSx}
             />
           </Box>
+
+          <Tooltip title="Settings">
+            <IconButton size="small" onClick={openSettingsDialog} sx={{ mx: 0.5 }}>
+              <SettingsIcon />
+            </IconButton>
+          </Tooltip>
 
           {/* Spacer pushes all view/zoom buttons to the far right */}
           <Box sx={{ flex: 1 }} />
@@ -608,6 +681,124 @@ export default function Toolbar(props: ToolbarProps) {
           </Stack>
         </Box>
       </Fragment>}
+
+      {/* Settings dialog */}
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Settings</DialogTitle>
+        <DialogContent dividers>
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Background Settings
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CmrLabel style={{ fontSize: 14 }}>Color:</CmrLabel>
+                <input
+                  type="color"
+                  value={draftBackColorHex}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftBackColorHex(e.target.value)}
+                  style={{
+                    width: 40,
+                    height: 28,
+                    padding: 0,
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                  }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Label Settings
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CmrLabel style={{ fontSize: 14 }}>Color:</CmrLabel>
+                <input
+                  type="color"
+                  value={draftLabelColorHex}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftLabelColorHex(e.target.value)}
+                  style={{
+                    width: 40,
+                    height: 28,
+                    padding: 0,
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                  }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined">
+            <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Crosshair Settings
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <CmrLabel style={{ fontSize: 14 }}>Color:</CmrLabel>
+                <input
+                  type="color"
+                  value={draftColorHex}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftColorHex(e.target.value)}
+                  style={{
+                    width: 40,
+                    height: 28,
+                    padding: 0,
+                    border: '1px solid #ccc',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ mb: 2 }}>
+                <CmrLabel style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
+                  Opacity: {draftOpacity.toFixed(1)}
+                </CmrLabel>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={draftOpacity}
+                  onChange={(e) => setDraftOpacity(Number(e.target.value))}
+                  style={{ width: '100%', accentColor }}
+                />
+              </Box>
+
+              <Box>
+                <CmrLabel style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
+                  Size: {draftSize}
+                </CmrLabel>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={draftSize}
+                  onChange={(e) => setDraftSize(Number(e.target.value))}
+                  style={{ width: '100%', accentColor }}
+                />
+              </Box>
+            </CardContent>
+          </Card>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSettingsOpen(false)} variant="outlined">Cancel</Button>
+          <Button onClick={handleSettingsSave} variant="contained">Save</Button>
+        </DialogActions>
+      </Dialog>
     </Box >
   );
 }

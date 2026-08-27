@@ -68,7 +68,7 @@ export const nv = new Niivue({
   dragMode: DRAG_MODE.pan,
   crosshairWidth: 0,
   // crosshairColor: [0.098,0.453,0.824]
-  crosshairColor: [1, 1, 0],
+  crosshairColor: [1, 1, 0, 1],
   fontColor: [0.00, 0.94, 0.37, 1],
   isNearestInterpolation: true,
   isFilledPen: true,
@@ -102,6 +102,7 @@ export default function CloudMrNiivueViewer(props) {
   const [radiological, setRadiological] = React.useState(true)
   const [crosshair3D, setCrosshair3D] = React.useState(false)
   const [textSize, setTextSize] = React.useState(nv.opts.textHeight)
+  const [fontColor, setFontColor] = React.useState(nv.opts.fontColor)
   const [colorBar, setColorBar] = React.useState(nv.opts.isColorbar)
   const [worldSpace, setWorldSpace] = React.useState(nv.opts.isSliceMM)
   const [clipPlane, setClipPlane] = React.useState(nv.currentClipPlaneIndex > 0 ? true : false)
@@ -136,6 +137,8 @@ export default function CloudMrNiivueViewer(props) {
   const loadingVolumeIndexRef = React.useRef(props.selectedVolume);
 
   const [showCrosshair, setShowCrosshair] = React.useState(false);
+  /** Preferred crosshair width when visible; toggle controls whether it is applied. */
+  const [crosshairSize, setCrosshairSize] = React.useState(1);
 
   const [complexMode, setComplexMode] = useState('absolute');
   const [complexOptions, setComplexOptions] = useState(['absolute']);
@@ -304,7 +307,7 @@ export default function CloudMrNiivueViewer(props) {
     nv.setSliceMM(worldSpace);
     nv.scene.crosshairPos = [0.5, 0.5, 0.5];
     nvUpdateSliceType(axialOnlyLoad ? 'axial' : sliceType);
-    nv.opts.crosshairWidth = showCrosshair ? 1 : 0;
+    nv.opts.crosshairWidth = showCrosshair ? crosshairSize : 0;
     setMMs(nv.frac2mm(nv.scene.crosshairPos));
     nv.applyDefaultViewState?.();
     setTimeout(() => {
@@ -754,6 +757,7 @@ export default function CloudMrNiivueViewer(props) {
 
   function nvUpdateCrosshairColor(rgb01, a = 1) {
     setCrosshairColor([...rgb01, a])
+    setCrosshairOpacity(a)
     nv.setCrosshairColor([...rgb01, a])
   }
 
@@ -869,6 +873,12 @@ export default function CloudMrNiivueViewer(props) {
     nv.drawScene();
   }
 
+  function nvUpdateFontColor(rgb01, a = 1) {
+    setFontColor([...rgb01, a])
+    nv.opts.fontColor = [...rgb01, a]
+    nv.drawScene()
+  }
+
   function updateDecimalPrecision(v) {
     setDecimalPrecision(v)
   }
@@ -897,9 +907,15 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function nvUpdateCrosshair() {
-    nv.opts.crosshairWidth = showCrosshair ? 0 : 1;
-    nv.drawScene();
-    setShowCrosshair(!showCrosshair);
+    const next = !showCrosshair;
+    const width = next ? crosshairSize : 0;
+    if (typeof nv.setCrosshairWidth === "function") {
+      nv.setCrosshairWidth(width);
+    } else {
+      nv.opts.crosshairWidth = width;
+      nv.drawScene();
+    }
+    setShowCrosshair(next);
   }
 
   function nvUpdateRadiological() {
@@ -929,8 +945,19 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function nvUpdateCrosshairSize(w) {
-    nv.opts.crosshairWidth = w
-    nv.drawScene()
+    setCrosshairSize(w);
+    // Toggle takes precedence: do not show the crosshair while it is off.
+    if (!showCrosshair) {
+      return;
+    }
+    // Prefer the official API — it invalidates the cached 3D crosshair mesh.
+    if (typeof nv.setCrosshairWidth === "function") {
+      nv.setCrosshairWidth(w);
+    } else {
+      nv.opts.crosshairWidth = w;
+      if (nv.crosshairs3D?.mm) nv.crosshairs3D.mm[0] = NaN;
+      nv.drawScene();
+    }
   }
 
 
@@ -1570,7 +1597,7 @@ export default function CloudMrNiivueViewer(props) {
         // ensure engine mode matches the remembered selection (axial-only volumes force axial)
         const nextNii = props.niis[volumeIndex];
         nvUpdateSliceType(isAxialOnlyVolume(nextNii) ? 'axial' : sliceType);
-        nv.opts.crosshairWidth = showCrosshair ? 1 : 0;
+        nv.opts.crosshairWidth = showCrosshair ? crosshairSize : 0;
       } catch (e) {
         setWarning("Error loading results, please check internet connectivity");
         setWarningOpen(true);
@@ -1986,7 +2013,7 @@ export default function CloudMrNiivueViewer(props) {
         >
         </ColorPicker>
         <NumberPicker
-          value={nv.opts.crosshairWidth}
+          value={crosshairSize}
           onChange={nvUpdateCrosshairSize}
           title={'Crosshair size'}
           min={0}
@@ -2226,6 +2253,17 @@ export default function CloudMrNiivueViewer(props) {
 
         labelsVisible={textsVisible}
         toggleLabelsVisible={nvToggleLabelVisible}
+
+        crosshairColor={crosshairColor}
+        crosshairOpacity={crosshairOpacity}
+        crosshairSize={crosshairSize}
+        onCrosshairColorChange={(rgb01, opacity) => nvUpdateCrosshairColor(rgb01, opacity)}
+        onCrosshairOpacityChange={(opacity) => nvUpdateCrosshairOpacity(opacity)}
+        onCrosshairSizeChange={(size) => nvUpdateCrosshairSize(size)}
+        backgroundColor={backColor}
+        onBackgroundColorChange={(rgb01) => nvUpdateBackColor(rgb01)}
+        labelColor={fontColor}
+        onLabelColorChange={(rgb01) => nvUpdateFontColor(rgb01)}
 
         saving={saving}
         setSaving={setSaving}

@@ -1328,7 +1328,7 @@ Niivue.prototype.drawCrossLinesMM = function (sliceIndex, axCorSag, axiMM, corMM
     }
     let linesH = corMM.slice();
     let linesV = sagMM.slice();
-    const thick = Math.max(7, this.opts.crosshairWidth);
+    const thick = Math.max(1, this.opts.crosshairWidth);
     if (axCorSag === SLICE_TYPE.CORONAL) {
         linesH = axiMM.slice();
     }
@@ -1447,63 +1447,51 @@ Niivue.prototype.drawCrossLinesMM = function (sliceIndex, axCorSag, axiMM, corMM
 }
 
 
-// not included in public docs
-// Niivue.prototype.drawCrosshairs3D=function(isDepthTest = true, alpha = 1, mvpMtx = null, is2DView = false, isSliceMM = true) {
-//     console.log('method called');
-//     if (!this.opts.show3Dcrosshair && !is2DView) {
-//         return;
-//     }
-//     if (this.opts.crosshairWidth <= 0 && is2DView) {
-//         return;
-//     }
-//     const gl = this.gl;
-//     const mm = this.frac2mm(this.scene.crosshairPos, 0, isSliceMM);
-//     if (this.crosshairs3D === null || this.crosshairs3D.mm[0] !== mm[0] || this.crosshairs3D.mm[1] !== mm[1] || this.crosshairs3D.mm[2] !== mm[2]) {
-//         if (this.crosshairs3D !== null) {
-//             gl.deleteBuffer(this.crosshairs3D.indexBuffer);
-//             gl.deleteBuffer(this.crosshairs3D.vertexBuffer);
-//         }
-//         const [mn, mx, range] = this.sceneExtentsMinMax(isSliceMM);
-//         let radius = 1;
-//         if (this.volumes.length > 0) {
-//             radius = 0.5 * Math.min(Math.min(this.back.pixDims[1], this.back.pixDims[2]), this.back.pixDims[3]);
-//         } else if (range[0] < 50 || range[0] > 1e3) {
-//             radius = range[0] * 0.02;
-//         }
-//         radius *= this.opts.crosshairWidth;
-//         this.crosshairs3D = NiivueObject3D.generateCrosshairs(this.gl, 1, mm, mn, mx, radius);
-//         this.crosshairs3D.mm = mm;
-//     }
-//     const crosshairsShader = this.surfaceShader;
-//     crosshairsShader.use(this.gl);
-//     if (mvpMtx === null) {
-//         ;
-//         [mvpMtx] = this.calculateMvpMatrix(this.crosshairs3D, this.scene.renderAzimuth, this.scene.renderElevation);
-//     }
-//     gl.uniformMatrix4fv(crosshairsShader.mvpLoc, false, mvpMtx);
-//     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.crosshairs3D.indexBuffer);
-//     gl.enable(gl.DEPTH_TEST);
-//     const color = [...this.opts.crosshairColor];
-//     if (isDepthTest) {
-//         gl.disable(gl.BLEND);
-//         gl.depthFunc(gl.GREATER);
-//     } else {
-//         gl.enable(gl.BLEND);
-//         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-//         gl.depthFunc(gl.ALWAYS);
-//     }
-//     color[3] = alpha;
-//     gl.uniform4fv(crosshairsShader.colorLoc, color);
-//     gl.bindVertexArray(this.crosshairs3D.vao);
-//     gl.drawElements(
-//         gl.TRIANGLES,
-//         this.crosshairs3D.indexCount,
-//         gl.UNSIGNED_INT,
-//         // gl.UNSIGNED_SHORT,
-//         0
-//     );
-//     gl.bindVertexArray(this.unusedVAO);
-// }
+// Stock drawCrosshairs3D overwrites color alpha with a hardcoded pass alpha (1.0 / 0.15)
+// and disables blending on the solid pass — so opts.crosshairColor[3] has no visual effect.
+// Scale the pass alpha by the user opacity and keep blending on when opacity < 1.
+const _drawCrosshairs3D = Niivue.prototype.drawCrosshairs3D;
+Niivue.prototype.drawCrosshairs3D = function cloudMrDrawCrosshairs3D(
+  isDepthTest = true,
+  alpha = 1.0,
+  mvpMtx = null,
+  is2DView = false,
+  isSliceMM = true
+) {
+  const c = this.opts.crosshairColor;
+  const userAlpha =
+    Array.isArray(c) && c.length > 3 && Number.isFinite(c[3]) ? c[3] : 1;
+  const scaledAlpha = alpha * userAlpha;
+
+  const gl = this.gl;
+  let restoreDisable = null;
+  if (isDepthTest && scaledAlpha < 0.999) {
+    const origDisable = gl.disable.bind(gl);
+    gl.disable = (cap) => {
+      if (cap === gl.BLEND) {
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        return;
+      }
+      return origDisable(cap);
+    };
+    restoreDisable = () => {
+      gl.disable = origDisable;
+    };
+  }
+  try {
+    return _drawCrosshairs3D.call(
+      this,
+      isDepthTest,
+      scaledAlpha,
+      mvpMtx,
+      is2DView,
+      isSliceMM
+    );
+  } finally {
+    if (restoreDisable) restoreDisable();
+  }
+};
 
 const _drawAddUndoBitmap = Niivue.prototype.drawAddUndoBitmap;
 Niivue.prototype.drawAddUndoBitmap = function cloudMrDrawAddUndoBitmap(...args) {
