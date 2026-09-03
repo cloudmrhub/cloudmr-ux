@@ -34,6 +34,25 @@ type SigninProps = {
   appIconHeight?: string | number;
 
   /**
+   * Gap between the app icon and title (flex `gap`).
+   * Use a negative value to pull the title closer when the icon PNG has built-in padding.
+   * Only affects apps that pass this prop; others keep the default.
+   */
+  appIconGap?: string | number;
+
+  /**
+   * Vertical alignment of the icon relative to the title (flex `alignItems`).
+   * Use "flex-end" to bottom-align the icon with the text.
+   */
+  appIconAlign?: "center" | "flex-start" | "flex-end" | "baseline";
+
+  /**
+   * Optical vertical nudge for the icon (CSS `translateY`).
+   * Negative values move the icon up (useful when text has a visual gap below glyphs).
+   */
+  appIconOffsetY?: string | number;
+
+  /**
    * "page" = original layout (flex-center + big top padding + container margins)
    * "embed" = popover/card mode (no page layout wrapper; no outer margins)
    */
@@ -56,6 +75,9 @@ export default function Signin({
   appIcon,
   appTitle,
   appIconHeight = "70pt",
+  appIconGap = "0.25rem",
+  appIconAlign = "center",
+  appIconOffsetY,
 
   variant = "page",
   sx = {},
@@ -97,14 +119,27 @@ export default function Signin({
             width: "100%",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
+            alignItems: appIconAlign,
+            gap: appIconGap,
           }}
         >
           {appIcon ? (
             <img
               src={appIcon}
               className="img-fluid"
-              style={{ margin: "auto", height: appIconHeight }}
+              style={{
+                height: appIconHeight,
+                display: "block",
+                ...(appIconOffsetY != null
+                  ? {
+                      transform: `translateY(${
+                        typeof appIconOffsetY === "number"
+                          ? `${appIconOffsetY}px`
+                          : appIconOffsetY
+                      })`,
+                    }
+                  : {}),
+              }}
               alt=""
             />
           ) : null}
@@ -113,8 +148,8 @@ export default function Signin({
             <h1
               style={{
                 display: "block",
-                marginTop: "8pt",
-                marginRight: "5pt",
+                margin: 0,
+                lineHeight: 1,
                 textAlign: "center",
                 fontWeight: "bold",
               }}
