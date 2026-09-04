@@ -1746,6 +1746,8 @@ Niivue.prototype.mouseDownListener = function cloudMrMouseDownListener(e) {
   if (isFreehandPenActive(this) && this.drawBitmap) {
     this._cloudMrFreehandSessionStartBitmap = this.drawBitmap.slice();
     this._cloudMrFreehandAxCorSag = -1;
+    this._cloudMrFreehandDidDrag = false;
+    this._cloudMrFreehandPointerDown = [e.offsetX, e.offsetY];
   }
   _mouseDownListener.call(this, e);
   if (isFreehandPenActive(this) && this._cloudMrFreehandSessionStartBitmap) {
@@ -1778,6 +1780,14 @@ Niivue.prototype.mouseClick = function cloudMrMouseClick(...args) {
 
 const _mouseMoveListener = Niivue.prototype.mouseMoveListener;
 Niivue.prototype.mouseMoveListener = function cloudMrMouseMoveListener(event) {
+  if (this._cloudMrFreehandPointerDown && isFreehandPenActive(this)) {
+    const start = this._cloudMrFreehandPointerDown;
+    const dx = start[0] - event.offsetX;
+    const dy = start[1] - event.offsetY;
+    if (dx * dx + dy * dy > 25) {
+      this._cloudMrFreehandDidDrag = true;
+    }
+  }
   const result = _mouseMoveListener.call(this, event);
   if (isPolylinePenActive(this) && this._cloudMrPolylineVertices?.length > 0) {
     previewPolylineSegment(this);
@@ -1802,21 +1812,41 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
     polylineClick = true;
   }
 
+  // Do not use NiiVue uiData here: dragEnd is often still equal to dragStart
+  // until native mouseUp, so a real stroke looks like a click and reopens as a draft.
+  const finishingFreehandStroke =
+    isFreehandPenActive(this) &&
+    !!this._cloudMrFreehandSessionStartBitmap &&
+    (!!this._cloudMrFreehandDidDrag ||
+      (Array.isArray(this.drawPenFillPts) && this.drawPenFillPts.length > 1));
+
   const willCommitDeferredShape =
     pendingDraft?.baseBitmap &&
     !isDraftTooSmall(pendingDraft.ptA, pendingDraft.ptB);
-  if (willCommitDeferredShape) {
+  if (willCommitDeferredShape || finishingFreehandStroke) {
     // Set before native mouseUpListener so onMouseUp can skip resampleImage;
-    // onShapeCommitted will resample once for this stroke.
+    // onShapeCommitted / onFreehandCommitted will resample once for this stroke.
     this._cloudMrSuppressDrawingChangedMouseUp = true;
   }
 
   _mouseUpListener.call(this);
 
+  this._cloudMrFreehandDidDrag = false;
+  this._cloudMrFreehandPointerDown = null;
+
   if (polylineClick) {
     const result = addPolylineVertex(this);
     if (result === POLYLINE_CLOSE && typeof this.onApplyActiveDraft === "function") {
       // Double-click detected — connect last vertex back to first, fill, and commit.
+      this.onApplyActiveDraft();
+    }
+    return;
+  }
+
+  // Rectangle/ellipse apply on release via onShapeCommitted. Freehand should too:
+  // commit the stroke and do not reopen it as an uncommitted draft.
+  if (finishingFreehandStroke) {
+    if (this._cloudMrPenDraftActive && typeof this.onApplyActiveDraft === "function") {
       this.onApplyActiveDraft();
     }
     return;

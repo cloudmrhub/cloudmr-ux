@@ -579,16 +579,16 @@ export default function CloudMrNiivueViewer(props) {
     nv.updateGLVolume()
   }
 
+  function nvSetLabelsVisible(visible) {
+    nv.hideText = !visible;
+    nv.opts.isOrientCube = visible;
+    setTextsVisible(visible);
+    setOrientCube(visible);
+    nv.drawScene();
+  }
+
   function nvToggleLabelVisible() {
-    if (textsVisible) {
-      nv.hideText = true;
-      nv.drawScene();
-      setTextsVisible(false);
-    } else {
-      nv.hideText = false;
-      nv.drawScene();
-      setTextsVisible(true);
-    }
+    nvSetLabelsVisible(!textsVisible);
   }
 
   const [dragMode, setDragMode] = useState("pan");
@@ -1565,15 +1565,13 @@ export default function CloudMrNiivueViewer(props) {
     if (isAxialOnlyVolume(nii)) {
       nvUpdateSliceType('axial');
       setShowCrosshair(false);
-      setTextsVisible(false);
       nv.opts.crosshairWidth = 0;
-      nv.hideText = true;
+      nvSetLabelsVisible(false);
     } else {
       nvUpdateSliceType(sliceType);
       setShowCrosshair(false);
-      setTextsVisible(false);
       nv.opts.crosshairWidth = 0;
-      nv.hideText = true;
+      nvSetLabelsVisible(false);
     }
     nv._cloudMrDefaultZoom = CLOUDMR_DEFAULT_VIEW_ZOOM;
     if (nv.volumes.length > 0) {
