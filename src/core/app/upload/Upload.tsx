@@ -98,33 +98,40 @@ const Upload = () => {
       headerName: "File Name",
       dataIndex: "fileName",
       field: "fileName",
-      editable: true,
+      editable: false,
       flex: 1,
-    },
-    {
-      headerName: "Date Submitted",
-      dataIndex: "createdAt",
-      field: "createdAt",
-      flex: 1,
-    },
-    {
-      headerName: "Status",
-      dataIndex: "status",
-      field: "status",
-      flex: 1,
-    },
-    {
-      field: "actions",
-      headerName: "Edit File Name",
-      sortable: false,
-      width: 160,
-      disableClickEventBubbling: true,
+      sortable: true,
       renderCell: (params: any) => {
-        let index = files.findIndex((row: UploadedFile) => row.id === params.id);
+        const index = files.findIndex((row: UploadedFile) => row.id === params.id);
         return (
-          <div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              width: "100%",
+              minWidth: 0,
+              paddingRight: 16,
+              boxSizing: "border-box",
+            }}
+          >
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                flex: 1,
+                minWidth: 0,
+              }}
+              title={params.row.fileName}
+            >
+              {params.row.fileName}
+            </span>
             <IconButton
-              onClick={() => {
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (index < 0) return;
                 const currentFileName = files[index].fileName;
                 setOriginalName(currentFileName);
                 setNameDialogOpen(true);
@@ -156,12 +163,18 @@ const Upload = () => {
               {params.row.renamingPending ? (
                 <CircularProgress size={20} />
               ) : (
-                <EditIcon />
+                <EditIcon fontSize="small" />
               )}
             </IconButton>
           </div>
         );
       },
+    },
+    {
+      headerName: "Date Uploaded",
+      dataIndex: "createdAt",
+      field: "createdAt",
+      flex: 1,
     },
   ];
 

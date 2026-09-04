@@ -164,17 +164,21 @@ export default function Signin({
         {!showRegister && !showForgotPassword ? (
           <Container
             // In embed mode, don't clamp width with maxWidth and remove margins/padding
-            maxWidth={variant === "embed" ? false : "lg"}
+            maxWidth={false}
+            disableGutters
             sx={{
               mt: variant === "embed" ? 0 : 4,
               mb: variant === "embed" ? 0 : 4,
               px: variant === "embed" ? 0 : undefined,
+              width: "100%",
               ...sx,
             }}
           >
             <Paper
               sx={{
                 p: 3,
+                width: "100%",
+                boxSizing: "border-box",
                 // In embed mode, let the Popover Paper handle shadow if desired
                 ...(variant === "embed" ? { boxShadow: "none" } : {}),
                 ...paperSx,

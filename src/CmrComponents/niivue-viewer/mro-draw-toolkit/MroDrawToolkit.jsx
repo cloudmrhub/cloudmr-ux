@@ -62,36 +62,41 @@ function EraserIcon(props) {
 function OpacityPlatte({ drawingOpacity, setDrawingOpacity, expanded }) {
   return (
     <Stack
+      aria-hidden={!expanded}
       style={{
         position: "absolute",
         top: "100%",
         left: 0,
-        zIndex: 1500,
+        zIndex: expanded ? 1500 : 0,
         border: `${expanded ? "1px" : 0} solid #bbb`,
         maxWidth: expanded ? 300 : 0,
         overflow: expanded ? "visible" : "hidden",
+        pointerEvents: expanded ? "auto" : "none",
+        visibility: expanded ? "visible" : "hidden",
         borderRadius: "16px",
         borderTopLeftRadius: "6pt",
         borderTopRightRadius: "6pt",
         background: "#333",
-        width: 150,
+        width: expanded ? 150 : 0,
       }}
       direction="column"
     >
-      <Stack sx={{ mb: 1 }} alignItems="center">
-        <Typography color="white" noWrap gutterBottom width="100%" marginLeft="10pt" fontSize="11pt" alignItems="start">
-          Opacity: {drawingOpacity}
-        </Typography>
-        <Slider
-          color="primary"
-          sx={{ width: "80%" }}
-          value={drawingOpacity}
-          step={0.01}
-          min={0}
-          max={1}
-          onChange={(_e, value) => setDrawingOpacity(value)}
-        />
-      </Stack>
+      {expanded && (
+        <Stack sx={{ mb: 1 }} alignItems="center">
+          <Typography color="white" noWrap gutterBottom width="100%" marginLeft="10pt" fontSize="11pt" alignItems="start">
+            Opacity: {drawingOpacity}
+          </Typography>
+          <Slider
+            color="primary"
+            sx={{ width: "80%" }}
+            value={drawingOpacity}
+            step={0.01}
+            min={0}
+            max={1}
+            onChange={(_e, value) => setDrawingOpacity(value)}
+          />
+        </Stack>
+      )}
     </Stack>
   );
 }
@@ -210,10 +215,18 @@ export function MroDrawToolkit(props) {
 
   const toolBtnSx = {
     color: ICON_COLOR,
+    cursor: "pointer",
     p: 0.5,
+    position: "relative",
+    zIndex: 2,
     "&:hover": { backgroundColor: "rgba(0,0,0,0.04)" },
-    "&.Mui-disabled": { color: "rgba(0,0,0,0.26)" },
+    "&.Mui-disabled": { color: "rgba(0,0,0,0.26)", cursor: "default" },
+    // Clicks must hit the full button, not only the painted SVG path.
+    "& .MuiSvgIcon-root": { pointerEvents: "none" },
   };
+
+  const undoDisabled = !props.shapeDraftActive && !props.penDraftActive && !props.canUndo;
+  const redoDisabled = !props.canRedo;
 
   function shouldIgnoreToolClickAway(event) {
     if (clickTargetIsNiivueCanvas(event.target)) return true;
@@ -229,7 +242,12 @@ export function MroDrawToolkit(props) {
     props.onDeactivateDrawTools?.();
   }
 
-  const toolGroupSx = { position: "relative", display: "inline-flex", alignItems: "center" };
+  const toolGroupSx = {
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "center",
+    isolation: "isolate",
+  };
 
   return (
       <div style={{ width: "100%", position: "relative", zIndex: 1080, ...props.style }}>
@@ -377,9 +395,31 @@ export function MroDrawToolkit(props) {
               </ToolClickAway>
 
               <Tooltip title="Undo">
-                <IconButton aria-label="revert" size="small" onClick={() => props.drawUndo()} sx={toolBtnSx}>
-                  <ReplyIcon sx={{ color: ICON_COLOR }} />
-                </IconButton>
+                <span style={{ display: "inline-flex", cursor: undoDisabled ? "default" : "pointer" }}>
+                  <IconButton
+                    aria-label="undo"
+                    size="small"
+                    disabled={undoDisabled}
+                    onClick={() => props.drawUndo()}
+                    sx={toolBtnSx}
+                  >
+                    <ReplyIcon sx={{ color: "inherit" }} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+
+              <Tooltip title="Redo">
+                <span style={{ display: "inline-flex", cursor: redoDisabled ? "default" : "pointer" }}>
+                  <IconButton
+                    aria-label="redo"
+                    size="small"
+                    disabled={redoDisabled}
+                    onClick={() => props.drawRedo?.()}
+                    sx={toolBtnSx}
+                  >
+                    <ReplyIcon sx={{ color: "inherit", transform: "scaleX(-1)" }} />
+                  </IconButton>
+                </span>
               </Tooltip>
 
               <Tooltip title="Save screenshot">

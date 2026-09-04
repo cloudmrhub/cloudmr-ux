@@ -7,10 +7,11 @@ export function NumberPicker(props){
 	const [value, setValue] = React.useState(props.value)
   React.useEffect(()=>{
     setValue(props.value)
-  },[])
+  },[props.value])
 
 	function handleNumberInput(event){
-    let v = event.target.value
+    let v = Number(event.target.value)
+    if (!Number.isFinite(v)) return
 		if (v < props.min) {
 			v = props.min
 		}

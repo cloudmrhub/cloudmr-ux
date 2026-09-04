@@ -14,6 +14,12 @@ import CmrConfirmation from "../dialogue/Confirmation";
 import CmrLabel from "../label/Label";
 import axios from "axios";
 import { resolveNiivueAccentColor, useNiivueViewerTheme } from "./NiivueViewerThemeContext";
+import {
+  clampMaxDrawUndoBitmaps,
+  DEFAULT_MAX_DRAW_UNDOS,
+  MAX_MAX_DRAW_UNDOS,
+  MIN_MAX_DRAW_UNDOS,
+} from "./drawUndoLimits";
 
 interface ToolbarProps {
   nv: any;
@@ -81,6 +87,10 @@ interface ToolbarProps {
   /** Orientation / slice label (font) color as RGBA 0–1 array. */
   labelColor?: number[];
   onLabelColorChange?: (rgb01: number[]) => void;
+
+  /** Max NiiVue drawing undo steps. */
+  maxDrawUndoBitmaps?: number;
+  onMaxDrawUndoBitmapsChange?: (value: number) => void;
 }
 
 export default function Toolbar(props: ToolbarProps) {
@@ -166,6 +176,7 @@ export default function Toolbar(props: ToolbarProps) {
   const [draftSize, setDraftSize] = useState(1);
   const [draftBackColorHex, setDraftBackColorHex] = useState('#000000');
   const [draftLabelColorHex, setDraftLabelColorHex] = useState('#00ef5e');
+  const [draftMaxDrawUndos, setDraftMaxDrawUndos] = useState(DEFAULT_MAX_DRAW_UNDOS);
 
   function rgb01ToHex(rgba: number[]): string {
     const r = Math.round((rgba[0] ?? 1) * 255);
@@ -190,6 +201,9 @@ export default function Toolbar(props: ToolbarProps) {
     setDraftSize(props.crosshairSize ?? 1);
     setDraftBackColorHex(rgb01ToHex(props.backgroundColor ?? [0, 0, 0, 1]));
     setDraftLabelColorHex(rgb01ToHex(props.labelColor ?? [0, 0.94, 0.37, 1]));
+    setDraftMaxDrawUndos(
+      clampMaxDrawUndoBitmaps(props.maxDrawUndoBitmaps ?? props.nv?.opts?.maxDrawUndoBitmaps ?? DEFAULT_MAX_DRAW_UNDOS)
+    );
     setSettingsOpen(true);
   }
 
@@ -201,6 +215,8 @@ export default function Toolbar(props: ToolbarProps) {
     props.onCrosshairSizeChange?.(draftSize);
     props.onBackgroundColorChange?.(hexToRgb01(draftBackColorHex));
     props.onLabelColorChange?.(hexToRgb01(draftLabelColorHex));
+    const undos = clampMaxDrawUndoBitmaps(draftMaxDrawUndos);
+    props.onMaxDrawUndoBitmapsChange?.(undos);
     setSettingsOpen(false);
   }
 
@@ -734,6 +750,49 @@ export default function Toolbar(props: ToolbarProps) {
                     background: 'transparent',
                   }}
                 />
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Drawing Settings
+              </Typography>
+
+              <Box>
+                <CmrLabel style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
+                  Max Draw Undos
+                </CmrLabel>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <input
+                    type="range"
+                    min={MIN_MAX_DRAW_UNDOS}
+                    max={MAX_MAX_DRAW_UNDOS}
+                    step={1}
+                    value={draftMaxDrawUndos}
+                    onChange={(e) => setDraftMaxDrawUndos(clampMaxDrawUndoBitmaps(e.target.value))}
+                    style={{ flex: 1, accentColor }}
+                  />
+                  <input
+                    type="number"
+                    min={MIN_MAX_DRAW_UNDOS}
+                    max={MAX_MAX_DRAW_UNDOS}
+                    step={1}
+                    value={draftMaxDrawUndos}
+                    onChange={(e) => setDraftMaxDrawUndos(clampMaxDrawUndoBitmaps(e.target.value))}
+                    style={{
+                      width: 56,
+                      fontSize: 14,
+                      padding: '4px 6px',
+                      borderRadius: 4,
+                      border: '1px solid #ccc',
+                    }}
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {MIN_MAX_DRAW_UNDOS}–{MAX_MAX_DRAW_UNDOS} undo steps. Redo is a separate button and is cleared when you draw something new.
+                </Typography>
               </Box>
             </CardContent>
           </Card>

@@ -15,6 +15,8 @@ body {
   align-items: center;
   display: flex;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .position-ref {
@@ -49,28 +51,29 @@ body {
 }
 
 #welcome {
-  display: grid;
-  grid-template-columns: 25% 50% 25%;
-  grid-template-rows: fit-content(30%) 0pt 1fr;
-  row-gap: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(25rem, calc(100vw - 2rem));
+  box-sizing: border-box;
 }
 
 #welcome-logo {
-  grid-row: 1;
-  grid-column: 2;
-  width: 90%;
+  width: 100%;
   display: flex;
   position: relative;
-  margin-left: auto;
-  margin-right: auto;
   color: #555;
 }
 
 #welcome-login {
-  grid-row: 3;
-  grid-column: 2 / span 1;
-  display: flex;
-  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
+#welcome-login > * {
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 #welcome-icon {
@@ -96,9 +99,7 @@ body {
 /* ---------- Embedded mode (Popover/Card) overrides ---------- */
 #welcome.welcome-embed {
   display: block;
-  grid-template-columns: none;
-  grid-template-rows: none;
-  row-gap: 0;
+  width: 100%;
 }
 
 #welcome.welcome-embed #welcome-logo {

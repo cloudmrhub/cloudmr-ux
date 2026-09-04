@@ -14,6 +14,14 @@ import { useNiivueViewerTheme } from "./NiivueViewerThemeContext";
 
 const HANDLE_SIZE = 10;
 
+function resizeCursorForCorner(pos, boxStyle) {
+  const midX = boxStyle.left + boxStyle.width / 2;
+  const midY = boxStyle.top + boxStyle.height / 2;
+  const west = pos.x <= midX;
+  const north = pos.y <= midY;
+  return west === north ? "nwse-resize" : "nesw-resize";
+}
+
 /**
  * Overlay handles for adjusting a rectangle/ellipse draft before commit.
  * @param {{ nv: any, draft: import('./shapeDraftUtils').ShapeDraft, onDraftChange: (d: any) => void, onApplyDraft?: () => void, overlayKey?: unknown }} props
@@ -232,7 +240,7 @@ export function ShapeDraftOverlay({ nv, draft, onDraftChange, onApplyDraft, over
             ...handleStyle,
             left: pos.x,
             top: pos.y,
-            cursor: "nwse-resize",
+            cursor: resizeCursorForCorner(pos, boxStyle),
           }}
           title="Resize shape"
         />

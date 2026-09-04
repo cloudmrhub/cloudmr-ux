@@ -21,7 +21,7 @@ export default function PasswordRequirements({
   const requirements = getPasswordRequirements();
 
   return (
-    <Box sx={{ mt: 1, mb: 1 }}>
+    <Box sx={{ mt: 1, mb: 1, width: "100%", minWidth: 0 }}>
       <Typography
         variant="caption"
         display="block"
@@ -39,6 +39,8 @@ export default function PasswordRequirements({
             alignItems="center"
             sx={{
               color: isValid ? "success.main" : "error.main",
+              minWidth: 0,
+              whiteSpace: "normal",
             }}
           >
             {isValid ? (

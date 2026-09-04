@@ -28,6 +28,15 @@ import {
 } from './shapeDraftUtils';
 import { CloudMrNiivuePanel } from './CloudMrNiivuePanel';
 import { Niivue, CLOUDMR_DEFAULT_VIEW_ZOOM } from './NiivuePatcher';
+import {
+  applyMaxDrawUndoBitmaps,
+  clampMaxDrawUndoBitmaps,
+  canDrawRedo,
+  canDrawUndo,
+  DEFAULT_MAX_DRAW_UNDOS,
+  MAX_MAX_DRAW_UNDOS,
+  MIN_MAX_DRAW_UNDOS,
+} from './drawUndoLimits';
 import NVSwitch from './Switch';
 import Toolbar from './Toolbar';
 import Layer from './Layer';
@@ -73,11 +82,13 @@ export const nv = new Niivue({
   isNearestInterpolation: true,
   isFilledPen: true,
   penValue: 1,
-  penType: NI_PEN_TYPE.PEN
+  penType: NI_PEN_TYPE.PEN,
+  maxDrawUndoBitmaps: DEFAULT_MAX_DRAW_UNDOS,
 });
 
 nv.opts.penBounds = 0;
 nv.opts.penSize = 1;
+applyMaxDrawUndoBitmaps(nv, DEFAULT_MAX_DRAW_UNDOS);
 nv._cloudMrDefaultZoom = CLOUDMR_DEFAULT_VIEW_ZOOM;
 
 window.nv = nv;
@@ -120,7 +131,11 @@ export default function CloudMrNiivueViewer(props) {
   const [orientCube, setOrientCube] = React.useState(nv.opts.isOrientCube)
   const [ruler, setRuler] = React.useState(nv.opts.isRuler)
   const [multiplanarPadPixels, setMultiplanarPadPixels] = React.useState(nv.opts.multiplanarPadPixels)
-  const [maxDrawUndoBitmaps, setMaxDrawUndoBitmaps] = React.useState(nv.opts.maxDrawUndoBitmaps)
+  const [maxDrawUndoBitmaps, setMaxDrawUndoBitmaps] = React.useState(
+    clampMaxDrawUndoBitmaps(nv.opts.maxDrawUndoBitmaps ?? DEFAULT_MAX_DRAW_UNDOS)
+  )
+  const [drawHistoryEpoch, setDrawHistoryEpoch] = React.useState(0)
+  nv.onDrawHistoryChange = () => setDrawHistoryEpoch((n) => n + 1)
   const [sagittalNoseLeft, setSagittalNoseLeft] = React.useState(nv.opts.sagittalNoseLeft)
   const [rulerWidth, setRulerWidth] = React.useState(nv.opts.rulerWidth)
   const [longTouchTimeout, setLongTouchTimeout] = React.useState(nv.opts.longTouchTimeout)
@@ -823,8 +838,8 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function nvUpdateMaxDrawUndoBitmaps(v) {
-    nv.opts.maxDrawUndoBitmaps = v
-    setMaxDrawUndoBitmaps(v)
+    const applied = applyMaxDrawUndoBitmaps(nv, v)
+    setMaxDrawUndoBitmaps(applied)
   }
 
   function nvUpdateBackColor(rgb01, a = 1) {
@@ -1157,7 +1172,6 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   nv.onShapeCommitted = (draft) => {
-    nv.drawAddUndoBitmap(nv.drawFillOverwrites);
     markShapeVoxelKind(draft);
     registerAppliedShape(nv, draft);
     setDrawingChanged(true);
@@ -1928,6 +1942,15 @@ export default function CloudMrNiivueViewer(props) {
         setDrawingChanged(false);
       }
     },
+    drawRedo: () => {
+      if (shapeDraftRef.current || penDraftRef.current) return;
+      nv.drawRedo();
+      resampleImage();
+      setDrawingChanged(true);
+    },
+    canUndo: canDrawUndo(nv),
+    canRedo: canDrawRedo(nv),
+    drawHistoryEpoch,
     resampleImage: resampleImage,
     roiVisible,
     toggleROIVisible,
@@ -2190,8 +2213,8 @@ export default function CloudMrNiivueViewer(props) {
           value={maxDrawUndoBitmaps}
           onChange={nvUpdateMaxDrawUndoBitmaps}
           title={'Max Draw Undos'}
-          min={8}
-          max={28}
+          min={MIN_MAX_DRAW_UNDOS}
+          max={MAX_MAX_DRAW_UNDOS}
           step={1}
         >
         </NumberPicker>
@@ -2264,6 +2287,8 @@ export default function CloudMrNiivueViewer(props) {
         onBackgroundColorChange={(rgb01) => nvUpdateBackColor(rgb01)}
         labelColor={fontColor}
         onLabelColorChange={(rgb01) => nvUpdateFontColor(rgb01)}
+        maxDrawUndoBitmaps={maxDrawUndoBitmaps}
+        onMaxDrawUndoBitmapsChange={nvUpdateMaxDrawUndoBitmaps}
 
         saving={saving}
         setSaving={setSaving}

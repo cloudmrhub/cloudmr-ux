@@ -117,15 +117,18 @@ export default function DrawColorPlatte({
 
   return (
     <Stack
+      aria-hidden={!expanded}
       style={{
         position: "absolute",
         top: "100%",
         left: 0,
-        zIndex: 1500,
+        zIndex: expanded ? 1500 : 0,
         border: `${expanded ? "1px" : 0} solid #bbb`,
         maxWidth: expanded ? 320 : 0,
         minWidth: expanded ? 240 : 0,
         overflow: expanded ? "visible" : "hidden",
+        pointerEvents: expanded ? "auto" : "none",
+        visibility: expanded ? "visible" : "hidden",
         borderRadius: "16px",
         borderTopLeftRadius: "6pt",
         borderTopRightRadius: "6pt",
@@ -135,7 +138,9 @@ export default function DrawColorPlatte({
       spacing={0.5}
       sx={{ py: expanded ? 0.5 : 0 }}
     >
-      {(isFreehandTool || isPolylineTool) && expanded && updateBrushSize && (
+      {!expanded ? null : (
+      <>
+      {(isFreehandTool || isPolylineTool) && updateBrushSize && (
         <BrushSizeSlider
           label="Line thickness"
           brushSize={brushSize}
@@ -184,7 +189,7 @@ export default function DrawColorPlatte({
         })}
       </Stack>
 
-      {isPolylineTool && expanded && (
+      {isPolylineTool && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>
           {polylineVertexCount >= 3
             ? "Double-click to close & fill"
@@ -193,7 +198,6 @@ export default function DrawColorPlatte({
       )}
 
       {penDraftActive &&
-        expanded &&
         ((isFreehandTool && penDraftKind === "freehand") ||
           (isPolylineTool && penDraftKind === "polyline")) && (
         <DeleteDraftRow
@@ -203,12 +207,14 @@ export default function DrawColorPlatte({
         />
       )}
 
-      {shapeDraftActive && expanded && (
+      {shapeDraftActive && (
         <DeleteDraftRow
           ariaLabel="delete shape draft"
           draftKind="shape"
           onClick={() => onDeleteShapeDraft?.()}
         />
+      )}
+      </>
       )}
     </Stack>
   );

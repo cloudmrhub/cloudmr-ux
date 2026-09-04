@@ -189,6 +189,9 @@ export function cornersToPtAB(corners) {
   };
 }
 
+/** Opposite corner in boundsToCorners order: 0↔3 (NW↔SE), 1↔2 (NE↔SW). */
+const CORNER_OPPOSITE = [3, 2, 1, 0];
+
 export function isDraftTooSmall(ptA, ptB) {
   return (
     Math.abs(ptA[0] - ptB[0]) < 1 &&
@@ -272,12 +275,16 @@ export function voxToOverlayPos(nv, vox, axCorSag) {
  */
 export function resizeDraftCorner(nv, draft, cornerIndex, newVox) {
   const dims = nv.back?.dims;
-  if (!dims) return draft;
+  if (!dims || cornerIndex < 0 || cornerIndex > 3 || !newVox) return draft;
   const bounds = normalizeBounds(draft.ptA, draft.ptB, dims);
   const corners = boundsToCorners(bounds, draft.axCorSag);
-  corners[cornerIndex] = [...newVox];
-  const next = cornersToPtAB(corners);
-  return { ...draft, ptA: next.ptA, ptB: next.ptB };
+  const opposite = [...corners[CORNER_OPPOSITE[cornerIndex]]];
+  const moved = [...newVox];
+  // Keep the resize on the draft slice plane.
+  if (draft.axCorSag === 0) moved[2] = opposite[2];
+  else if (draft.axCorSag === 1) moved[1] = opposite[1];
+  else moved[0] = opposite[0];
+  return { ...draft, ptA: opposite, ptB: moved };
 }
 
 export function captureDeferredShapeDraft(nv) {

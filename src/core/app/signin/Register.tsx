@@ -64,13 +64,8 @@ export default function Register({
   useEffect(() => {
     if (registerSuccess) {
       setShowSuccess(true);
-      // Clear success message after showing it
-      setTimeout(() => {
-        dispatch(clearRegisterSuccess());
-        setShowSuccess(false);
-      }, 5000);
     }
-  }, [registerSuccess, dispatch]);
+  }, [registerSuccess]);
 
   useEffect(() => {
     // Clear error when component unmounts
@@ -78,6 +73,12 @@ export default function Register({
       dispatch(clearError());
     };
   }, [dispatch]);
+
+  const handleBackToSignin = () => {
+    dispatch(clearRegisterSuccess());
+    setShowSuccess(false);
+    onBackToSignin();
+  };
 
   // Validate password with debounce - only update after user stops typing
   useEffect(() => {
@@ -165,153 +166,170 @@ export default function Register({
   };
 
   const body = (
-    <Box component="form" onSubmit={handleSubmit} noValidate>
-      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-        Create Account
-      </Typography>
+    <Box sx={{ width: "100%" }}>
+      {showSuccess ? (
+        <Box sx={{ width: "100%" }}>
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Registration successful! Please wait for admin approval before signing in.
+          </Alert>
 
-      {error && (
-        <Alert
-          severity="error"
-          sx={{ mb: 2 }}
-          onClose={() => dispatch(clearError())}
-        >
-          {error}
-        </Alert>
-      )}
-
-      {showSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Registration successful! Please wait for admin approval before signing in.
-        </Alert>
-      )}
-
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            margin="normal"
-            required
+          <Button
+            type="button"
             fullWidth
-            id="firstname"
-            label="First Name"
-            name="firstname"
-            size="small"
-            autoFocus
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="lastname"
-            label="Last Name"
-            name="lastname"
-            size="small"
-          />
-        </Grid>
-      </Grid>
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="username"
-        label="Username"
-        name="username"
-        size="small"
-        value={username}
-        onChange={handleUsernameChange}
-        autoComplete="username"
-      />
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="email"
-        label="Email Address"
-        name="email"
-        type="email"
-        size="small"
-        value={email}
-        onChange={handleEmailChange}
-        autoComplete="email"
-      />
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="password"
-        label="Password"
-        type="password"
-        id="password"
-        size="small"
-        autoComplete="new-password"
-        value={password}
-        onChange={handlePasswordChange}
-      />
-
-      <PasswordRequirements
-        validation={passwordValidation}
-        show={showPasswordValidation}
-      />
-
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        name="confirmPassword"
-        label="Confirm Password"
-        type="password"
-        id="confirmPassword"
-        size="small"
-        autoComplete="new-password"
-        value={confirmPassword}
-        onChange={handleConfirmPasswordChange}
-        error={confirmPassword.length > 0 && !passwordsMatch}
-        helperText={
-          confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : ""
-        }
-      />
-
-      <Button
-        type="submit"
-        fullWidth
-        variant="contained"
-        sx={{ mt: 3, mb: 2 }}
-        disabled={loading || !isFormValid()}
-      >
-        {loading ? "Registering..." : "Register"}
-      </Button>
-
-      <Grid container justifyContent="flex-end">
-        <Grid item>
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onBackToSignin();
-            }}
-            variant="body2"
+            variant="contained"
+            sx={{ mt: 1, mb: 2 }}
+            onClick={handleBackToSignin}
           >
-            Already have an account? Sign in
-          </Link>
-        </Grid>
-      </Grid>
+            Sign In
+          </Button>
+        </Box>
+      ) : (
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: "100%" }}>
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            Create Account
+          </Typography>
+
+          {error && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              onClose={() => dispatch(clearError())}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="firstname"
+                label="First Name"
+                name="firstname"
+                size="small"
+                autoFocus
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="lastname"
+                label="Last Name"
+                name="lastname"
+                size="small"
+              />
+            </Grid>
+          </Grid>
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="username"
+            label="Username"
+            name="username"
+            size="small"
+            value={username}
+            onChange={handleUsernameChange}
+            autoComplete="username"
+          />
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            type="email"
+            size="small"
+            value={email}
+            onChange={handleEmailChange}
+            autoComplete="email"
+          />
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            size="small"
+            autoComplete="new-password"
+            value={password}
+            onChange={handlePasswordChange}
+          />
+
+          <PasswordRequirements
+            validation={passwordValidation}
+            show={showPasswordValidation}
+          />
+
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            id="confirmPassword"
+            size="small"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
+            error={confirmPassword.length > 0 && !passwordsMatch}
+            helperText={
+              confirmPassword.length > 0 && !passwordsMatch ? "Passwords do not match" : ""
+            }
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            disabled={loading || !isFormValid()}
+          >
+            {loading ? "Registering..." : "Register"}
+          </Button>
+
+          <Grid container justifyContent="flex-end">
+            <Grid item>
+              <Link
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleBackToSignin();
+                }}
+                variant="body2"
+              >
+                Already have an account? Sign in
+              </Link>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
     </Box>
   );
 
   // Embedded mode: no container/paper outline (popover provides the frame)
   if (hidePaper) {
-    return <Box sx={{ p: 0 }}>{body}</Box>;
+    return <Box sx={{ p: 0, width: "100%" }}>{body}</Box>;
   }
 
-  // Default mode: same as before
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>{body}</Paper>
+    <Container
+      maxWidth={false}
+      disableGutters
+      sx={{ mt: 4, mb: 4, width: "100%" }}
+    >
+      <Paper sx={{ p: 3, width: "100%", boxSizing: "border-box" }}>{body}</Paper>
     </Container>
   );
 }

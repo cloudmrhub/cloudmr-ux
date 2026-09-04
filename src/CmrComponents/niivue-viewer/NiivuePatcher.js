@@ -36,6 +36,7 @@ import {
   CLOUDMR_DEFAULT_VIEW_ZOOM,
   CLOUDMR_NIIVUE_FIT_ZOOM,
 } from "./niivueViewDefaults.js";
+import { clampMaxDrawUndoBitmaps, compactDrawUndoHistory } from "./drawUndoLimits.js";
 
 export {
   CLOUDMR_DEFAULT_VIEW_ZOOM,
@@ -127,6 +128,14 @@ function create2() {
     return out;
 }
 
+function typedArraysEqual(a, b) {
+    if (!a || !b || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
 function decodeRLE(rle, decodedlen) {
     const r = new Uint8Array(rle.buffer)
     const rI = new Int8Array(r.buffer) // typecast as header can be negative
@@ -156,6 +165,62 @@ function decodeRLE(rle, decodedlen) {
         }
     }
     return d
+}
+
+/** PackBits RLE, same format as NiiVue encodeRLE. */
+function encodeRLE(data) {
+    const dl = data.length
+    let dp = 0
+    const r = new Uint8Array(dl + Math.ceil(0.01 * dl))
+    const rI = new Int8Array(r.buffer)
+    let rp = 0
+    while (dp < dl) {
+        let v = data[dp]
+        dp++
+        let rl = 1
+        while (rl < 129 && dp < dl && data[dp] === v) {
+            dp++
+            rl++
+        }
+        if (rl > 1) {
+            rI[rp] = -rl + 1
+            rp++
+            r[rp] = v
+            rp++
+            continue
+        }
+        while (dp < dl) {
+            if (rl > 127) break
+            if (dp + 2 < dl) {
+                if (v !== data[dp] && data[dp + 2] === data[dp] && data[dp + 1] === data[dp]) {
+                    break
+                }
+            }
+            v = data[dp]
+            dp++
+            rl++
+        }
+        r[rp] = rl - 1
+        rp++
+        for (let i = 0; i < rl; i++) {
+            r[rp] = data[dp - rl + i]
+            rp++
+        }
+    }
+    return r.slice(0, rp)
+}
+
+function restoreDrawHistorySlot(nv, slot) {
+    nv.drawBitmap = decodeRLE(slot, nv.drawBitmap.length)
+    nv.hiddenBitmap = new Uint8Array(nv.drawBitmap.length)
+    for (let i = 0; i < nv.drawBitmap.length; i++) {
+        const pen = nv.drawBitmap[i]
+        if (typeof nv.getLabelVisibility === "function" && !nv.getLabelVisibility(pen)) {
+            nv.hiddenBitmap[i] = nv.drawBitmap[i]
+            nv.drawBitmap[i] = 0
+        }
+    }
+    nv.refreshDrawing(true)
 }
 
 function intensityRaw2Scaled(hdr, raw) {
@@ -665,32 +730,39 @@ Niivue.prototype.drawAddUndoBitmapWithHiddenVoxels = function () {
  * Yuelong: drawundo hides invisible rois in post processing
  */
 Niivue.prototype.drawUndo = function () {
-    if (this.drawUndoBitmaps.length < 1) {
+    if (!this.drawUndoBitmaps || this.drawUndoBitmaps.length < 1) {
         console.debug('undo bitmaps not loaded')
         return
     }
+    if (this.currentDrawUndoBitmap <= 0) {
+        return
+    }
     this.currentDrawUndoBitmap--
-    if (this.currentDrawUndoBitmap < 0) {
-        this.currentDrawUndoBitmap = this.drawUndoBitmaps.length - 1
-    }
-    if (this.currentDrawUndoBitmap >= this.drawUndoBitmaps.length) {
-        this.currentDrawUndoBitmap = 0
-    }
-    if (this.drawUndoBitmaps[this.currentDrawUndoBitmap].length < 2) {
+    const slot = this.drawUndoBitmaps[this.currentDrawUndoBitmap]
+    if (!slot || slot.length < 2) {
+        this.currentDrawUndoBitmap++
         console.debug('drawUndo is misbehaving')
         return
     }
-    this.drawBitmap = decodeRLE(this.drawUndoBitmaps[this.currentDrawUndoBitmap], this.drawBitmap.length)
-    // Post-processing to hide invisible region and reveal hidden ones
-    this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
-    for (let i = 0; i < this.drawBitmap.length; i++) {
-        let pen = this.drawBitmap[i];
-        if (!this.getLabelVisibility(pen)) {
-            this.hiddenBitmap[i] = this.drawBitmap[i];
-            this.drawBitmap[i] = 0;
-        }
+    restoreDrawHistorySlot(this, slot)
+    this.onDrawHistoryChange?.()
+}
+
+Niivue.prototype.drawRedo = function () {
+    if (!this.drawUndoBitmaps || this.drawUndoBitmaps.length < 1) {
+        return
     }
-    this.refreshDrawing(true)
+    if (this.currentDrawUndoBitmap >= this.drawUndoBitmaps.length - 1) {
+        return
+    }
+    this.currentDrawUndoBitmap++
+    const slot = this.drawUndoBitmaps[this.currentDrawUndoBitmap]
+    if (!slot || slot.length < 2) {
+        this.currentDrawUndoBitmap--
+        return
+    }
+    restoreDrawHistorySlot(this, slot)
+    this.onDrawHistoryChange?.()
 }
 
 /**
@@ -1493,13 +1565,55 @@ Niivue.prototype.drawCrosshairs3D = function cloudMrDrawCrosshairs3D(
   }
 };
 
-const _drawAddUndoBitmap = Niivue.prototype.drawAddUndoBitmap;
-Niivue.prototype.drawAddUndoBitmap = function cloudMrDrawAddUndoBitmap(...args) {
+Niivue.prototype.drawClearAllUndoBitmaps = function cloudMrDrawClearAllUndoBitmaps() {
+  this.opts.maxDrawUndoBitmaps = clampMaxDrawUndoBitmaps(this.opts?.maxDrawUndoBitmaps);
+  this.drawUndoBitmaps = [];
+  this.currentDrawUndoBitmap = -1;
+  this.onDrawHistoryChange?.();
+};
+
+Niivue.prototype.drawAddUndoBitmap = function cloudMrDrawAddUndoBitmap(drawFillOverwrites = true) {
   if (this._cloudMrSkipNextUndoBitmap) {
     this._cloudMrSkipNextUndoBitmap = false;
     return;
   }
-  return _drawAddUndoBitmap.apply(this, args);
+  if (!this.drawBitmap || this.drawBitmap.length < 1) {
+    return;
+  }
+  this.opts.maxDrawUndoBitmaps = clampMaxDrawUndoBitmaps(this.opts.maxDrawUndoBitmaps);
+  if (!Array.isArray(this.drawUndoBitmaps)) {
+    this.drawUndoBitmaps = [];
+    this.currentDrawUndoBitmap = -1;
+  }
+
+  const idx = this.currentDrawUndoBitmap;
+  let bitmap = this.drawBitmap;
+  if (drawFillOverwrites === false && idx >= 0) {
+    const prevRle = this.drawUndoBitmaps[idx];
+    if (prevRle && prevRle.length >= 2) {
+      const prev = decodeRLE(prevRle, bitmap.length);
+      bitmap = new Uint8Array(bitmap);
+      for (let i = 0; i < bitmap.length; i++) {
+        if (prev[i] > 0) bitmap[i] = prev[i];
+      }
+      this.drawBitmap = bitmap;
+      this.refreshDrawing(false);
+    }
+  }
+
+  const rle = encodeRLE(bitmap);
+  const cur = idx >= 0 ? this.drawUndoBitmaps[idx] : null;
+  if (cur && typedArraysEqual(cur, rle)) {
+    return;
+  }
+
+  if (idx >= 0 && idx < this.drawUndoBitmaps.length - 1) {
+    this.drawUndoBitmaps = this.drawUndoBitmaps.slice(0, idx + 1);
+  }
+  this.drawUndoBitmaps.push(rle);
+  this.currentDrawUndoBitmap = this.drawUndoBitmaps.length - 1;
+  compactDrawUndoHistory(this);
+  this.onDrawHistoryChange?.();
 };
 
 Niivue.prototype.cloudMrCancelPolyline = function cloudMrCancelPolyline() {
@@ -1677,7 +1791,6 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   let polylineClick = false;
 
   if (shouldDeferShapeCommit(this)) {
-    this._cloudMrSkipNextUndoBitmap = true;
     pendingDraft = captureDeferredShapeDraft(this);
   }
 
