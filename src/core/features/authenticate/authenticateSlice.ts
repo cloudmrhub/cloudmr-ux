@@ -178,13 +178,19 @@ export const authenticateSlice = createSlice({
             }),
             builder.addCase(getProfile.fulfilled, (state, action) => {
                 const payloadData: any = action.payload;
-                if (payloadData === undefined || payloadData.error === 'user not recognized') {
+                if (payloadData?.error === 'user not recognized') {
+                    // Only clear auth if the server explicitly rejects the token.
+                    // Do NOT clear on undefined (network error / timeout) — that
+                    // would silently log the user out on any transient failure.
                     state.logged_in_token = undefined;
                     state.accessToken = "";
                     state.loading = false;
                     // Reset to default tokens
                     state.uploadToken = '';
                     state.queueToken = '';
+                } else if (payloadData === undefined) {
+                    // Network error — leave auth state intact, just stop loading
+                    state.loading = false;
                 } else {
                     state.email = payloadData.email;
                     state.level = payloadData.level;
