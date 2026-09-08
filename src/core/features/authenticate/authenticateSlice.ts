@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser, changePassword, forgotPassword, resetPassword} from './authenticateActionCreation';
+import {getLoggedInToken, refreshAccessToken, getProfile, signOut, registerUser, changePassword, forgotPassword, resetPassword, webSignin} from './authenticateActionCreation';
 import {getUploadedData} from '../data/dataActionCreation';
 
 export interface AuthenticateToken {
@@ -127,6 +127,25 @@ export const authenticateSlice = createSlice({
                 state.loading = false;
                 const payload = action.payload as any;
                 state.error = payload?.message || "Sign in failed";
+            }),
+            builder.addCase(webSignin.fulfilled, (state, action) => {
+                // Cross-app SSO: token arrives via URL (/websignin/:token).
+                // getProfile is already dispatched inside the thunk to fill
+                // in email / level / status. Here we store the token itself
+                // so that logged_in_token is truthy and protected routes open.
+                const { access_token } = action.payload as any;
+                if (access_token) {
+                    state.accessToken = access_token;
+                    state.logged_in_token = {
+                        idToken: access_token,
+                        accessToken: access_token,
+                        refreshToken: "",
+                        tokenType: "bearer",
+                        expiresIn: 1440,
+                        parsedToken: null,
+                    };
+                }
+                state.loading = false;
             }),
             builder.addCase(refreshAccessToken.fulfilled, (state, action) => {
                 console.log("refreshed token", action.payload.parsedToken);
