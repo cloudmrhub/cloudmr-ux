@@ -130,9 +130,8 @@ export const authenticateSlice = createSlice({
             }),
             builder.addCase(webSignin.fulfilled, (state, action) => {
                 // Cross-app SSO: token arrives via URL (/websignin/:token).
-                // getProfile is already dispatched inside the thunk to fill
-                // in email / level / status. Here we store the token itself
-                // so that logged_in_token is truthy and protected routes open.
+                // getProfile is dispatched inside the thunk to fill email/level/status.
+                // parsedToken must be set (not null) so AuthenticatedHttpClient can read .exp.
                 const { access_token } = action.payload as any;
                 if (access_token) {
                     state.accessToken = access_token;
@@ -142,7 +141,7 @@ export const authenticateSlice = createSlice({
                         refreshToken: "",
                         tokenType: "bearer",
                         expiresIn: 1440,
-                        parsedToken: null,
+                        parsedToken: parseJwt(access_token),
                     };
                 }
                 state.loading = false;
