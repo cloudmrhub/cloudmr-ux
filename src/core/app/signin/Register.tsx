@@ -50,6 +50,8 @@ export default function Register({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [title, setTitle] = useState("");
   const [showPasswordValidation, setShowPasswordValidation] = useState(false);
 
   const [passwordValidation, setPasswordValidation] =
@@ -127,8 +129,11 @@ export default function Register({
     const passwordsMatchValid = password === confirmPassword && confirmPassword.length > 0;
     // Check if password fields have content
     const hasPasswordContent = password.length > 0 && confirmPassword.length > 0;
+    // Check required new fields
+    const hasInstitution = institution.trim().length > 0;
+    const hasTitle = title.trim().length > 0;
 
-    return passwordValid && passwordsMatchValid && hasPasswordContent;
+    return passwordValid && passwordsMatchValid && hasPasswordContent && hasInstitution && hasTitle;
   };
 
   const handleSubmit = (event: any) => {
@@ -160,6 +165,8 @@ export default function Register({
       firstname: data.get("firstname") as string,
       lastname: data.get("lastname") as string,
       username,
+      institution: institution.trim(),
+      title: title.trim(),
     };
 
     dispatch(registerUser(registerData));
@@ -221,6 +228,35 @@ export default function Register({
                 label="Last Name"
                 name="lastname"
                 size="small"
+              />
+            </Grid>
+          </Grid>
+
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="institution"
+                label="Institution"
+                name="institution"
+                size="small"
+                value={institution}
+                onChange={(e) => setInstitution(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="title"
+                label="Title"
+                name="title"
+                size="small"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
               />
             </Grid>
           </Grid>

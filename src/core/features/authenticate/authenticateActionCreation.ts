@@ -15,6 +15,8 @@ export interface RegisterDataType {
   firstname: string;
   lastname: string;
   username: string;
+  institution: string;
+  title: string;
 }
 
 export interface ChangePasswordDataType {
