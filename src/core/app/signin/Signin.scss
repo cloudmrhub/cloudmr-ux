@@ -65,6 +65,17 @@ body {
   color: #555;
 }
 
+#welcome-logo img {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+@media (max-height: 850px) {
+  .flex-center {
+    padding-top: clamp(12px, 4vh, 40px) !important;
+  }
+}
+
 #welcome-login {
   width: 100%;
   min-width: 0;

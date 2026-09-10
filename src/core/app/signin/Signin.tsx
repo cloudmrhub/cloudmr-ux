@@ -15,6 +15,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { clearError } from "../../features/authenticate/authenticateSlice";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import type { ResponsiveStyleValue } from "@mui/system";
 import { useState, useEffect } from "react";
 
 import Register from "./Register";
@@ -31,7 +32,11 @@ const theme = createTheme({
 type SigninProps = {
   appIcon?: string;
   appTitle?: string;
-  appIconHeight?: string | number;
+  /**
+   * Logo height. Accepts a CSS length (`"100px"`, `"clamp(48px, 10vh, 100px)"`),
+   * a number (pixels), or a MUI breakpoint map (`{ xs: 48, md: 100 }`).
+   */
+  appIconHeight?: ResponsiveStyleValue<string | number>;
 
   /**
    * Gap between the app icon and title (flex `gap`).
@@ -124,12 +129,17 @@ export default function Signin({
           }}
         >
           {appIcon ? (
-            <img
+            <Box
+              component="img"
               src={appIcon}
               className="img-fluid"
-              style={{
-                height: appIconHeight,
+              alt=""
+              sx={{
                 display: "block",
+                width: "auto",
+                maxWidth: "100%",
+                objectFit: "contain",
+                height: appIconHeight,
                 ...(appIconOffsetY != null
                   ? {
                       transform: `translateY(${
@@ -140,7 +150,6 @@ export default function Signin({
                     }
                   : {}),
               }}
-              alt=""
             />
           ) : null}
 
