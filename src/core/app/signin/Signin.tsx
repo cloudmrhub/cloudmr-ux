@@ -185,7 +185,7 @@ export default function Signin({
           >
             <Paper
               sx={{
-                p: 3,
+                p: { xs: 2, md: 3 },
                 width: "100%",
                 boxSizing: "border-box",
                 // In embed mode, let the Popover Paper handle shadow if desired

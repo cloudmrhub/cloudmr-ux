@@ -58,6 +58,24 @@ body {
   box-sizing: border-box;
 }
 
+@media (max-width: 899px) {
+  #welcome {
+    width: min(22.5rem, calc(100vw - 2rem));
+  }
+}
+
+@media (max-width: 599px) {
+  #welcome {
+    width: min(20rem, calc(100vw - 1.5rem));
+  }
+}
+
+@media (max-height: 850px) {
+  #welcome {
+    width: min(22.5rem, calc(100vw - 2rem));
+  }
+}
+
 #welcome-logo {
   width: 100%;
   display: flex;

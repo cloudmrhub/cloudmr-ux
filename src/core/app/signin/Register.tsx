@@ -363,9 +363,9 @@ export default function Register({
     <Container
       maxWidth={false}
       disableGutters
-      sx={{ mt: 4, mb: 4, width: "100%" }}
+      sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, width: "100%" }}
     >
-      <Paper sx={{ p: 3, width: "100%", boxSizing: "border-box" }}>{body}</Paper>
+      <Paper sx={{ p: { xs: 2, md: 3 }, width: "100%", boxSizing: "border-box" }}>{body}</Paper>
     </Container>
   );
 }

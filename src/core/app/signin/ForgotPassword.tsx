@@ -159,8 +159,8 @@ export default function ForgotPassword({
   };
 
   return (
-    <Container maxWidth={false} disableGutters sx={{ mt: 4, mb: 4, width: "100%" }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth={false} disableGutters sx={{ mt: { xs: 2, md: 4 }, mb: { xs: 2, md: 4 }, width: "100%" }}>
+      <Paper sx={{ p: { xs: 2, md: 3 } }}>
         {!showResetForm ? (
           <Box component="form" onSubmit={handleForgotPasswordSubmit} noValidate>
             <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
