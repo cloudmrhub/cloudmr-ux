@@ -100,8 +100,13 @@ export default function ForgotPassword({
   const passwordsMatch =
     newPassword === confirmPassword && confirmPassword.length > 0;
 
-  const isEmailValid = (emailAddr: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddr);
+  const isIdentifierValid = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    if (trimmed.includes("@")) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    }
+    return true;
   };
 
   const isResetFormValid = (): boolean => {
@@ -119,8 +124,7 @@ export default function ForgotPassword({
   const handleForgotPasswordSubmit = (event: React.FormEvent) => {
     event.preventDefault();
 
-    // Validate email format
-    if (!isEmailValid(email)) {
+    if (!isIdentifierValid(email)) {
       return;
     }
 
@@ -168,8 +172,8 @@ export default function ForgotPassword({
             </Typography>
 
             <Typography variant="body2" sx={{ mb: 2 }}>
-              Enter your email address and we'll send you a verification code to
-              reset your password.
+              Enter your email or username and we'll send a verification code to
+              the email on your account.
             </Typography>
 
             {error && (
@@ -193,11 +197,10 @@ export default function ForgotPassword({
               required
               fullWidth
               id="email"
-              label="Email Address"
-              name="email"
-              type="email"
+              label="Email or Username"
+              name="Email or Username"
               size="small"
-              autoComplete="email"
+              autoComplete="username"
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -208,7 +211,7 @@ export default function ForgotPassword({
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading || !email || !isEmailValid(email)}
+              disabled={loading || !email || !isIdentifierValid(email)}
             >
               {loading ? "Sending Code..." : "Send Verification Code"}
             </Button>

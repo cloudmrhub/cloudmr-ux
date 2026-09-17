@@ -214,10 +214,10 @@ export default function Signin({
                   required
                   fullWidth
                   id="email"
-                  label="Email Address"
-                  name="email"
+                  label="Email or Username"
+                  name="Email or Username"
                   size="small"
-                  autoComplete="email"
+                  autoComplete="username"
                   autoFocus
                 />
 
