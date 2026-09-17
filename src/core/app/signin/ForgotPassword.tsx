@@ -198,7 +198,7 @@ export default function ForgotPassword({
               fullWidth
               id="email"
               label="Email or Username"
-              name="Email or Username"
+              name="email"
               size="small"
               autoComplete="username"
               autoFocus
