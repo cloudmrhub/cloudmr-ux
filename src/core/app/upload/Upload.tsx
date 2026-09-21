@@ -125,7 +125,7 @@ const Upload = ({
     } else {
       // Non-admin: own files show their email, everything else is an admin upload
       if (currentUserId && String(currentUserId) === userId && email) return email;
-      return "System Administrator";
+      return "Cloud MR Admin";
     }
   };
 
