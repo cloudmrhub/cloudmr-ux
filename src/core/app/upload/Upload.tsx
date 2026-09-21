@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { UploadedFile } from "../../features/data/dataSlice";
 import IconButton from "@mui/material/IconButton";
@@ -14,18 +14,62 @@ import {
 } from "../../features/data/dataActionCreation";
 import { getUpstreamJobs } from "../../features/jobs/jobActionCreation";
 import { CmrConfirmation } from "../../../index";
-import { Button, CircularProgress } from "@mui/material";
+import { Button, CircularProgress, Typography } from "@mui/material";
 import { GridRowSelectionModel } from "@mui/x-data-grid";
 import { CMRUpload } from "../../../index";
 import { uploadHandlerFactory } from "../../common/utilities/SystemUtilities";
+import { AuthenticatedHttpClient } from "../../common/utilities/AuthenticatedRequests";
+import { getEndpoints } from "../../config/AppConfig";
 
-const Upload = () => {
+// Maps userId → display email/username. Only accessible by admins (/admin/users).
+function userDirectoryFromPayload(payload: any): Record<string, string> {
+  const users = Array.isArray(payload?.users)
+    ? payload.users
+    : Array.isArray(payload?.data?.users)
+      ? payload.data.users
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : [];
+  const out: Record<string, string> = {};
+  for (const u of users) {
+    const id = u?.userId ?? u?.user_id ?? u?.id;
+    if (id == null) continue;
+    const label =
+      String(u?.email || "").trim() ||
+      String(u?.username || "").trim() ||
+      String(id);
+    out[String(id)] = label;
+  }
+  return out;
+}
+
+export interface UploadProps {
+  /** Column header background color. Defaults to the CmrTable default (#F3E5F5). */
+  headerBgColor?: string;
+  /** Column header text color. Defaults to #333. */
+  headerTextColor?: string;
+  /** Header sort/menu icon and checkbox accent color. Defaults to #580f8b. */
+  headerIconColor?: string;
+  /** Checked/indeterminate checkbox color. Defaults to headerIconColor. */
+  checkboxCheckedColor?: string;
+}
+
+const Upload = ({
+  headerBgColor,
+  headerTextColor,
+  headerIconColor,
+  checkboxCheckedColor,
+}: UploadProps = {}) => {
   const dispatch = useAppDispatch();
-  const { uploadToken, level, isAdmin: isAdminFlag } = useAppSelector(
-    (state) => state.authenticate,
-  );
+  const { uploadToken, level, isAdmin: isAdminFlag, email, logged_in_token } =
+    useAppSelector((state) => state.authenticate);
   const { files } = useAppSelector((state) => state.data);
   const isAdmin = Boolean(isAdminFlag) || level === "admin";
+  const currentUserId =
+    logged_in_token?.parsedToken?.["custom:userId"] ??
+    logged_in_token?.parsedToken?.user_id ??
+    logged_in_token?.parsedToken?.sub;
+  const [userLabelById, setUserLabelById] = useState<Record<string, string>>({});
 
   const [nameDialogOpen, setNameDialogOpen] = useState(false);
   const [renamingCallback, setRenamingCallback] = useState<
@@ -54,6 +98,36 @@ const Upload = () => {
 
   const [selectedData, setSelectedData] = useState<GridRowSelectionModel>([]);
   const [uploadKey, setUploadKey] = useState(0);
+
+  const loadUserDirectory = useCallback(async () => {
+    try {
+      const usersUrl = getEndpoints().DATA_API.replace(
+        /\/data\/read\/?$/,
+        "/admin/users",
+      );
+      const res = await AuthenticatedHttpClient.get(usersUrl);
+      setUserLabelById(userDirectoryFromPayload(res?.data ?? res));
+    } catch (e) {
+      console.error("Could not load user directory:", e);
+    }
+  }, []);
+
+  const uploadedByLabel = (file: UploadedFile): string => {
+    const userId = file.userId;
+    if (!userId) return "—";
+
+    if (isAdmin) {
+      // Admins see real emails from the directory
+      if (userLabelById[userId]) return userLabelById[userId];
+      // Fallback: their own email if directory hasn't loaded yet
+      if (currentUserId && String(currentUserId) === userId && email) return email;
+      return "—";
+    } else {
+      // Non-admin: own files show their email, everything else is an admin upload
+      if (currentUserId && String(currentUserId) === userId && email) return email;
+      return "System Administrator";
+    }
+  };
 
   const renamingProxy = (
     originalFileName: string,
@@ -176,6 +250,24 @@ const Upload = () => {
       field: "createdAt",
       flex: 1,
     },
+    {
+      headerName: "Uploaded By",
+      dataIndex: "uploadedBy",
+      field: "uploadedBy",
+      flex: 1,
+      renderCell: (params: any) => {
+        const label = params.row.uploadedBy || "—";
+        return (
+          <Typography
+            variant="body2"
+            noWrap
+            title={label !== "—" ? label : undefined}
+          >
+            {label}
+          </Typography>
+        );
+      },
+    },
   ];
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,6 +279,7 @@ const Upload = () => {
         //@ts-ignore
         const p2 = dispatch(getUpstreamJobs());
         await Promise.all([p1, p2]);
+        await loadUserDirectory();
         console.log("dispatched");
       } catch (err) {
         console.error("Initial data load failed:", err);
@@ -195,7 +288,7 @@ const Upload = () => {
         setOpen(true);
       }
     })();
-  }, []);
+  }, [loadUserDirectory]);
 
   function downloadSelectedValues() {
     let downloadPending: UploadedFile[] = [];
@@ -236,12 +329,19 @@ const Upload = () => {
       >
         <CmrPanel key="0" header="Uploaded Data" className="mb-2">
           <CmrTable
-            dataSource={[...files].reverse()}
+            dataSource={[...files].reverse().map((file) => ({
+              ...file,
+              uploadedBy: uploadedByLabel(file),
+            }))}
             rowSelectionModel={selectedData}
             onRowSelectionModelChange={(rowSelectionModel) => {
               setSelectedData(rowSelectionModel);
             }}
             columns={uploadedFilesColumns}
+            headerBgColor={headerBgColor}
+            headerTextColor={headerTextColor}
+            headerIconColor={headerIconColor}
+            checkboxCheckedColor={checkboxCheckedColor}
           />
 
           <div className="row mt-2">

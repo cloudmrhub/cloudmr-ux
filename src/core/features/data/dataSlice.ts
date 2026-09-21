@@ -2,6 +2,17 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {deleteUploadedData, getUploadedData, renameUploadedData} from './dataActionCreation';
 import {convertTimestamp} from '../../common/utilities/CalendarHelper';
 
+function extractFileUserId(row: any): string | undefined {
+    const nested =
+        row?.user && typeof row.user === "object"
+            ? row.user.id ?? row.user.user_id
+            : undefined;
+    const v = row?.user_id ?? row?.userId ?? row?.userid ?? row?.UserId ?? nested;
+    if (v == null) return undefined;
+    const s = String(v).trim();
+    return s === "" ? undefined : s;
+}
+
 export interface UploadedFile {
     id: number;
     fileName: string;
@@ -13,6 +24,7 @@ export interface UploadedFile {
     updatedAt: string;
     database: string;
     location: string;
+    userId?: string;
     renamingPending?: boolean;
     deletionPending?: boolean;
     is_demo_data?: boolean;
@@ -61,6 +73,7 @@ export const dataSlice = createSlice({
                         updatedAt: convertTimestamp(element.updated_at),
                         database: element.database,
                         location: element.location,
+                        userId: extractFileUserId(element),
                         renamingPending: false,
                         is_demo_data: element.is_demo_data
                     });
