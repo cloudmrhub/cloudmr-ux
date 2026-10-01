@@ -188,12 +188,22 @@ const Results = ({
       width: 256,
       disableClickEventBubbling: true,
       renderCell: (params: { row: Job }) => {
+        const jobStatus = params.row.status?.toLowerCase();
+        const waiting = jobStatus === "pending" || jobStatus === "queued";
         return (
           <div>
-            {params.row.status !== "failed" && (
+            {jobStatus !== "failed" && waiting && (
+              <IconButton disabled>
+                <div
+                  className="spinner-border spinner-border-sm"
+                  style={{ aspectRatio: "1 / 1" }}
+                  role="status"
+                />
+              </IconButton>
+            )}
+            {jobStatus !== "failed" && !waiting && (
               <Tooltip title={`View job ${params.row.alias}`}>
                 <IconButton
-                  disabled={params.row.status === "pending"}
                   onClick={(event) => {
                     event.stopPropagation();
                     if (params.row.pipeline_id === activeJob?.pipeline_id) {
@@ -235,8 +245,7 @@ const Results = ({
                     });
                   }}
                 >
-                  {resultLoading === params.row.id ||
-                  params.row.status === "pending" ? (
+                  {resultLoading === params.row.id ? (
                     <div
                       className="spinner-border spinner-border-sm"
                       style={{ aspectRatio: "1 / 1" }}
