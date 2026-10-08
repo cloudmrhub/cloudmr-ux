@@ -301,7 +301,7 @@ export function NiivueSlicePosition({
                       color: worldSpace ? accentColor : undefined,
                     }}
                   >
-                    Anatomical
+                    Anatomical (World Space)
                   </CmrLabel>
                 </span>
               </div>
