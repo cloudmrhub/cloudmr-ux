@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, FormControlLabel, Switch } from "@mui/material";
+import { Card, CardContent, Switch } from "@mui/material";
 import CmrLabel from "../label/Label";
 import {
   resolveNiivueAccentColor,
@@ -98,7 +98,7 @@ const round3 = (v: number) => Math.round(v * 1000) / 1000;
  *   - Coronal: a Y slider.
  *   - Sagittal: an X slider.
  *   - Multiplanar: independent X, Y, and Z sliders.
- *   - An "Anatomical / Native plane" toggle that calls `onWorldSpaceChange`.
+ *   - A two-sided toggle: Native Image Plane (off) or Anatomical (on).
  *
  * Slice stepping uses `nv.moveCrosshairInVox` along the active axis (or axes
  * in multiplanar) so it operates in native voxel space.
@@ -270,23 +270,40 @@ export function NiivueSlicePosition({
         <CardContent sx={{ "&:last-child": { paddingBottom: 2 } }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
 
-            {/* Slice orientation toggle */}
+            {/* Thumb rests against the active mode. */}
             {onWorldSpaceChange != null && (
-              <div style={{ marginBottom: 12 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      size="small"
-                      checked={worldSpace}
-                      onChange={(e) => onWorldSpaceChange(e.target.checked)}
-                    />
-                  }
-                  label={
-                    <span style={{ fontSize: "16px" }}>
-                      {worldSpace ? "Anatomical (World Space)" : "Native Image Plane"}
-                    </span>
-                  }
+              <div style={{ ...rowStyle, marginBottom: 12 }}>
+                <span onClick={() => onWorldSpaceChange(false)} style={{ display: "inline-flex" }}>
+                  <CmrLabel
+                    style={{
+                      cursor: "pointer",
+                      paddingRight: 0,
+                      fontWeight: worldSpace ? 400 : 700,
+                      color: worldSpace ? undefined : accentColor,
+                    }}
+                  >
+                    Native Image Plane
+                  </CmrLabel>
+                </span>
+                <Switch
+                  size="small"
+                  checked={worldSpace}
+                  onChange={(e) => onWorldSpaceChange(e.target.checked)}
+                  inputProps={{ "aria-label": "Slice plane mode" }}
+                  sx={{ ...theme.muiSwitchSx, m: 0 }}
                 />
+                <span onClick={() => onWorldSpaceChange(true)} style={{ display: "inline-flex" }}>
+                  <CmrLabel
+                    style={{
+                      cursor: "pointer",
+                      paddingRight: 0,
+                      fontWeight: worldSpace ? 700 : 400,
+                      color: worldSpace ? accentColor : undefined,
+                    }}
+                  >
+                    Anatomical
+                  </CmrLabel>
+                </span>
               </div>
             )}
 
