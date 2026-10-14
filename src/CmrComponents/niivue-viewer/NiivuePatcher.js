@@ -1880,4 +1880,54 @@ Niivue.prototype.mouseUpListener = function cloudMrMouseUpListener() {
   }
 };
 
+// Native image plane measures tiles in voxels, which shrinks the multi-view 3D cell.
+// Lay that view out in world space (same as a normal 3D view) and keep 2D slices on the image plane.
+;(function () {
+  const _drawSceneCore = Niivue.prototype.drawSceneCore;
+  Niivue.prototype.drawSceneCore = function () {
+    const nativeMulti =
+      !this.opts.isSliceMM &&
+      this.opts.sliceType === this.sliceTypeMultiplanar &&
+      (!this.sliceMosaicString || this.sliceMosaicString.length < 1);
+    if (!nativeMulti) return _drawSceneCore.call(this);
+
+    const _draw2D = this.draw2D;
+    this.opts.isSliceMM = true;
+    this.draw2D = function (ltwh, axCorSag, customMM) {
+      this.opts.isSliceMM = false;
+      try {
+        let rect = ltwh;
+        if (ltwh && ltwh[2] > 0 && ltwh[3] > 0 && !(ltwh[4] > 0)) {
+          const screen = this.screenFieldOfViewExtendedVox(axCorSag);
+          const fw = Math.abs(screen.fovMM[0]) || 1;
+          const fh = Math.abs(screen.fovMM[1]) || 1;
+          const tileAspect = ltwh[2] / ltwh[3];
+          const imgAspect = fw / fh;
+          if (Math.abs(tileAspect - imgAspect) / imgAspect > 0.02) {
+            rect = ltwh.slice();
+            if (imgAspect > tileAspect) {
+              const h = ltwh[2] / imgAspect;
+              rect[1] = ltwh[1] + (ltwh[3] - h) / 2;
+              rect[3] = h;
+            } else {
+              const w = ltwh[3] * imgAspect;
+              rect[0] = ltwh[0] + (ltwh[2] - w) / 2;
+              rect[2] = w;
+            }
+          }
+        }
+        return _draw2D.call(this, rect, axCorSag, customMM);
+      } finally {
+        this.opts.isSliceMM = true;
+      }
+    };
+    try {
+      return _drawSceneCore.call(this);
+    } finally {
+      this.draw2D = _draw2D;
+      this.opts.isSliceMM = false;
+    }
+  };
+})();
+
 export { Niivue };
