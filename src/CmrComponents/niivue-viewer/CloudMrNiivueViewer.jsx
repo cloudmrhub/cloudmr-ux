@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Box, Button } from '@mui/material';
 import { NVImage, DRAG_MODE } from '@niivue/niivue';
 import { NI_PEN_TYPE } from './niivuePenType';
+import { MAX_ROI_LABEL } from './roiLabelModel';
+import { forgetCustomRoiColor, loadCustomRoiColors, rememberCustomRoiColor } from './roiColorStorage';
 import { SettingsPanel } from './SettingsPanel';
 import { NumberPicker } from './NumberPicker';
 import { ColorPicker } from './ColorPicker';
@@ -67,6 +69,9 @@ import { NiivueViewerThemeProvider } from './NiivueViewerThemeContext';
  * @property {string} [accentColor] — override viewer accent; else host MUI primary if set, else `#580f8b`
  * @property {number} [sliceCount] — number of acquired slices from job settings; forwarded to the Slice # slider
  */
+
+/** User whose saved custom ROI colours are currently loaded into the (page-wide) `nv` palette. */
+let lastRestoredRoiUserKey = "";
 
 export const nv = new Niivue({
   loadingText: '',
@@ -136,6 +141,24 @@ export default function CloudMrNiivueViewer(props) {
   )
   const [drawHistoryEpoch, setDrawHistoryEpoch] = React.useState(0)
   nv.onDrawHistoryChange = () => setDrawHistoryEpoch((n) => n + 1)
+  // ROI colour palette (label -> colour). Label 1 is the default; the rest are user-added.
+  const [roiPalette, setRoiPalette] = React.useState(() =>
+    typeof nv.getRoiPalette === "function" ? nv.getRoiPalette() : []
+  )
+  nv.onRoiPaletteChange = () => setRoiPalette(nv.getRoiPalette())
+  // Optional `userKey` prop (e.g. the logged-in user's email): custom colours added with "+" are
+  // remembered in this browser's localStorage under that key and restored on the next visit.
+  // `nv` lives for the whole page, so when a different user shows up the previous user's
+  // in-memory colours are dropped first. Without `userKey` nothing is stored.
+  const roiUserKey = props.userKey ? String(props.userKey).trim().toLowerCase() : ""
+  React.useEffect(() => {
+    if (!roiUserKey || roiUserKey === lastRestoredRoiUserKey) {
+      return
+    }
+    lastRestoredRoiUserKey = roiUserKey
+    nv.resetRoiPalette?.()
+    loadCustomRoiColors(roiUserKey).forEach((hex) => nv.addRoiColor?.(hex))
+  }, [roiUserKey])
   const [sagittalNoseLeft, setSagittalNoseLeft] = React.useState(nv.opts.sagittalNoseLeft)
   const [rulerWidth, setRulerWidth] = React.useState(nv.opts.rulerWidth)
   const [longTouchTimeout, setLongTouchTimeout] = React.useState(nv.opts.longTouchTimeout)
@@ -663,16 +686,16 @@ export default function CloudMrNiivueViewer(props) {
   }
 
   function nvUpdateDrawPen(a) {
-    const raw = Number(a.target.value);
+    // 0 = erase, 1..255 = ROI label (palette colour). Labels are a plain byte, no bit masking.
+    const parsed = Math.round(Number(a.target.value));
+    const raw = Number.isFinite(parsed) ? Math.max(0, Math.min(MAX_ROI_LABEL, parsed)) : 0;
     setDrawPen(raw);
-    const isEraser = raw === 0 || raw === 8;
+    const isEraser = raw === 0;
 
     if (raw === 0) {
       nv.setPenValue(0, false);
-    } else if (raw === 8) {
-      nv.setPenValue(0, true);
     } else {
-      nv.setPenValue(raw & 7, raw > 0);
+      nv.setPenValue(raw, true);
     }
 
     if (isEraser) {
@@ -700,7 +723,7 @@ export default function CloudMrNiivueViewer(props) {
 
     // Immediately repaint any active draft in the new color so the user sees the change.
     if (!isEraser) {
-      const colorValue = raw & 7;
+      const colorValue = raw;
       if (shapeDraftRef.current) {
         const next = { ...shapeDraftRef.current, penValue: colorValue };
         shapeDraftRef.current = next;
@@ -742,7 +765,7 @@ export default function CloudMrNiivueViewer(props) {
     nv.opts.polylinePenMode = false;
     nv.cloudMrResetPolyline?.();
     nvSetDrawingEnabled(false);
-    if (drawPen === 0 || drawPen === 8) {
+    if (drawPen === 0) {
       setDrawPen(1);
       nv.setPenValue(1, false);
       nv.opts.isFilledPen = false;
@@ -1676,7 +1699,9 @@ export default function CloudMrNiivueViewer(props) {
           "type": 'image',
           // "numpyPixelType": "complex64",
           // "pixelType": "complex"
-          "labelMapping": labelMapping
+          "labelMapping": labelMapping,
+          // palette colours so custom ROI colours survive save/reload ({ "<label>": "#rrggbb" })
+          "labelColors": typeof nv.getRoiLabelColorMap === "function" ? nv.getRoiLabelColorMap() : {}
         }
       ]
     }
@@ -1722,6 +1747,7 @@ export default function CloudMrNiivueViewer(props) {
       let info = JSON.parse(content);
       let niiFilePath = info.data[0].filename;
       const importedLabels = info.data[0].labelMapping || {};
+      const importedColors = info.data[0].labelColors || {};
       const niiDrawing = zip.file(niiFilePath);
       if (niiDrawing) {
         // Read the content as a blob
@@ -1734,10 +1760,19 @@ export default function CloudMrNiivueViewer(props) {
             return null;
           }
           if (mergeResult.importLabelRemap === null) {
+            nv.applyRoiLabelColors?.(importedColors);
             setLabelMapping(importedLabels);
             resampleImage(importedLabels);
           } else {
             const merged = { ...labelMapping };
+            // carry saved colours over to the (possibly remapped) label ids
+            const remappedColors = {};
+            for (const [oldL, newId] of Object.entries(mergeResult.importLabelRemap)) {
+              if (importedColors[oldL]) {
+                remappedColors[newId] = importedColors[oldL];
+              }
+            }
+            nv.applyRoiLabelColors?.(remappedColors);
             for (const [oldL, newId] of Object.entries(mergeResult.importLabelRemap)) {
               const oldN = Number(oldL);
               const newN = Number(newId);
@@ -1754,6 +1789,7 @@ export default function CloudMrNiivueViewer(props) {
           }
         } else {
           await nv.loadDrawingFromBase64(niiFilePath, base64);
+          nv.applyRoiLabelColors?.(importedColors);
           setLabelMapping(importedLabels);
           resampleImage(importedLabels);
         }
@@ -1912,8 +1948,45 @@ export default function CloudMrNiivueViewer(props) {
     }));
   }
 
+  /** Add a custom colour to the ROI palette; returns its label (1..255) or null when full. */
+  const addRoiColor = (hex) => {
+    const label = nv.addRoiColor(hex);
+    if (label === null || label === undefined) {
+      props.warn?.(`All ${MAX_ROI_LABEL} ROI colors are in use.`);
+      return null;
+    }
+    const entry = nv.getRoiPalette().find((e) => e.label === label);
+    if (entry) {
+      rememberCustomRoiColor(roiUserKey, entry.color);
+    }
+    return label;
+  };
+
+  /**
+   * Remove a colour from the palette (and from the user's saved colours). Refused for the default
+   * colour and for colours still used by an ROI. Returns true when removed.
+   */
+  const removeRoiColor = (label) => {
+    const result = nv.removeRoiColor(label);
+    if (!result.ok) {
+      if (result.reason === "in-use") {
+        props.warn?.("That color is used by an ROI. Delete the ROI first to remove the color.");
+      }
+      return false;
+    }
+    forgetCustomRoiColor(roiUserKey, result.color);
+    // never leave the pen on a colour that no longer exists
+    if (drawPen === label) {
+      nvUpdateDrawPen({ target: { value: 1 } });
+    }
+    return true;
+  };
+
   const drawToolkitProps = {
     nv,
+    roiPalette,
+    onAddRoiColor: addRoiColor,
+    onRemoveRoiColor: removeRoiColor,
     volumes: props.niis.map(niiToVolume),
     selectedVolume,
     setSelectedVolume: selectVolume,
@@ -2096,14 +2169,11 @@ export default function CloudMrNiivueViewer(props) {
         <label htmlFor="drawPen">Draw color:</label>
         <select name="drawPen" id="drawPen" onChange={nvUpdateDrawPen} value={drawPen}>
           <option value="0">Erase</option>
-          <option value="1">Red</option>
-          <option value="2">Green</option>
-          <option value="3">Blue</option>
-          <option value="8">Filled Erase</option>
-          <option value="9">Filled Red</option>
-          <option value="10">Filled Green</option>
-          <option value="11">Filled Blue</option>
-          <option value="12">Erase Selected Cluster</option>
+          {roiPalette.map((entry) => (
+            <option key={entry.label} value={entry.label}>
+              {entry.label === 1 ? `Label 1 (default)` : `Label ${entry.label} ${entry.color}`}
+            </option>
+          ))}
         </select>
         <Button
           title={'Save image'}

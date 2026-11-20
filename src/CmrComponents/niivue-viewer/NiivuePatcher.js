@@ -37,6 +37,31 @@ import {
   CLOUDMR_NIIVUE_FIT_ZOOM,
 } from "./niivueViewDefaults.js";
 import { clampMaxDrawUndoBitmaps, compactDrawUndoHistory } from "./drawUndoLimits.js";
+import {
+  MAX_ROI_LABEL,
+  buildDrawLut,
+  clearGroups,
+  createRoiLabelState,
+  expandToLabels,
+  findLabelByColor,
+  getBaseColor,
+  getColorMap,
+  getGroup,
+  getPalette,
+  groupItems,
+  isGroupId,
+  isRoiLabel,
+  nextFreeLabel,
+  normalizeHex,
+  pruneLabelsFromGroups,
+  registerLabel,
+  relabelInGroups,
+  removeLabelColor,
+  resetPalette,
+  resolveLabelColor,
+  setLabelColor,
+  ungroupItems,
+} from "./roiLabelModel.js";
 
 export {
   CLOUDMR_DEFAULT_VIEW_ZOOM,
@@ -46,43 +71,109 @@ export {
 } from "./niivueViewDefaults.js";
 
 /*
- * bitmapOverlay — in-browser state only: remembers each voxel's label *before* Group
- * (so Ungroup can restore red/green etc.). It is not written to NIfTI; closing the tab
- * or loading a new drawing loses it unless the file already stores separate label ids.
+ * ROI labels, palette and groups (see roiLabelModel.js for the full description).
  *
- * When to drop that saved state (so it cannot go stale):
- * - Full reset: replace whole drawing, clear/close drawing, delete-by-label,
- *   load from URL/base64, relabel → clear the entire array.
- * - Merge upload: remove entries only for voxels the import overwrites (non-zero in
- *   the imported map); other voxels keep their saved pre-merge labels for Ungroup.
+ * - drawBitmap voxels always hold the real ROI label (1..255); 0 = erase.
+ * - The palette (label -> colour) lives in `roiState.colors`; label 1 is the default colour.
+ * - Groups are metadata only (`roiState.groups`, ids are negative: -1, -2, ...). Grouping does
+ *   NOT touch voxels: member labels are merely drawn with the group colour by rewriting the
+ *   Niivue draw LUT. Ungroup removes the remap and the original colours come back instantly.
+ * - Groups/palette are in-browser state. Palette colours are persisted by the viewer in the
+ *   saved ROI zip (info.json `labelColors`); groups are not persisted.
  */
-const bitmapOverlay = [];
+const roiState = createRoiLabelState();
 
-function clearBitmapOverlay() {
-    bitmapOverlay.length = 0;
+/** Every non-zero label currently in the drawing (visible + temporarily hidden voxels). */
+function collectDrawnLabels(nv) {
+    const found = new Set();
+    const scan = (arr) => {
+        if (!arr || !arr.length) {
+            return;
+        }
+        for (let i = 0; i < arr.length; i++) {
+            const v = arr[i];
+            if (v !== 0) {
+                found.add(v);
+            }
+        }
+    };
+    scan(nv.drawBitmap);
+    scan(nv.hiddenBitmap);
+    return found;
 }
 
-/** Remove group-undo rows for voxels that will be / were overwritten by an import (flat indices). */
-function stripBitmapOverlayForVoxelIndices(writtenSet) {
-    if (!writtenSet || writtenSet.size === 0) {
-        return;
+/** Colour table Niivue shipped with (ITK-SNAP). Captured once, before we first replace it. */
+function getBaseDrawLut(nv) {
+    if (!nv._roiBaseDrawLut) {
+        nv._roiBaseDrawLut = Uint8ClampedArray.from(nv.drawLut.lut);
     }
-    for (let k = bitmapOverlay.length - 1; k >= 0; k--) {
-        if (writtenSet.has(bitmapOverlay[k][0])) {
-            bitmapOverlay.splice(k, 1);
+    return nv._roiBaseDrawLut;
+}
+
+function notifyRoiPaletteChange(nv) {
+    if (typeof nv.onRoiPaletteChange === "function") {
+        nv.onRoiPaletteChange();
+    }
+}
+
+/**
+ * Rebuild the 256-entry draw LUT from palette + groups and push it to the GPU.
+ * Display only: voxel data is never modified.
+ */
+function applyRoiDrawLut(nv, { notify = true } = {}) {
+    const base = getBaseDrawLut(nv);
+    nv.drawLut = {
+        lut: buildDrawLut(roiState, base),
+        labels: nv.drawLut.labels,
+    };
+    if (nv.gl && nv.volumes && nv.volumes.length > 0) {
+        try {
+            nv.refreshColormaps();
+            nv.drawScene();
+        } catch (err) {
+            console.warn("applyRoiDrawLut: could not refresh colormap texture", err);
         }
     }
+    if (notify) {
+        notifyRoiPaletteChange(nv);
+    }
 }
 
-/** Clone of drawBitmap with bitmapOverlay undo applied; does not mutate the live drawing. */
-function getResolvedDrawBitmapForExport(nv) {
-    const src = nv.drawBitmap;
-    const copy = new Uint8Array(src);
-    for (let i = 0; i < bitmapOverlay.length; i++) {
-        const t = bitmapOverlay[i];
-        copy[t[0]] = t[1];
+/** Register any labels found in the drawing that have no palette entry yet. */
+function registerDrawnLabels(nv) {
+    const base = getBaseDrawLut(nv);
+    let changed = false;
+    // NOTE: ES5 build target (no downlevelIteration): never for..of / spread a Set or Map.
+    Array.from(collectDrawnLabels(nv)).forEach((l) => {
+        if (registerLabel(roiState, l, getBaseColor(roiState, l, base))) {
+            changed = true;
+        }
+    });
+    return changed;
+}
+
+/** Drop group metadata (e.g. new/cleared drawing) and restore plain label colours. */
+function resetRoiGroups(nv) {
+    if (roiState.groups.length === 0) {
+        return;
     }
-    return copy;
+    for (const g of roiState.groups) {
+        delete labelVisibility[g.id];
+    }
+    clearGroups(roiState);
+    applyRoiDrawLut(nv);
+}
+
+/** Clone of the drawing limited to `labelSet` (voxels with other labels become 0). */
+function maskDrawBitmapByLabels(live, labelSet) {
+    const out = new Uint8Array(live.length);
+    for (let i = 0; i < live.length; i++) {
+        const v = live[i];
+        if (v !== 0 && labelSet.has(v)) {
+            out[i] = v;
+        }
+    }
+    return out;
 }
 
 var NiivueObject3D = function (id, vertexBuffer, mode, indexCount, indexBuffer = null, vao = null) {
@@ -249,31 +340,50 @@ Niivue.prototype.getLabelVisibility = function (label) {
     }
 }
 
+/**
+ * Show/hide a label, or a whole group when `label` is a negative group id
+ * (applies to every member label in one pass over the bitmap).
+ */
 Niivue.prototype.setLabelVisibility = function (label, visible) {
-    console.log(label);
-    labelVisibility[label] = visible;
+    let targets;
+    if (isGroupId(label)) {
+        const group = getGroup(roiState, label);
+        if (!group) {
+            return;
+        }
+        labelVisibility[label] = visible;
+        targets = new Set(group.members);
+    } else {
+        targets = new Set([label]);
+    }
+    targets.forEach((t) => {
+        labelVisibility[t] = visible;
+    });
+    if (!this.drawBitmap) {
+        return;
+    }
     if (this.hiddenBitmap === undefined || this.hiddenBitmap === null || this.hiddenBitmap.length === 0)
         this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
     if (!visible) {
         for (let i = 0; i < this.drawBitmap.length; i++) {
-            if (this.drawBitmap[i] === label) {
-                console.log(this.drawBitmap[i])
-                this.hiddenBitmap[i] = label;
+            const v = this.drawBitmap[i];
+            if (v !== 0 && targets.has(v)) {
+                this.hiddenBitmap[i] = v;
                 this.drawBitmap[i] = 0;
             }
         }
-        this.refreshDrawing(false);
     } else {
         for (let i = 0; i < this.hiddenBitmap.length; i++) {
-            if (this.hiddenBitmap[i] === label) {
+            const v = this.hiddenBitmap[i];
+            if (v !== 0 && targets.has(v)) {
                 this.hiddenBitmap[i] = 0;
                 if (this.drawBitmap[i] === 0) {
-                    this.drawBitmap[i] = label;
+                    this.drawBitmap[i] = v;
                 }
             }
         }
-        this.refreshDrawing(false);
     }
+    this.refreshDrawing(false);
 }
 
 // whether the user drags, resets, or changes contrast programmatically, React will be notified
@@ -300,7 +410,7 @@ const closeDrawing = Niivue.prototype.closeDrawing;
  * This patch to closeDrawing clears invisible bitmapCache when applied
  */
 Niivue.prototype.closeDrawing = function () {
-    clearBitmapOverlay();
+    resetRoiGroups(this);
     if (this.drawBitmap !== undefined && this.drawBitmap !== null)
         this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
     else if (this.hiddenBitmap !== undefined)
@@ -310,7 +420,7 @@ Niivue.prototype.closeDrawing = function () {
 
 const _loadDrawingFromUrl = Niivue.prototype.loadDrawingFromUrl;
 Niivue.prototype.loadDrawingFromUrl = async function (fnm, isBinarize) {
-    clearBitmapOverlay();
+    resetRoiGroups(this);
     return _loadDrawingFromUrl.call(this, fnm, isBinarize);
 };
 
@@ -319,7 +429,7 @@ Niivue.prototype.loadDrawingFromUrl = async function (fnm, isBinarize) {
  * clear drawing retains itself in the undo stack.
  */
 Niivue.prototype.clearDrawing = function () {
-    clearBitmapOverlay();
+    resetRoiGroups(this);
     if (this.drawBitmap != undefined && this.drawBitmap != null) {
         this.drawBitmap = new Uint8Array(this.drawBitmap.length);
         this.hiddenBitmap = new Uint8Array(this.drawBitmap.length);
@@ -783,14 +893,11 @@ Niivue.prototype.saveImageByLabels = async function (fnm, labels = [1]) {
         console.debug('No drawing open')
         return false
     }
-    const live = this.drawBitmap
-    const resolved = getResolvedDrawBitmapForExport(this)
+    // `labels` may contain group ids (<0); export the member labels with their real ids.
+    const live = maskDrawBitmapByLabels(this.drawBitmap, expandToLabels(roiState, labels))
     const perm = this.volumes[0].permRAS
     if (perm[0] === 1 && perm[1] === 2 && perm[2] === 3) {
-        const outFlat = new Uint8Array(live.length)
-        for (let i = 0; i < live.length; i++) {
-            outFlat[i] = labels.indexOf(live[i]) >= 0 ? resolved[i] : 0
-        }
+        const outFlat = live
         await this.volumes[0].saveToDisk(fnm, outFlat)
         return true
     } else {
@@ -829,7 +936,7 @@ Niivue.prototype.saveImageByLabels = async function (fnm, labels = [1]) {
         let zlut = range(0, dims[3] - 1, 1)
         if (inflip[2]) zlut = range(dims[3] - 1, 0, -1)
         for (let i = 0; i < dims[3]; i++) zlut[i] *= instride[2]
-        // convert data â€” mask by current (possibly merged) label; write underlying ungrouped IDs
+        // convert data (already masked to the requested labels; voxels keep their real ids)
 
         const outVs = new Uint8Array(dims[1] * dims[2] * dims[3])
         let j = 0
@@ -837,8 +944,7 @@ Niivue.prototype.saveImageByLabels = async function (fnm, labels = [1]) {
             for (let y = 0; y < dims[2]; y++) {
                 for (let x = 0; x < dims[1]; x++) {
                     const idx = xlut[x] + ylut[y] + zlut[z]
-                    const bitLive = live[idx]
-                    outVs[j] = (labels.indexOf(bitLive) >= 0) ? resolved[idx] : 0
+                    outVs[j] = live[idx]
                     j++
                 }
             }
@@ -848,88 +954,239 @@ Niivue.prototype.saveImageByLabels = async function (fnm, labels = [1]) {
     }
 }
 
+/**
+ * Delete every voxel of the given labels. `labels` may contain group ids (<0), which delete all
+ * member labels. Palette colours are kept (the colour stays available for new drawing).
+ */
 Niivue.prototype.deleteDrawingByLabel = function (labels = [0]) {
-    clearBitmapOverlay();
-    for (let i = 0; i < this.drawBitmap.length; i++) {
-        this.drawBitmap[i] = (labels.indexOf(this.drawBitmap[i]) < 0) ? this.drawBitmap[i] : 0;
+    const labelSet = expandToLabels(roiState, labels);
+    if (labelSet.size === 0) {
+        return;
     }
-    this.refreshDrawing(false);
-}
-
-Niivue.prototype.groupLabelsInto = function (sourceLabels = [0], targetLabel = 7) {
     for (let i = 0; i < this.drawBitmap.length; i++) {
-        if (sourceLabels.indexOf(this.drawBitmap[i]) >= 0) {
-            for (let k = bitmapOverlay.length - 1; k >= 0; k--) {
-                if (bitmapOverlay[k][0] === i) {
-                    bitmapOverlay.splice(k, 1);
-                }
+        if (labelSet.has(this.drawBitmap[i])) {
+            this.drawBitmap[i] = 0;
+        }
+    }
+    // also drop voxels that are currently hidden, otherwise they would reappear on "show"
+    if (this.hiddenBitmap && this.hiddenBitmap.length === this.drawBitmap.length) {
+        for (let i = 0; i < this.hiddenBitmap.length; i++) {
+            if (labelSet.has(this.hiddenBitmap[i])) {
+                this.hiddenBitmap[i] = 0;
             }
-            bitmapOverlay.push([i, this.drawBitmap[i]]);
-            this.drawBitmap[i] = targetLabel;
+        }
+    }
+    const affectedGroups = roiState.groups
+        .filter((g) => g.members.some((m) => labelSet.has(m)))
+        .map((g) => g.id);
+    pruneLabelsFromGroups(roiState, labelSet);
+    for (const id of affectedGroups) {
+        if (!getGroup(roiState, id)) {
+            delete labelVisibility[id];
         }
     }
     this.refreshDrawing(false);
-}
-
-Niivue.prototype.ungroup = function () {
-    for (let tuple of bitmapOverlay) {
-        this.drawBitmap[tuple[0]] = tuple[1];
+    if (affectedGroups.length > 0) {
+        applyRoiDrawLut(this);
     }
-    bitmapOverlay.length = 0;
-    this.refreshDrawing(false);
 }
 
 /**
- * Smart group from ROI table selection.
- * - Extend: selection includes merged label(s) >= targetLabel â†’ mask those voxels, ungroup once, merge into max(merged ids in selection) (e.g. add to 7 or 8).
- * - New merge (primitives only): if no merged id >= targetLabel exists in the volume, merge into targetLabel (7); else merge into maxMergedInVolume + 1 (e.g. second group â†’ 8).
+ * Compatibility wrapper (old API merged voxels into label `targetLabel`, default 7).
+ * Grouping is now display-only: voxels keep their labels and `targetLabel` is ignored.
+ * @returns {number|null} the group id
  */
-Niivue.prototype.groupLabelsFromSelection = function (sourceLabels = [], targetLabel = 7) {
-    if (!this.drawBitmap || !sourceLabels || sourceLabels.length < 2) {
-        return;
+Niivue.prototype.groupLabelsInto = function (sourceLabels = [0], targetLabel = 7) {
+    return this.groupLabelsFromSelection(sourceLabels);
+}
+
+/**
+ * Dissolve groups. `groupIds` = negative ids to dissolve; omit to dissolve all groups.
+ * Member labels return to their own palette colours; voxels are untouched.
+ */
+Niivue.prototype.ungroup = function (groupIds) {
+    const ids = Array.isArray(groupIds) ? groupIds : null;
+    const removed = ungroupItems(roiState, ids);
+    if (removed.length === 0) {
+        return [];
     }
-    const labelSet = new Set(sourceLabels);
-    if (labelSet.size < 2) {
-        return;
+    for (const g of removed) {
+        delete labelVisibility[g.id];
     }
-    const MERGE_THRESHOLD = targetLabel;
-    const mergedInSelection = sourceLabels.filter(function (l) {
-        return l >= MERGE_THRESHOLD;
-    });
-    if (mergedInSelection.length > 0) {
-        const mergeTarget = Math.max.apply(null, mergedInSelection);
-        const n = this.drawBitmap.length;
-        const mask = new Uint8Array(n);
-        for (let i = 0; i < n; i++) {
-            if (labelSet.has(this.drawBitmap[i])) {
-                mask[i] = 1;
-            }
-        }
-        this.ungroup();
-        const mergeSet = new Set();
-        for (let i = 0; i < n; i++) {
-            if (mask[i] && this.drawBitmap[i] !== 0) {
-                mergeSet.add(this.drawBitmap[i]);
-            }
-        }
-        const toMerge = Array.from(mergeSet).sort(function (a, b) { return a - b; });
-        if (toMerge.length === 0) {
-            this.refreshDrawing(false);
-            return;
-        }
-        this.groupLabelsInto(toMerge, mergeTarget);
-        return;
+    applyRoiDrawLut(this);
+    return removed.map((g) => g.id);
+}
+
+/**
+ * Group from ROI-table selection. `ids` mixes labels (>0) and existing group ids (<0).
+ * - Selection contains group(s): everything is merged into the oldest selected group.
+ * - Otherwise a new group (-1, -2, ...) is created.
+ * Display only: member voxels keep their label, they are drawn in the group colour.
+ * @returns {number|null} the (new or extended) group id, or null if nothing was grouped
+ */
+Niivue.prototype.groupLabelsFromSelection = function (ids = []) {
+    if (!this.drawBitmap || !Array.isArray(ids)) {
+        return null;
     }
-    var sceneMaxMerged = 0;
-    for (var j = 0; j < this.drawBitmap.length; j++) {
-        var v = this.drawBitmap[j];
-        if (v >= MERGE_THRESHOLD) {
-            sceneMaxMerged = Math.max(sceneMaxMerged, v);
-        }
+    const group = groupItems(roiState, ids);
+    if (!group) {
+        return null;
     }
-    var newTarget = sceneMaxMerged >= MERGE_THRESHOLD ? sceneMaxMerged + 1 : MERGE_THRESHOLD;
-    this.groupLabelsInto(sourceLabels, newTarget);
+    // Group visibility: visible unless every member was hidden. Apply it to all members so the
+    // group row and its voxels always agree.
+    const visible = group.members.some((m) => this.getLabelVisibility(m));
+    applyRoiDrawLut(this);
+    this.setLabelVisibility(group.id, visible);
+    return group.id;
 };
+
+/** Group metadata: [{ id (<0), members: number[], color: "#rrggbb" }]. */
+Niivue.prototype.getRoiGroups = function () {
+    return roiState.groups.map((g) => ({ id: g.id, members: g.members.slice(), color: g.color }));
+};
+
+/** Palette: [{ label (1..255), color: "#rrggbb" }] sorted by label. */
+Niivue.prototype.getRoiPalette = function () {
+    return getPalette(roiState);
+};
+
+/** { label: "#rrggbb" } (for saving alongside a drawing). */
+Niivue.prototype.getRoiLabelColorMap = function () {
+    return getColorMap(roiState);
+};
+
+/**
+ * Colour a label (>0) or group (<0) is currently drawn with (group colour if grouped).
+ */
+Niivue.prototype.getRoiLabelColor = function (label) {
+    return resolveLabelColor(roiState, label, getBaseDrawLut(this));
+};
+
+/**
+ * Add a user colour to the palette and return its new label (1..255).
+ * If the colour already exists, the existing label is returned. Returns null when all 255
+ * labels are in use.
+ */
+Niivue.prototype.addRoiColor = function (hex) {
+    const color = normalizeHex(hex);
+    if (!color) {
+        return null;
+    }
+    registerDrawnLabels(this);
+    const existing = findLabelByColor(roiState, color);
+    if (existing !== null) {
+        applyRoiDrawLut(this);
+        return existing;
+    }
+    const label = nextFreeLabel(roiState, collectDrawnLabels(this));
+    if (label === null) {
+        console.warn(`addRoiColor: all ${MAX_ROI_LABEL} ROI labels are in use`);
+        return null;
+    }
+    registerLabel(roiState, label, color);
+    applyRoiDrawLut(this);
+    return label;
+};
+
+/**
+ * Remove a colour from the palette.
+ * Not allowed for the default colour (label 1) or while any voxel (visible or hidden) still uses
+ * the label; delete that ROI first.
+ * @returns {{ ok: boolean, reason?: "default"|"missing"|"in-use", color?: string }}
+ */
+Niivue.prototype.removeRoiColor = function (label) {
+    if (label === 1) {
+        return { ok: false, reason: "default" };
+    }
+    if (!roiState.colors.has(label)) {
+        return { ok: false, reason: "missing" };
+    }
+    if (this.drawBitmap && collectDrawnLabels(this).has(label)) {
+        return { ok: false, reason: "in-use" };
+    }
+    const color = removeLabelColor(roiState, label);
+    // drop stale group membership (e.g. voxels removed by undo)
+    pruneLabelsFromGroups(roiState, new Set([label]));
+    applyRoiDrawLut(this);
+    return { ok: true, color };
+};
+
+/** Change the colour of an existing label. */
+Niivue.prototype.setRoiLabelColor = function (label, hex) {
+    registerDrawnLabels(this);
+    if (!isRoiLabel(label) || !normalizeHex(hex)) {
+        return false;
+    }
+    setLabelColor(roiState, label, hex);
+    applyRoiDrawLut(this);
+    return true;
+};
+
+/**
+ * Apply a saved { label: "#rrggbb" } map (e.g. from a loaded ROI zip). Existing labels in the
+ * map are overwritten; others are left alone.
+ */
+Niivue.prototype.applyRoiLabelColors = function (colorMap) {
+    if (!colorMap || typeof colorMap !== "object") {
+        return;
+    }
+    let changed = false;
+    for (const key of Object.keys(colorMap)) {
+        const label = Number(key);
+        if (!isRoiLabel(label)) {
+            continue;
+        }
+        const color = normalizeHex(colorMap[key]);
+        if (!color) {
+            continue;
+        }
+        if (!roiState.colors.has(label)) {
+            roiState.colors.set(label, color);
+            changed = true;
+        } else if (setLabelColor(roiState, label, color)) {
+            changed = true;
+        }
+    }
+    if (changed) {
+        applyRoiDrawLut(this);
+    }
+};
+
+/**
+ * Make sure every label present in the drawing has a palette entry (called after loads and
+ * whenever the ROI table is rebuilt). Optionally pass extra labels to register.
+ */
+Niivue.prototype.ensureRoiLabelsRegistered = function (extraLabels) {
+    let changed = this.drawBitmap ? registerDrawnLabels(this) : false;
+    const base = getBaseDrawLut(this);
+    for (const l of extraLabels || []) {
+        if (registerLabel(roiState, l, getBaseColor(roiState, l, base))) {
+            changed = true;
+        }
+    }
+    if (changed) {
+        applyRoiDrawLut(this);
+    }
+    return changed;
+};
+
+/**
+ * Reset the palette to the single default colour (label 1), then re-register labels that are
+ * already drawn. Used when a different user's saved colours are about to be restored.
+ */
+Niivue.prototype.resetRoiPalette = function () {
+    resetPalette(roiState);
+    if (this.drawBitmap) {
+        registerDrawnLabels(this);
+    }
+    applyRoiDrawLut(this);
+};
+
+/** Push palette + groups to the GPU draw LUT again (e.g. after the viewer re-created textures). */
+Niivue.prototype.rebuildRoiDrawLut = function () {
+    applyRoiDrawLut(this);
+};
+
 
 Niivue.prototype.applyDefaultViewState = function () {
     const defaultZoom = this._cloudMrDefaultZoom ?? CLOUDMR_DEFAULT_VIEW_ZOOM;
@@ -1018,13 +1275,15 @@ Niivue.prototype.resetContrast = function () {
 }
 
 Niivue.prototype.relabelROIs = function (source = 0, target = 0) {
-    clearBitmapOverlay();
     for (let i = 0; i < this.drawBitmap.length; i++) {
         if (this.drawBitmap[i] === source) {
             this.drawBitmap[i] = target;
         }
     }
+    // keep group membership in sync (source label no longer exists)
+    relabelInGroups(roiState, source, target);
     this.refreshDrawing(true);
+    applyRoiDrawLut(this);
 }
 
 Niivue.prototype.loadDrawingFromBase64 = async function (fnm, base64) {
@@ -1032,7 +1291,7 @@ Niivue.prototype.loadDrawingFromBase64 = async function (fnm, base64) {
         console.debug('Overwriting open drawing!')
     }
     this.drawClearAllUndoBitmaps()
-    clearBitmapOverlay()
+    resetRoiGroups(this)
     try {
         // const volume = await NVImage.loadFromUrl()
         if (base64) {
@@ -1047,7 +1306,7 @@ Niivue.prototype.loadDrawingFromBase64 = async function (fnm, base64) {
         console.error(err);
         console.error('loadDrawingFromBlob() failed to load ' + fnm)
         this.drawClearAllUndoBitmaps()
-        clearBitmapOverlay()
+        resetRoiGroups(this)
     }
     return base64 !== undefined;
 }
@@ -1164,7 +1423,7 @@ Niivue.prototype.mergeDrawingFromBase64 = async function (fnm, base64) {
 
         if (this.drawBitmap && this.drawBitmap.length !== vx) {
             console.warn('mergeDrawingFromBase64: drawBitmap size mismatch; replacing drawing');
-            clearBitmapOverlay();
+            resetRoiGroups(this);
             this.loadDrawing(drawingBitmap);
             result.ok = true;
             result.importLabelRemap = null;
@@ -1172,20 +1431,15 @@ Niivue.prototype.mergeDrawingFromBase64 = async function (fnm, base64) {
         }
 
         if (!hasExistingDrawing) {
-            clearBitmapOverlay();
+            resetRoiGroups(this);
             this.loadDrawing(drawingBitmap);
             result.ok = true;
             result.importLabelRemap = null;
             return result;
         }
 
-        const usedOnCanvas = new Set();
-        for (let i = 0; i < this.drawBitmap.length; i++) {
-            const v = this.drawBitmap[i];
-            if (v !== 0) {
-                usedOnCanvas.add(v);
-            }
-        }
+        // labels already on the canvas (including temporarily hidden ones)
+        const usedOnCanvas = collectDrawnLabels(this);
 
         const seen = new Set();
         for (let i = 0; i < importFlat.length; i++) {
@@ -1196,36 +1450,28 @@ Niivue.prototype.mergeDrawingFromBase64 = async function (fnm, base64) {
         }
         const sorted = Array.from(seen).sort((a, b) => a - b);
         const importLabelRemap = {};
-        let nextSynthetic = 0;
-        for (const v of usedOnCanvas) {
-            if (v > nextSynthetic) {
-                nextSynthetic = v;
-            }
-        }
-        nextSynthetic += 1;
-
+        // Colliding imports move to the lowest free label (1..255). Labels are one byte per
+        // voxel, so if all 255 are taken the import label is reused (merges into that ROI).
+        let nextSynthetic = 1;
         for (let s = 0; s < sorted.length; s++) {
             const oldL = sorted[s];
             if (!usedOnCanvas.has(oldL)) {
                 importLabelRemap[oldL] = oldL;
                 usedOnCanvas.add(oldL);
             } else {
-                while (usedOnCanvas.has(nextSynthetic)) {
+                while (nextSynthetic <= MAX_ROI_LABEL && usedOnCanvas.has(nextSynthetic)) {
                     nextSynthetic++;
                 }
-                importLabelRemap[oldL] = nextSynthetic;
-                usedOnCanvas.add(nextSynthetic);
-                nextSynthetic++;
+                if (nextSynthetic > MAX_ROI_LABEL) {
+                    console.warn('mergeDrawingFromBase64: no free ROI label left; merging label ' + oldL + ' into the existing one');
+                    importLabelRemap[oldL] = oldL;
+                } else {
+                    importLabelRemap[oldL] = nextSynthetic;
+                    usedOnCanvas.add(nextSynthetic);
+                    nextSynthetic++;
+                }
             }
         }
-
-        const importWrittenVoxels = new Set();
-        for (let i = 0; i < vx; i++) {
-            if (importFlat[i] !== 0) {
-                importWrittenVoxels.add(i);
-            }
-        }
-        stripBitmapOverlayForVoxelIndices(importWrittenVoxels);
 
         for (let i = 0; i < vx; i++) {
             const v = importFlat[i];
@@ -1238,6 +1484,9 @@ Niivue.prototype.mergeDrawingFromBase64 = async function (fnm, base64) {
 
         this.drawAddUndoBitmap();
         this.refreshDrawing(false);
+        // make sure imported labels (possibly remapped) have palette entries
+        registerDrawnLabels(this);
+        applyRoiDrawLut(this);
         this.drawScene();
         result.ok = true;
         result.importLabelRemap = importLabelRemap;

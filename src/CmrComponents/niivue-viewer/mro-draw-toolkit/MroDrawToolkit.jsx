@@ -30,6 +30,7 @@ import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import OpacityIcon from "@mui/icons-material/Opacity";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import DrawColorPlatte from "./DrawColorPlatte";
+import { roiColorPickerInteraction } from "./RoiColorSwatches";
 import EraserPlatte from "./EraserPlatte";
 import MaskPlatte from "./MaskPlatte";
 import { useNiivueViewerTheme } from "../NiivueViewerThemeContext";
@@ -230,6 +231,8 @@ export function MroDrawToolkit(props) {
 
   function shouldIgnoreToolClickAway(event) {
     if (clickTargetIsNiivueCanvas(event.target)) return true;
+    // dragging inside the custom colour picker and releasing outside it must not close the palette
+    if (roiColorPickerInteraction.active) return true;
     if (props.shapeDraftActive || props.penDraftActive) return true;
     return false;
   }
@@ -296,6 +299,9 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   penToolKind="freehand"
                   currentPenValue={props.drawPen}
+                  palette={props.roiPalette}
+                  onAddRoiColor={props.onAddRoiColor}
+                  onRemoveRoiColor={props.onRemoveRoiColor}
                   penDraftActive={props.penDraftActive}
                   penDraftKind={props.penDraftKind}
                   onDeletePenDraft={props.onDeletePenDraft}
@@ -320,6 +326,9 @@ export function MroDrawToolkit(props) {
                   setDrawingEnabled={props.setDrawingEnabled}
                   penToolKind="polyline"
                   currentPenValue={props.drawPen}
+                  palette={props.roiPalette}
+                  onAddRoiColor={props.onAddRoiColor}
+                  onRemoveRoiColor={props.onRemoveRoiColor}
                   polylineVertexCount={props.polylineVertexCount}
                   penDraftActive={props.penDraftActive}
                   penDraftKind={props.penDraftKind}
@@ -344,6 +353,9 @@ export function MroDrawToolkit(props) {
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
                   currentPenValue={props.drawPen}
+                  palette={props.roiPalette}
+                  onAddRoiColor={props.onAddRoiColor}
+                  onRemoveRoiColor={props.onRemoveRoiColor}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "rectangle"}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
@@ -364,6 +376,9 @@ export function MroDrawToolkit(props) {
                   updateDrawPen={props.updateDrawPen}
                   setDrawingEnabled={props.setDrawingEnabled}
                   currentPenValue={props.drawPen}
+                  palette={props.roiPalette}
+                  onAddRoiColor={props.onAddRoiColor}
+                  onRemoveRoiColor={props.onRemoveRoiColor}
                   shapeDraftActive={props.shapeDraftActive && drawShapeTool === "ellipse"}
                   onDeleteShapeDraft={props.onDeleteShapeDraft}
                 />
@@ -498,6 +513,9 @@ export function MroDrawToolkit(props) {
                   }}
                   expanded={expandedOption === "m"}
                   nv={props.nv}
+                  palette={props.roiPalette}
+                  onAddRoiColor={props.onAddRoiColor}
+                  onRemoveRoiColor={props.onRemoveRoiColor}
                   setMaskColor={setMaskColor}
                   unfocus={() => setExpandedOption("n")}
                 />

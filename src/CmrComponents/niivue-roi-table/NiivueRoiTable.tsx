@@ -20,7 +20,10 @@ import { getEndpoints } from "../../core/config/AppConfig";
 import { AuthenticatedHttpClient } from "../../core/common/utilities/AuthenticatedRequests";
 import { useNiivueViewerTheme } from "../niivue-viewer/NiivueViewerThemeContext";
 
-/** Default merged ROI label in Niivue patcher `groupLabelsInto` / `groupLabelsFromSelection`. */
+/**
+ * @deprecated Groups are now display-only metadata with negative ids (-1, -2, ...); voxels are
+ * no longer merged into a target label. Kept so existing imports keep compiling.
+ */
 export const DEFAULT_ROI_GROUP_TARGET_LABEL = 7;
 
 const ROI_TOOLBAR_ICON_SIZE_PX = 24;
@@ -51,7 +54,7 @@ export interface NiivueRoiTableProps {
    * Use this to refresh server-side ROI metadata (e.g. `dispatch(getPipelineROI(...))`).
    */
   onAfterRoiUpload?: () => void | Promise<void>;
-  /** Niivue label index ROIs merge into when grouping. Default: {@link DEFAULT_ROI_GROUP_TARGET_LABEL}. */
+  /** @deprecated Ignored. Grouping no longer merges voxels into a target label. */
   groupTargetLabel?: number;
 }
 
@@ -60,10 +63,7 @@ export interface NiivueRoiTableProps {
  * download subset, delete, and upload replacement mask. No Redux — pass callbacks and `nv`.
  */
 export function NiivueRoiTable(props: NiivueRoiTableProps) {
-  const {
-    groupTargetLabel = DEFAULT_ROI_GROUP_TARGET_LABEL,
-    onAfterRoiUpload,
-  } = props;
+  const { onAfterRoiUpload } = props;
 
   const [uploadKey, setUploadKey] = useState(1);
   const theme = useNiivueViewerTheme();
@@ -223,19 +223,12 @@ export function NiivueRoiTable(props: NiivueRoiTableProps) {
                   );
                   return;
                 }
-                if (typeof props.nv.groupLabelsFromSelection === "function") {
-                  props.nv.groupLabelsFromSelection(
-                    selectedNums,
-                    groupTargetLabel,
-                  );
-                } else {
-                  props.nv.groupLabelsInto(
-                    selectedNums,
-                    groupTargetLabel,
-                  );
-                }
+                // Display-only: voxels keep their labels, the selection (ROIs and/or existing
+                // groups) is drawn in one group colour and gets a negative group id.
+                props.nv.groupLabelsFromSelection(selectedNums);
                 props.nv.drawScene();
                 props.resampleImage();
+                setSelectedData([]);
               }}
             >
               <WpIcon icon={wpGroup} size={24} fill="currentColor" />
@@ -251,9 +244,16 @@ export function NiivueRoiTable(props: NiivueRoiTableProps) {
                 warnEmptySelection("Please select an ROI to ungroup");
                 return;
               }
-              props.nv.ungroup();
+              // Only the selected group rows (negative ids) are dissolved.
+              const selectedGroupIds = selectedNums.filter((n) => n < 0);
+              if (selectedGroupIds.length === 0) {
+                warnEmptySelection("Please select a group to ungroup");
+                return;
+              }
+              props.nv.ungroup(selectedGroupIds);
               props.nv.drawScene();
               props.resampleImage();
+              setSelectedData([]);
             }}
           >
             <WpIcon
@@ -271,8 +271,10 @@ export function NiivueRoiTable(props: NiivueRoiTableProps) {
               let fileName = "label";
               const selectedLabels: number[] = [];
               for (const label of selectedData) {
-                fileName += label;
-                selectedLabels.push(Number(label));
+                const id = Number(label);
+                // groups (negative ids) export all their member labels; name them G1, G2, ...
+                fileName += id < 0 ? `G${Math.abs(id)}` : String(id);
+                selectedLabels.push(id);
               }
               fileName += ".nii";
               if (selectedLabels.length === 0) {

@@ -17,6 +17,12 @@ export type CloudMrDrawToolkitProps = Omit<
   DrawToolkitProps,
   "rois" | "selectedROI" | "setSelectedROI" | "saveROI" | "labelsVisible" | "toggleLabelsVisible"
 > & {
+  /** ROI colour palette (label 1 = default colour; others added by the user). Up to 255 entries. */
+  roiPalette?: { label: number; color: string }[];
+  /** Adds a custom colour to the palette; returns its label (1..255) or null when full. */
+  onAddRoiColor?: (hex: string) => number | null;
+  /** Removes a palette colour (not the default, not one used by an ROI); returns true if removed. */
+  onRemoveRoiColor?: (label: number) => boolean;
   penDrawMode?: "freehand" | "polyline";
   onPenDrawModeChange?: (mode: "freehand" | "polyline") => void;
   polylineVertexCount?: number;

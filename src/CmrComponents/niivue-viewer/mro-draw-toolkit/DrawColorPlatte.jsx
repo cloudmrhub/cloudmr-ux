@@ -2,30 +2,10 @@
  * Color palette for pen/shape ROI tools. Freehand and polyline each use their own
  * toolbar button and pass `penToolKind` to show the matching options.
  */
-import { Stack, IconButton, Tooltip, Typography, Box } from "@mui/material";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import { Stack, Tooltip, Typography, Box } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { BrushSizeSlider } from "./BrushSizeSlider";
-
-const FILLED_COLORS = [
-  { sx: { color: "red" }, glow: "rgba(255, 72, 72, 0.55)" },
-  { sx: { color: "green" }, glow: "rgba(72, 200, 72, 0.55)" },
-  { sx: { color: "blue" }, glow: "rgba(72, 140, 255, 0.55)" },
-  { sx: { color: "yellow" }, glow: "rgba(255, 220, 72, 0.5)" },
-  { sx: { color: "cyan" }, glow: "rgba(72, 220, 255, 0.55)" },
-  { sx: { color: "#e81ce8" }, glow: "rgba(232, 28, 232, 0.5)" },
-];
-
-/** Soft halo that hugs the circular icon shape (drop-shadow, not box-shadow). */
-function swatchGlowFilter(glow, { active = false, hover = false } = {}) {
-  if (active) {
-    return `drop-shadow(0 0 1px ${glow}) drop-shadow(0 0 4px ${glow}) drop-shadow(0 0 8px rgba(255, 255, 255, 0.12))`;
-  }
-  if (hover) {
-    return `drop-shadow(0 0 2px rgba(255, 255, 255, 0.28))`;
-  }
-  return "none";
-}
+import RoiColorSwatches from "./RoiColorSwatches";
 
 const ACTION_FONT_SIZE = "0.75rem";
 const ACTION_ICON_SIZE = "0.875rem";
@@ -101,8 +81,14 @@ export default function DrawColorPlatte({
   setDrawingEnabled,
   /** @type {"freehand" | "polyline" | null} */
   penToolKind = null,
-  /** Currently active pen value (1–6); used to highlight the selected swatch. */
+  /** Currently active pen label (1..255); used to highlight the selected swatch. */
   currentPenValue = 1,
+  /** ROI palette [{ label, color }]; label 1 is the default colour. */
+  palette,
+  /** (hex) => label | null; enables the "+" custom colour picker. */
+  onAddRoiColor,
+  /** (label) => boolean; enables right-click "Remove color" on swatches. */
+  onRemoveRoiColor,
   polylineVertexCount = 0,
   penDraftActive = false,
   penDraftKind,
@@ -148,46 +134,16 @@ export default function DrawColorPlatte({
         />
       )}
 
-      <Stack direction="row" sx={{ px: 0.25 }}>
-        {FILLED_COLORS.map((color, index) => {
-          const penValue = index + 1;
-          const isActive = penValue === (currentPenValue & 7);
-          return (
-            <IconButton
-              key={index}
-              aria-label={`Color ${penValue}`}
-              aria-pressed={isActive}
-              onClick={() => {
-                updateDrawPen({ target: { value: penValue } });
-                setDrawingEnabled(true);
-              }}
-              sx={{
-                p: "6px",
-                borderRadius: "50%",
-                boxShadow: "none",
-                transition: "background-color 0.15s ease",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.06)",
-                },
-                "& .color-swatch": {
-                  fontSize: "1.2rem",
-                  display: "block",
-                  transition: "filter 0.18s ease",
-                  filter: swatchGlowFilter(color.glow, { active: isActive }),
-                },
-                "&:hover .color-swatch": {
-                  filter: swatchGlowFilter(color.glow, {
-                    active: isActive,
-                    hover: !isActive,
-                  }),
-                },
-              }}
-            >
-              <FiberManualRecordIcon className="color-swatch" sx={color.sx} />
-            </IconButton>
-          );
-        })}
-      </Stack>
+      <RoiColorSwatches
+        palette={palette}
+        currentLabel={currentPenValue}
+        onAddColor={onAddRoiColor}
+        onRemoveColor={onRemoveRoiColor}
+        onSelect={(label) => {
+          updateDrawPen({ target: { value: label } });
+          setDrawingEnabled(true);
+        }}
+      />
 
       {isPolylineTool && (
         <Typography sx={{ px: 1, pb: 0.5, fontSize: "0.68rem", color: "#aaa", userSelect: "none" }}>

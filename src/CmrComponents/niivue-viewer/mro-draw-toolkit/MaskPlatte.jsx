@@ -1,7 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from "react";
 import { Stack, IconButton, Typography, Box } from "@mui/material";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import RoiColorSwatches from "./RoiColorSwatches";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { InvertibleDualSlider, CmrCheckbox } from "cloudmr-ux";
@@ -24,23 +24,25 @@ var MaskPlatte = function (_a) {
     nv = _a.nv,
     setMaskColor = _a.setMaskColor,
     resampleImage = _a.resampleImage,
+    palette = _a.palette,
+    onAddRoiColor = _a.onAddRoiColor,
+    onRemoveRoiColor = _a.onRemoveRoiColor,
     unfocus = _a.unfocus;
-  var _b = useState(0),
-    colorIndex = _b[0],
-    storeColorIndex = _b[1];
-  var _c = useState("red"),
-    maskColor = _c[0],
-    storeMaskColor = _c[1];
+  // ROI label (1..255) the mask is written with; its colour comes from the shared ROI palette
+  var _b = useState(1),
+    maskLabel = _b[0],
+    storeMaskLabel = _b[1];
+  var maskColor = (
+    (palette || []).filter(function (entry) {
+      return entry.label === maskLabel;
+    })[0] || { color: "#ff0000" }
+  ).color;
   var _d = useState(false),
     checked = _d[0],
     setChecked = _d[1];
   var _e = useState(undefined),
     original = _e[0],
     setOriginal = _e[1];
-  var colors = ["red", "green", "blue", "yellow", "cyan", "#e81ce8"];
-  var filledOptions = colors.map(function (color, i) {
-    return _jsx(FiberManualRecordIcon, { sx: { color: color } }, i);
-  });
   if (expanded) {
     setMaskColor(maskColor);
   } else {
@@ -64,7 +66,7 @@ var MaskPlatte = function (_a) {
       if (!expanded) {
         cancelMask();
       } else {
-        if (colorIndex !== -1) nv.fillRange(min, max, colorIndex + 1, checked, original, setOriginal);
+        nv.fillRange(min, max, maskLabel, checked, original, setOriginal);
         resampleImage();
       }
     },
@@ -72,8 +74,7 @@ var MaskPlatte = function (_a) {
   );
   useEffect(
     function () {
-      if (colorIndex !== -1 && expanded)
-        nv.fillRange(min, max, colorIndex + 1, checked, original, setOriginal);
+      if (expanded) nv.fillRange(min, max, maskLabel, checked, original, setOriginal);
     },
     [min, max, checked]
   );
@@ -122,30 +123,36 @@ var MaskPlatte = function (_a) {
               }
             )
           ),
+          _jsx(RoiColorSwatches, {
+            palette: palette,
+            currentLabel: maskLabel,
+            onAddColor: onAddRoiColor,
+            onRemoveColor: function (label) {
+              var removed = onRemoveRoiColor ? onRemoveRoiColor(label) : false;
+              // the mask was written with this label: fall back to the default colour
+              if (removed && label === maskLabel) {
+                storeMaskLabel(1);
+                nv.fillRange(min, max, 1, checked, original, setOriginal);
+                resampleImage();
+              }
+              return removed;
+            },
+            onSelect: function (label) {
+              storeMaskLabel(label);
+              var entry = (palette || []).filter(function (e) {
+                return e.label === label;
+              })[0];
+              setMaskColor(entry ? entry.color : undefined);
+              nv.fillRange(min, max, label, checked, original, setOriginal);
+              resampleImage();
+            },
+          }),
           _jsxs(
             Stack,
             __assign(
               { direction: "row", flexDirection: "row", justifyContent: "center" },
               {
                 children: [
-                  filledOptions.map(function (value, index) {
-                    return _jsx(
-                      IconButton,
-                      __assign(
-                        {
-                          onClick: function () {
-                            storeColorIndex(index);
-                            storeMaskColor(colors[index]);
-                            setMaskColor(colors[index]);
-                            nv.fillRange(min, max, index + 1, checked, original, setOriginal);
-                            resampleImage();
-                          },
-                        },
-                        { children: value }
-                      ),
-                      index
-                    );
-                  }),
                   _jsx(
                     CmrCheckbox,
                     __assign(
