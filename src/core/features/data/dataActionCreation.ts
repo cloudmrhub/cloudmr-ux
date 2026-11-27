@@ -279,6 +279,7 @@ const ALLOWED_EXTENSIONS = [
     "zip",
     "seq",
     "mtrk",
+    "json",
 ];
 
 const createPayload = async (

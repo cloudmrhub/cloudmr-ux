@@ -52,6 +52,8 @@ export interface UploadProps {
   headerIconColor?: string;
   /** Checked/indeterminate checkbox color. Defaults to headerIconColor. */
   checkboxCheckedColor?: string;
+  /** Return false to hide a file from the table (e.g. app-internal files). */
+  fileFilter?: (file: UploadedFile) => boolean;
 }
 
 const Upload = ({
@@ -59,6 +61,7 @@ const Upload = ({
   headerTextColor,
   headerIconColor,
   checkboxCheckedColor,
+  fileFilter,
 }: UploadProps = {}) => {
   const dispatch = useAppDispatch();
   const { uploadToken, level, isAdmin: isAdminFlag, email, logged_in_token } =
@@ -329,7 +332,7 @@ const Upload = ({
       >
         <CmrPanel key="0" header="Uploaded Data" className="mb-2">
           <CmrTable
-            dataSource={[...files].reverse().map((file) => ({
+            dataSource={[...files].reverse().filter((file) => !fileFilter || fileFilter(file)).map((file) => ({
               ...file,
               uploadedBy: uploadedByLabel(file),
             }))}
